@@ -58,7 +58,11 @@ from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizHandleShiftAndRightCli
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizPluginMenu \
     import QVizPluginMenu
 from imasviz.VizPlugins.QVizPluginCatalog import QVizPluginCatalog
-from imasviz.VizPlugins.VizPlugin import VizPlugin, QVizPluginAnswers
+from imasviz.VizPlugins.VizPlugin import (IDS, NODE, CASE, APP,
+                                          QVizPluginAction, QVizPluginAnswers,
+                                          QVizPluginScope,
+                                          QVizPluginContext,
+                                          VizPlugin)
 
 from conftest import CASE_DATA_DICTIONARY_VERSION, case_uri_or_skip
 from support.fakes import FakeTreeNode
@@ -88,6 +92,12 @@ class StubView(QTreeWidget):
         self.uri = uri
         self.pluginCatalog = None
         self.imas_viz_api = 'the-api-of-this-view'
+
+        class _Occ:
+            def occurrencesOf(self, ids): return [0]
+        self.occurrences = _Occ()
+        self.dataSource = types.SimpleNamespace(uri=uri)
+        self.IDSRoots = {}
 
 
 @pytest.fixture
@@ -133,257 +143,206 @@ def registerUiPlugins(monkeypatch, registrations):
 # --------------------------------------------------------------------------
 
 class DeclaresSeven:
-    """Every documented method, and no inheritance from the base class.
+    """Every documented attribute, and no inheritance from the base class.
 
-    Measured: the framework gated on `isinstance(plugin, VizPlugin)` and fell
-    back on a table naming two plugins that are not registered, so this plugin
-    got no line in the menu at all, and nothing was logged.
+    Declares a scope (any IDS) and three actions -- zero, one and seven -- the
+    way the contract says a plugin that honours the contract does. Nothing else
+    is asked of it; the framework reads the scope and the actions, and calls
+    the action with a context that already holds the api, the case, and the
+    node the menu was built on.
     """
+
+    def _run(self, context):
+        RAN.append(('DeclaresSeven', context.api, 7))
 
     def __init__(self):
         BUILT.append('DeclaresSeven')
-        self.askedOn = []
+        self.SCOPE = QVizPluginScope(IDS)
+        self.ACTIONS = (
+            QVizPluginAction(0, 'the first', run=self._run),
+            QVizPluginAction(1, 'the second', run=self._run),
+            QVizPluginAction(7, 'the seventh', run=self._run,
+                             description='what the seventh entry is for'))
 
-    def setSelectedTreeNode(self, node):
-        self.askedOn.append(node)
-
-    def isEnabled(self):
-        return True
-
-    def getEntries(self):
-        return [7]
-
-    def getAllEntries(self):
-        return [(0, 'the first'), (1, 'the second'), (7, 'the seventh')]
-
-    def getDescription(self):
-        return 'what the seventh entry is for'
-
-    def execute(self, vizAPI, pluginEntry):
-        RAN.append(('DeclaresSeven', vizAPI, pluginEntry))
+    # Only entry 7 is offered: the same rule the old getEntries() enforced.
+    def offered(self, context):
+        return [one for one in self.ACTIONS if one.key == 7]
 
 
 class TakesAnswers(VizPlugin):
-    """The extended contract: an entry that can be answered for the user.
-
-    A session replaying this line hands over what the user answered the first
-    time instead of letting the entry ask again, which is what the Profiles plugin
-    used to need: its question was a modal `QInputDialog`, and a probe left to
-    answer one sat there for 240 s. It asks nothing now -- the occurrence is a
-    control of its window -- but the contract stays, because a plugin that draws
-    its window from a session answer is what a restore can replay.
+    """A session replaying this line hands over what the user answered the first
+    time instead of letting the entry ask again: the context it reads is the
+    one the catalog built, and `context.answers` is the answer if one was given.
     """
+
+    def _run(self, context):
+        RAN.append(('TakesAnswers', context.api, 4, context.answers))
 
     def __init__(self):
         super().__init__()
         BUILT.append('TakesAnswers')
-
-    def isEnabled(self):
-        return True
-
-    def getEntries(self):
-        return [4]
-
-    def getAllEntries(self):
-        return [(4, 'the answered one')]
-
-    def execute(self, vizAPI, pluginEntry, answers=None):
-        RAN.append(('TakesAnswers', vizAPI, pluginEntry, answers))
+        self.SCOPE = QVizPluginScope(IDS)
+        self.ACTIONS = (QVizPluginAction(4, 'the answered one', run=self._run),)
 
 
 class ClaimsEquilibriumOnly(VizPlugin):
     """A plugin that offers itself on one IDS name and on no other.
 
-    The Profiles plugin used to be exactly this -- five names spelled in its own
-    code -- and 42 of the 55 IDSs of the reference case got a 'Plugins' sub-menu
-    with nothing in it because of it. Now that every IDS earns that line from its
-    own tree, the two refusals an unclaimed IDS answers are pinned on a plugin
-    that still refuses by name.
+    The scope names the one IDS it claims; the framework checks it on every
+    node and offers nothing on any other -- the two refusals an unclaimed IDS
+    answers are now the scope test, not a separate `isEnabled` call.
     """
+
+    def _run(self, context):
+        RAN.append(('ClaimsEquilibriumOnly', context.api, 3, context.answers))
 
     def __init__(self):
         super().__init__()
         BUILT.append('ClaimsEquilibriumOnly')
-
-    def isEnabled(self):
-        return self.selectedTreeNode.getIDSName() == 'equilibrium'
-
-    def getEntries(self):
-        return [3]
-
-    def getAllEntries(self):
-        return [(3, 'only on equilibrium')]
-
-    def execute(self, vizAPI, pluginEntry, answers=None):
-        RAN.append(('ClaimsEquilibriumOnly', vizAPI, pluginEntry, answers))
+        self.SCOPE = QVizPluginScope(IDS, ids=('equilibrium',))
+        self.ACTIONS = (QVizPluginAction(3, 'only on equilibrium',
+                                         run=self._run),)
 
 
 class TakesAnything(VizPlugin):
-    """The same contract through `**keywords`, which the check must not miss."""
+    """The same contract, reading `answers` off the context rather than from a
+    keyword argument -- the session replay is in the context either way."""
+
+    def _run(self, context):
+        RAN.append(('TakesAnything', context.api, 5, context.answers))
 
     def __init__(self):
         super().__init__()
         BUILT.append('TakesAnything')
-
-    def isEnabled(self):
-        return True
-
-    def getEntries(self):
-        return [5]
-
-    def getAllEntries(self):
-        return [(5, 'the wide one')]
-
-    def execute(self, vizAPI, pluginEntry, **keywords):
-        RAN.append(('TakesAnything', vizAPI, pluginEntry,
-                    keywords.get('answers')))
+        self.SCOPE = QVizPluginScope(IDS)
+        self.ACTIONS = (QVizPluginAction(5, 'the wide one', run=self._run),)
 
 
 class UndescribedNumber(VizPlugin):
-    """Asks for an entry its `getAllEntries` says nothing about."""
+    """An action whose run is None: the line says what it is, but has no work.
+
+    The old contract answered this by having a number the description table did
+    not explain; the new one has no such split, so the guard it tests is the
+    one that actually exists now -- an action without a run is named and left
+    out, the ones with a keep their line.
+    """
+
+    def _run0(self, context): RAN.append(('UndescribedNumber', context.api, 0))
+    def _run1(self, context): RAN.append(('UndescribedNumber', context.api, 1))
 
     def __init__(self):
         super().__init__()
         BUILT.append('UndescribedNumber')
-
-    def isEnabled(self):
-        return True
-
-    def getEntries(self):
-        return [2]
-
-    def getAllEntries(self):
-        return [(0, 'zero'), (1, 'one')]
+        self.SCOPE = QVizPluginScope(IDS)
+        self.ACTIONS = (
+            QVizPluginAction(0, 'zero', run=self._run0),
+            QVizPluginAction(1, 'one', run=self._run1),
+            QVizPluginAction(2, 'the one with no work'))
 
 
 class RaisesWhileAnswering(VizPlugin):
+    """A plugin that refuses the question before the framework can read it.
+
+    In the new contract the refusal is a `KeyError` out of `offered` -- the
+    framework catches it, names the plugin in the log, and drops the line. No
+    entry is left, no other plugin is cost its own.
+    """
+
     def __init__(self):
         super().__init__()
         BUILT.append('RaisesWhileAnswering')
+        self.SCOPE = QVizPluginScope(IDS)
+        self.ACTIONS = (QVizPluginAction(1, 'would be here',
+                                         run=lambda ctx: None),)
 
-    def isEnabled(self):
-        return True
-
-    def getEntries(self):
+    def offered(self, context):
         raise KeyError('profiles_1d')
 
 
 class OffersNothingForThisNode(VizPlugin):
-    """What `VizProfiles_plugin.getEntries` answers for an IDS it does not claim.
+    """A plugin that declares no actions: an empty ACTIONS tuple.
 
-    It falls off the end of the method and answers None; the old menu read that
-    as an empty list only by accident.
+    The result is the same as the old `getEntries()` answering None -- no
+    entry, and no refusal logged: a plugin that offered nothing was not broken,
+    it simply had nothing for the node in question.
     """
 
     def __init__(self):
         super().__init__()
         BUILT.append('OffersNothingForThisNode')
-
-    def isEnabled(self):
-        return True
-
-    def getEntries(self):
-        return None
+        self.SCOPE = QVizPluginScope(IDS)
+        self.ACTIONS = ()
 
 
 class NotEnabled(VizPlugin):
+    """A plugin with no scope at all: the old `isEnabled` answering False.
+
+    The catalog refuses it by name -- "it names no SCOPE" -- in its
+    `_pluginsNow`, and no other plugin costs its menu for it. The difference
+    from the old contract is that the refusal is now logged, not silent.
+    """
+
     def __init__(self):
         super().__init__()
         BUILT.append('NotEnabled')
-
-    def isEnabled(self):
-        return False
-
-    def getEntries(self):
-        raise AssertionError('a disabled plugin was asked what it offers')
 
 
 class DeclaresZero:
     """Records the entry it was run with, like `DeclaresSeven`."""
 
+    def _run(self, context):
+        RAN.append(('DeclaresZero', context.api, 0))
+
     def __init__(self):
         BUILT.append('DeclaresZero')
+        self.SCOPE = QVizPluginScope(IDS)
+        self.ACTIONS = (
+            QVizPluginAction(0, 'the first', run=self._run),
+            QVizPluginAction(1, 'the second', run=self._run))
 
-    def setSelectedTreeNode(self, node):
-        pass
-
-    def isEnabled(self):
-        return True
-
-    def getEntries(self):
-        return [0]
-
-    def getAllEntries(self):
-        return [(0, 'the first'), (1, 'the second')]
-
-    def execute(self, vizAPI, pluginEntry):
-        RAN.append(('DeclaresZero', vizAPI, pluginEntry))
+    # Only entry 0 is offered: the same rule the old getEntries() enforced.
+    def offered(self, context):
+        return [one for one in self.ACTIONS if one.key == 0]
 
 
 class ReadsItsOwnView(VizPlugin):
-    """The shape `VizProfiles_plugin` has: it reaches its case on `self`.
-
-    It does not call the base constructor, so nothing but the framework's
-    binding can give it a view. Measured on the reference case, the catalog bound
-    the node only, and `execute` died on its first line with `AttributeError:
-    'VizProfiles_plugin' object has no attribute 'dataTreeView'` -- which the
-    guard in `run` reported as "Plugin ... failed", so the entry looked broken
-    rather than unbound.
+    """Reaches its case through the context -- `context.view.uri` is where the
+    uri is now -- rather than off a bound attribute of itself.
     """
 
+    def _run(self, context):
+        RAN.append(('ReadsItsOwnView', context.view.uri, 1))
+
     def __init__(self):
+        super().__init__()
         BUILT.append('ReadsItsOwnView')
-
-    def isEnabled(self):
-        return True
-
-    def getEntries(self):
-        return [1]
-
-    def getAllEntries(self):
-        return [(1, 'draw the panel of this case')]
-
-    def execute(self, vizAPI, pluginEntry):
-        RAN.append(('ReadsItsOwnView', self.dataTreeView.uri, pluginEntry))
+        self.SCOPE = QVizPluginScope(IDS)
+        self.ACTIONS = (QVizPluginAction(1, 'draw the panel of this case',
+                                         run=self._run),)
 
 
 class RefusesToRun(VizPlugin):
+    def _run(self, context):
+        raise ValueError('this case holds no equilibrium IDS')
+
     def __init__(self):
         super().__init__()
         BUILT.append('RefusesToRun')
-
-    def isEnabled(self):
-        return True
-
-    def getEntries(self):
-        return [1]
-
-    def getAllEntries(self):
-        return [(1, 'draw the panel')]
-
-    def getDescription(self):
-        return 'draws a panel this case cannot fill'
-
-    def execute(self, vizAPI, pluginEntry):
-        raise ValueError('this case holds no equilibrium IDS')
+        self.SCOPE = QVizPluginScope(IDS)
+        self.ACTIONS = (QVizPluginAction(1, 'draw the panel', run=self._run,
+                                         description='draws a panel this '
+                                                     'case cannot fill'),)
 
 
 class CrashesWhileRunning(VizPlugin):
+    def _run(self, context):
+        raise KeyError('time_slice')
+
     def __init__(self):
         super().__init__()
         BUILT.append('CrashesWhileRunning')
-
-    def isEnabled(self):
-        return True
-
-    def getEntries(self):
-        return [3]
-
-    def getAllEntries(self):
-        return [(3, 'plot the slices')]
-
-    def execute(self, vizAPI, pluginEntry):
-        raise KeyError('time_slice')
+        self.SCOPE = QVizPluginScope(IDS)
+        self.ACTIONS = (QVizPluginAction(3, 'plot the slices', run=self._run),)
 
 
 def menuOn(view, node, parent=None):
@@ -408,15 +367,20 @@ def test_an_entry_is_found_by_the_number_the_plugin_declared(monkeypatch, view):
     assert entries[0].description == 'what the seventh entry is for'
 
 
-def test_a_number_the_plugin_does_not_describe_is_refused_with_the_ones_it_does(
+def test_an_action_with_no_run_is_refused_and_the_others_keep_their_lines(
         monkeypatch, view):
+    # In the new contract the failure is a line whose run is not callable:
+    # the catalog names it and leaves out that one line, and the ones with a
+    # run keep it -- the old "a number getAllEntries did not describe" has no
+    # direct equivalent, because an action is both its number and its words.
     registerStubs(monkeypatch, UndescribedNumber)
     catalog = QVizPluginCatalog(view)
-    assert catalog.entriesFor(FakeTreeNode(idsName='equilibrium')) == []
+    entries = catalog.entriesFor(FakeTreeNode(idsName='equilibrium'))
+    assert [entry.number for entry in entries] == [0, 1]
     assert len(catalog.refusals) == 1
     assert 'UndescribedNumber' in catalog.refusals[0]
-    assert 'entry 2' in catalog.refusals[0]
-    assert '[0, 1]' in catalog.refusals[0]
+    assert 'action 2' in catalog.refusals[0]
+    assert 'no run' in catalog.refusals[0]
 
 
 def test_a_plugin_raising_while_answering_leaves_the_others_their_lines(
@@ -466,23 +430,30 @@ def test_a_plugin_with_nothing_for_this_node_answers_nothing(monkeypatch, view):
 
 
 def test_a_disabled_plugin_is_not_asked_what_it_offers(monkeypatch, view):
+    # In the new contract, "disabled" is "no SCOPE declared": the catalog
+    # refuses it in _pluginsNow with a named reason rather than silently
+    # skipping it the way the old isEnabled answered False.
     registerStubs(monkeypatch, NotEnabled)
     catalog = QVizPluginCatalog(view)
     assert catalog.entriesFor(FakeTreeNode(idsName='equilibrium')) == []
-    assert catalog.refusals == []
+    assert 'NotEnabled' in catalog.refused
+    assert 'SCOPE' in catalog.refused['NotEnabled']
 
 
 def test_a_plugin_decides_from_the_node_the_menu_was_built_on(monkeypatch,
                                                               view):
-    # The framework handed the plugin the view's selection instead.
+    # Each offer carries the node it was offered on: the context the catalog
+    # builds for one call does not leak into the next, and a plugin that
+    # reads its node from the context reads the one it was offered on, not
+    # the most recent one the catalog was asked for.
     registerStubs(monkeypatch, DeclaresSeven)
     catalog = QVizPluginCatalog(view)
     first = FakeTreeNode(idsName='equilibrium')
     second = FakeTreeNode(idsName='core_profiles')
-    catalog.entriesFor(first)
-    catalog.entriesFor(second)
-    plugin = catalog.plugins()[0][1]
-    assert plugin.askedOn == [first, second]
+    firstOffer = catalog.entriesFor(first)
+    secondOffer = catalog.entriesFor(second)
+    assert firstOffer[0].context.node is first
+    assert secondOffer[0].context.node is second
 
 
 def test_the_plugins_of_a_view_are_built_once_however_many_menus_are_built(
@@ -559,7 +530,7 @@ def test_an_entry_is_logged_before_it_is_handed_over(monkeypatch, view, caplog):
     catalog = QVizPluginCatalog(view)
     with caplog.at_level(logging.INFO, logger=view.uri):
         catalog.run(catalog.entriesFor(FakeTreeNode(idsName='equilibrium'))[0])
-    assert 'Running plugin DeclaresSeven, entry 7.' in caplog.text
+    assert 'Running plugin DeclaresSeven, action 7.' in caplog.text
 
 
 class AnswersOnItsOfferNode(VizPlugin):
@@ -567,24 +538,19 @@ class AnswersOnItsOfferNode(VizPlugin):
 
     The window a plugin draws names that IDS (the title and the session stamp),
     so it is what the entry was *offered* on, not whatever node the catalog was
-    last built for.
+    last built for. In the new contract the node lives in the context the action
+    was handed, and each offer carries its own; running an older offer reads the
+    older node, not the most recent one the catalog was asked for since.
     """
+
+    def _run(self, context):
+        RAN.append(('AnswersOnItsOfferNode', context.node.getIDSName()))
 
     def __init__(self):
         super().__init__()
-
-    def isEnabled(self):
-        return True
-
-    def getEntries(self):
-        return [1]
-
-    def getAllEntries(self):
-        return [(1, 'the one the node decides')]
-
-    def execute(self, vizAPI, pluginEntry):
-        RAN.append(('AnswersOnItsOfferNode',
-                    self.selectedTreeNode.getIDSName()))
+        self.SCOPE = QVizPluginScope(IDS)
+        self.ACTIONS = (QVizPluginAction(1, 'the one the node decides',
+                                         run=self._run),)
 
 
 def test_an_entry_runs_on_the_node_it_was_offered_on(monkeypatch, view):
@@ -592,20 +558,22 @@ def test_an_entry_runs_on_the_node_it_was_offered_on(monkeypatch, view):
 
     Measured on the reference case: an `entriesFor` on a *different* IDS root
     between the offer and the run left the plugin bound to that other root, and
-    the window it drew named that IDS in its title and its session stamp. The
-    entry is answered on the node it was offered on, and only there.
+    the window it drew named that IDS in its title and its session stamp. In
+    the new contract each offer carries its own context with its own node, and
+    running the first offer reads the first node -- not whatever the catalog
+    was asked for most recently.
     """
     registerStubs(monkeypatch, AnswersOnItsOfferNode)
     catalog = QVizPluginCatalog(view)
     offeredOn = FakeTreeNode(idsName='equilibrium')
     entry = catalog.entriesFor(offeredOn)[0]
     assert entry.node is offeredOn
-    # The menu of another node is built in between: the plugin is now bound
-    # there, and is asked for nothing by it.
+    # The menu of another node is built in between: a different offer, still
+    # its own, with its own node.
     elsewhere = FakeTreeNode(idsName='core_profiles')
-    others = catalog.entriesFor(elsewhere)  # one line, still its own
+    others = catalog.entriesFor(elsewhere)
     assert len(others) == 1 and others[0].pluginName == entry.pluginName
-    assert catalog.plugins()[0][1].selectedTreeNode is elsewhere
+    assert others[0].context.node is elsewhere
     catalog.run(entry)
     assert RAN == [('AnswersOnItsOfferNode', 'equilibrium')]
 
@@ -613,28 +581,6 @@ def test_an_entry_runs_on_the_node_it_was_offered_on(monkeypatch, view):
 # --------------------------------------------------------------------------
 # The answers a session gives in the user's place
 # --------------------------------------------------------------------------
-
-def test_an_entry_that_takes_no_answers_is_refused_and_never_run(monkeypatch,
-                                                                view, caplog):
-    """`DeclaresSeven` honours the two-argument contract, as every plugin written
-    before the answers did.
-
-    Running such an entry from a session would not fail: it would ask its
-    question again. And the one registered plugin that asks a question asks it
-    through a modal `QInputDialog` -- measured, a probe left to answer that one
-    sat in `askForOccurrence` for 240 s. So the entry is named and left alone,
-    and the rest of the screen is put back.
-    """
-    registerStubs(monkeypatch, DeclaresSeven)
-    catalog = QVizPluginCatalog(view)
-    entry = catalog.entriesFor(FakeTreeNode(idsName='equilibrium'))[0]
-    with caplog.at_level(logging.INFO, logger=view.uri):
-        catalog.run(entry, answers=QVizPluginAnswers(occurrence=2,
-                                                     figureKey='PlotView:1'))
-
-    assert RAN == []
-    assert 'DeclaresSeven' in caplog.text and 'not replayed' in caplog.text
-
 
 def test_the_answers_a_session_gave_are_the_answers_the_entry_is_handed(
         monkeypatch, view):
@@ -673,14 +619,13 @@ def test_an_entry_taking_its_keywords_by_star_is_not_refused(monkeypatch, view):
 
 def test_a_plugin_is_bound_to_the_view_whose_catalog_built_it(monkeypatch,
                                                               view):
-    # The contract says the node *and* the view are set when the menu is built.
-    # Measured after the catalog replaced the old handler, only the node was: the
-    # Profiles plugin, the one registered plugin that reaches its case through
-    # its view, failed every entry on the first line of its execute().
+    # In the new contract the view is not set on the plugin, it is in the
+    # context the action is handed: a plugin that reads its case through
+    # `context.view` reads the one the catalog was built for, not a copy.
     registerStubs(monkeypatch, ReadsItsOwnView)
     catalog = QVizPluginCatalog(view)
-    catalog.entriesFor(FakeTreeNode(idsName='equilibrium'))
-    assert catalog.plugins()[0][1].dataTreeView is view
+    entries = catalog.entriesFor(FakeTreeNode(idsName='equilibrium'))
+    assert entries[0].context.view is view
 
 
 def test_a_plugin_that_reaches_its_case_through_its_view_runs(monkeypatch,

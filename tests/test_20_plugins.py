@@ -120,44 +120,41 @@ def test_the_menu_is_no_longer_built_by_two_deleted_modules():
 # The contract a plugin honours
 # --------------------------------------------------------------------------
 
-def test_a_fresh_plugin_is_inactive_and_unbound():
+def test_a_fresh_plugin_declares_nothing():
+    """A plugin that declares no scope and no actions is inert: the catalog
+    refuses it by name ("it names no SCOPE"), and no other plugin costs its
+    line for it."""
     plugin = VizPlugin()
-    assert plugin.isEnabled() is False
-    assert plugin.selectedTreeNode is None
-    assert plugin.dataTreeView is None
+    assert plugin.SCOPE is None
+    assert plugin.ACTIONS == ()
 
 
-def test_a_plugin_takes_the_node_it_is_offered_on_and_the_view_it_reads():
-    node = FakeTreeNode(idsName='equilibrium')
-    plugin = VizPlugin()
-    plugin.setSelectedTreeNode(node)
-    plugin.setDataTreeView('a-tree-view')
-    assert plugin.selectedTreeNode is node
-    assert plugin.dataTreeView == 'a-tree-view'
+def test_a_plugin_with_no_actions_returns_empty_offers():
+    from imasviz.VizPlugins.VizPlugin import QVizPluginAction, QVizPluginScope, IDS
+    class NoActions(VizPlugin):
+        def __init__(self):
+            super().__init__()
+            self.SCOPE = QVizPluginScope(IDS)
+            self.ACTIONS = ()
+    plugin = NoActions()
+    # offered() returns list(ACTIONS) = []
+    from imasviz.VizPlugins.VizPlugin import QVizPluginContext
+    assert plugin.offered(QVizPluginContext()) == []
 
 
-def test_a_plugin_that_declares_nothing_is_asked_for_it_in_words():
-    plugin = VizPlugin()
-    for method in ('getEntries', 'getAllEntries', 'execute'):
-        with pytest.raises(ValueError) as refused:
-            getattr(plugin, method)(None, None) if method == 'execute' \
-                else getattr(plugin, method)()
-        assert 'should be implemented' in str(refused.value)
-
-
-def test_getAllEntries_is_reachable_on_the_base_class():
-    # Measured before: this answered `TypeError: VizPlugin.getAllEntries()
-    # missing 1 required positional argument: 'pluginsName'`, because the
-    # contract stub was shadowed by a static table of the same name.
-    with pytest.raises(ValueError):
-        VizPlugin().getAllEntries()
-
-    # One declaration, taking only the plugin itself.
-    assert list(inspect.signature(VizPlugin.getAllEntries).parameters) == ['self']
-
-
-def test_a_plugin_answers_for_its_own_configuration():
-    # The manual asks a plugin for this; the framework never asked it, and asked
-    # a per-name table instead -- which answered KeyError for both registered
-    # plugins.
-    assert VizPlugin().getPluginsConfiguration() is None
+def test_a_plugin_with_actions_offers_them():
+    from imasviz.VizPlugins.VizPlugin import (APP, QVizPluginAction,
+                                              QVizPluginContext,
+                                              QVizPluginScope)
+    class OneAction(VizPlugin):
+        def _run(self, context): pass
+        def __init__(self):
+            super().__init__()
+            self.SCOPE = QVizPluginScope(APP)
+            self.ACTIONS = (QVizPluginAction(0, 'say something', run=self._run),)
+    plugin = OneAction()
+    offers = plugin.offered(QVizPluginContext(scope=APP))
+    assert len(offers) == 1
+    assert offers[0].key == 0
+    assert offers[0].label == 'say something'
+    assert callable(offers[0].run)

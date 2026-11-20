@@ -2644,15 +2644,13 @@ class McpGuiCore:
                 'refusals': list(catalog.refusals)}
 
     def run_plugin(self, uri, plugin, entry, occurrence=0, ids_name=None):
-        """Run one entry of a plugin, with the answers the entry would have asked.
+        """Run one entry of a plugin, with the occurrence the caller named.
 
-        `QVizPluginAnswers` is always handed when the entry can take it,
-        which is what keeps a modal question off the path of an agent: the
-        occurrence it says is the one asked here, and an entry whose
-        `execute` cannot take the answers is run the way the menu runs it.
+        `QVizPluginAnswers` carries the occurrence so that `catalog.run`
+        passes it into `QVizPluginContext.answers`, where the plugin's
+        action reads it. This is what keeps a modal occurrence question
+        off the path of an agent.
         """
-        import inspect
-
         from imasviz.VizPlugins.VizPlugin import QVizPluginAnswers
 
         view = self._viewForUri(uri)
@@ -2677,35 +2675,11 @@ class McpGuiCore:
                 'The case %s does not offer entry %s of plugin "%s": '
                 'list_plugins names what it does.'
                 % (uri, entry, plugin))
-        answers = None
-        execute = getattr(chosen.plugin, 'execute', None)
-        if callable(execute) and self._acceptsAnswers(execute):
-            answers = QVizPluginAnswers(occurrence=occurrence,
-                                        figureKey=None)
+        answers = QVizPluginAnswers(occurrence=occurrence, figureKey=None)
         catalog.run(chosen, answers=answers)
         return {'ran': {'plugin': plugin, 'entry': entry,
-                        'occurrence': occurrence if answers is not None
-                        else None},
+                        'occurrence': occurrence},
                 'windows': self.list_windows()}
-
-    @staticmethod
-    def _acceptsAnswers(execute):
-        """The same question `QVizPluginCatalog` asks, asked the same way.
-
-        Mirror of that helper, kept local because it is module-private:
-        whether the signature answers an `answers=` keyword, and when it
-        cannot be inspected at all the safe reading -- the menu path -- is
-        the one taken.
-        """
-        import inspect
-        try:
-            parameters = inspect.signature(execute).parameters
-        except (TypeError, ValueError):
-            return False
-        parameter = parameters.get('answers')
-        return (parameter is not None
-                or any(p.kind is inspect.Parameter.VAR_KEYWORD
-                       for p in parameters.values()))
 
     # --------------------------------------------------------------- session
 

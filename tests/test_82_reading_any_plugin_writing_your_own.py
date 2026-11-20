@@ -86,6 +86,11 @@ class StubView(QTreeWidget):
         self.uri = 'stub?case'
         self.pluginCatalog = None
         self.imas_viz_api = 'the-api-of-this-view'
+        import types as _types
+        class _Occ:
+            def occurrencesOf(self, ids): return [0]
+        self.occurrences = _Occ()
+        self.dataSource = _types.SimpleNamespace(uri='stub?case')
 
 
 @pytest.fixture
@@ -105,14 +110,17 @@ def aUserPlugin(name='MyAnalysisPlugin', label='the first thing'):
     os.makedirs(folder)
     path = os.path.join(folder, name + '.py')
     with open(path, 'w', encoding='utf-8') as handle:
-        handle.write('from imasviz.VizPlugins.VizPlugin import VizPlugin\n\n\n'
-                     'class %s(VizPlugin):\n'
-                     '    def isEnabled(self):\n'
-                     '        return True\n\n'
-                     '    def getEntries(self):\n'
-                     '        return [0]\n\n'
-                     '    def getAllEntries(self):\n'
-                     '        return [(0, %r)]\n' % (name, label))
+        handle.write(
+            'from imasviz.VizPlugins.VizPlugin import (IDS, QVizPluginAction,'
+            ' QVizPluginScope, VizPlugin)\n\n\n'
+            'class %s(VizPlugin):\n'
+            '    def _run(self, context):\n'
+            '        pass\n\n'
+            '    def __init__(self):\n'
+            '        super().__init__()\n'
+            '        self.SCOPE = QVizPluginScope(IDS)\n'
+            '        self.ACTIONS = (QVizPluginAction(0, %r, run=self._run),)\n'
+            % (name, label))
     from imasviz.VizPlugins.QVizPluginSource import QVizPluginSource, USER
     return QVizPluginSource(name, os.path.basename(folder) + '.' + name, USER,
                             folder=folder, fileName=path)
@@ -132,18 +140,17 @@ def shipAStub(monkeypatch):
     module = types.ModuleType(
         'imasviz.VizPlugins.viz_stub_shipped.ShippedThingPlugin')
 
-    class ShippedThingPlugin:
-        def isEnabled(self):
-            return True
+    from imasviz.VizPlugins.VizPlugin import (IDS, QVizPluginAction,
+                                              QVizPluginScope, VizPlugin as _VizPlugin)
 
-        def getEntries(self):
-            return [3]
+    class ShippedThingPlugin(_VizPlugin):
+        def _run(self, context): pass
 
-        def getAllEntries(self):
-            return [(3, 'the shipped one')]
-
-        def execute(self, vizAPI, pluginEntry, answers=None):
-            pass
+        def __init__(self):
+            super().__init__()
+            self.SCOPE = QVizPluginScope(IDS)
+            self.ACTIONS = (QVizPluginAction(3, 'the shipped one',
+                                             run=self._run),)
 
     module.ShippedThingPlugin = ShippedThingPlugin
     monkeypatch.setitem(sys.modules, module.__name__, module)

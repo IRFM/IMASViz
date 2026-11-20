@@ -7,57 +7,41 @@
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
 
-"""Which plugins a shot view can offer, and what each of them offers.
+"""Which plugins a place may offer, and what each of them offers there.
 
-The framework used to ask this question again on every menu: `QVizPluginsHandler`
-called `VizPlugin.getPluginsObjects`, which imported every registered plugin and
-built its object anew. Measured on the reference case, in a process that had
-opened the shot view and nothing else, the first right click paid **0,999 s** for
-that (4,186 s for `getPluginsObjects` alone, cold: it is where matplotlib comes
-in), the second 0,0425 s, the third 0,0008 s -- and the launch chain imports no
-plugin at all, so the whole cost sits on the gesture. Nothing kept the objects
-either, so a plugin built from a **.ui** file would construct a `QMainWindow` and
-`sys.path.append` its directory once per click.
+A place is one of the four scopes a plugin can name: a node of the tree
+(``IDS`` for the root, ``NODE`` for a quantity), the case itself (``CASE``), or
+the application (``APP``). The catalog a place asks is built **once** for it --
+a place nobody asks never pays for importing its plugins -- and the plugins are
+imported and built **once per catalog**, each on its own, so the one that
+cannot be imported is named in the log and the others keep their lines.
 
-What that framework also measured:
+What a place may offer comes from **two** places: the table IMASViz ships
+(``RegisteredPlugins``), and this user's own plugin folder -- see
+``QVizPluginSource``, which owns that difference. A user plugin is found by
+looking, so one created in the middle of a session is on the next place's menu
+with nothing else edited. That is also what makes a *reload* something that has
+to exist: the cache that stops a view paying twice for the same plugins is the
+same cache that would keep an edited plugin running the code it had when the
+place was built. ``reload()`` puts one catalog back to what the disk says now;
+``reloadEverywhere(api)`` puts every open place back.
 
-* a plugin raising inside `getEntries` took the **whole menu** with it: 0 entries
-  left, and the exception escaped the right click;
-* the label of an entry was read at its **position** in `getAllEntries()`, so a
-  plugin declaring entries `[2]` with two descriptions answered `IndexError`;
-* a plugin honouring the documented methods but not inheriting `VizPlugin` was
-  **invisible, without a word** -- the gate was an `isinstance`, and the fallback
-  was a table naming two plugins that are not registered;
-* every entry got the same id, `9999`, under a `# TODO: properly set ID`, and the
-  id was then read back and thrown away: the click dispatched on the **position**
-  in a list that grew with every menu built on the same handler.
-
-So a catalog belongs to the shot view: the plugins are imported and built once for
-it, lazily -- a view nobody right-clicks never pays for them -- and each plugin is
-asked on its own, so the one that fails is named and the others are still offered.
-An entry carries its own number, which is also what `execute` is asked for,
-because the manual documents `getAllEntries` as `[(config number, description)]`
-and `execute(vizAPI, pluginEntry)` receives that number.
-
-What a view can offer comes from **two** places now: the table IMASViz ships, and
-this user's own plugin folder -- see `QVizPluginSource`, which owns that
-difference. A user plugin is found by looking, so one created in the middle of a
-session is on the menu of the next right click with nothing else edited. That is
-also what makes a *reload* something that has to exist: the cache that stops a
-view paying twice for the same plugins is the same cache that would keep an edited
-plugin running the code it had when the view was built. `reload()` puts one view
-back to what the disk says now; `reloadEverywhere(api)` puts every open shot view
-back, which is what the watcher on the application window calls.
+The offer a place gets is read off the plugin's declared ``SCOPE`` and
+``ACTIONS`` -- the declarative contract of ``VizPlugin`` -- and each is run by
+calling the action with a ``QVizPluginContext`` that already carries the api,
+the case, the node, the occurrence and the answers a session gave. A plugin does
+not test a node to decide where it applies; the framework reads its scope.
 """
 
 import importlib
-import inspect
 import logging
 import re
 
 import shiboken6
 
-from imasviz.VizPlugins.VizPlugin import getRegisteredPlugins
+from imasviz.VizPlugins.VizPlugin import (APP, CASE, IDS, NODE,
+                                          QVizPluginAction, QVizPluginContext,
+                                          getRegisteredPlugins)
 from imasviz.VizPlugins.QVizPluginSource import (BUILTIN, USER,
                                                  attachUserPackage,
                                                  builtinSource,
@@ -80,30 +64,29 @@ _CUSTOM_WIDGET = re.compile(r'<customwidget>.*?<class>(\w+)</class>', re.S)
 
 
 class QVizPluginEntry:
-    """One line of the Plugins menu: a plugin, the feature it offers, its words.
+    """One line of a Plugins menu: a plugin, and the action it offers there.
 
-    `source` says which plugin that is and where it came from, which is what lets
-    the menu offer *Edit* for a plugin of the user's own and not for one IMASViz
-    shipped. It is optional so that a line built without it stays a line: the
-    origin then reads as shipped, which is the safe answer -- nothing offers to
-    edit what nobody has.
+    `number` is the action's key -- the stable identifier the plugin gave it,
+    which is also what the session and the agent key it by. `source` says which
+    plugin that is and where it came from, which is what lets the menu offer
+    *Edit* for a plugin of the user's own and not for one IMASViz shipped. It is
+    optional so that a line built without it stays a line: the origin then reads
+    as shipped, which is the safe answer -- nothing offers to edit what nobody
+    has. `node`, when the line was offered on a node, is that node, and `action`
+    / `context` are what `run` hands over to do the work.
     """
 
     def __init__(self, pluginName, plugin, number, label, description=None,
-                 source=None, node=None):
+                 source=None, node=None, action=None, context=None):
         self.pluginName = pluginName
         self.plugin = plugin
         self.number = number
         self.label = label
         self.description = description or pluginName
         self.source = source
-        # The node the entry was offered on: a plugin reads its IDS name from
-        # the node it was bound to, and the binding travels with the menu -- an
-        # entry asked on the equilibrium root and run a moment later must still
-        # be answered on that root, so `run` re-binds it here (measured stale:
-        # an `entriesFor` on another node between the offer and the click left
-        # the window naming that other node).
         self.node = node
+        self.action = action
+        self.context = context
 
     def __repr__(self):
         return '<%s entry %s "%s">' % (self.pluginName, self.number, self.label)
@@ -114,16 +97,21 @@ class QVizPluginEntry:
 
 
 class QVizPluginCatalog:
-    """The plugins of one shot view -- shipped and the user's own -- asked one at
-    a time.
+    """The plugins one place may offer, and what each of them offers there.
 
-    Built once per view, on the first menu that needs it. A plugin that cannot be
-    imported, built, or asked what it offers is named in the log of that case and
-    left out; the others keep their entries.
+    Built once per place, on the first menu that needs it. A plugin that cannot
+    be imported, built, or offered is named in the log of that place and left
+    out; the others keep their lines. A catalog bound to a case answers for an
+    ``IDS``, ``NODE`` or ``CASE`` place; one bound to the application (no case)
+    answers for an ``APP`` place.
     """
 
-    def __init__(self, dataTreeView):
+    def __init__(self, dataTreeView=None, api=None):
+        if dataTreeView is None and api is None:
+            raise ValueError('a plugin catalog needs a case or the '
+                             'application to answer for')
         self.dataTreeView = dataTreeView
+        self._api = api
         self._plugins = None
         self._sourceOf = {}
         self.refusals = []
@@ -134,8 +122,17 @@ class QVizPluginCatalog:
         # on how `_refuse` happens to be worded.
         self.refused = {}
 
+    def _apiObject(self):
+        """The api this catalog answers with: the case's, or the one it was given."""
+        if self.dataTreeView is not None:
+            return self.dataTreeView.imas_viz_api
+        return self._api
+
     def _log(self):
-        return logging.getLogger(self.dataTreeView.uri)
+        """The log of the place this catalog answers for."""
+        if self.dataTreeView is not None:
+            return logging.getLogger(self.dataTreeView.uri)
+        return logging.getLogger('logPanel')
 
     def _refuse(self, pluginName, why):
         """Leave a plugin out of the menu, and say so where the user reads."""
@@ -145,7 +142,7 @@ class QVizPluginCatalog:
         self._log().error(message)
 
     def _sources(self):
-        """What the view may offer: the shipped table, then this user's folder.
+        """What this place may offer: the shipped table, then this user's folder.
 
         The shipped table is asked through the name imported *here*, because that
         is the seam the menu tests replace to hand over a stub plugin; a helper
@@ -183,15 +180,15 @@ class QVizPluginCatalog:
         return importlib.import_module(source.importName)
 
     def reload(self):
-        """Put this view's plugins back to what the disk says now.
+        """Put this catalog's plugins back to what the disk says now.
 
         Every module under the package the user's folder is imported under is
         dropped, the folder's own package with it -- not just the plugins this
-        view happens to have built. `sys.modules` is one table for the process, so
-        forgetting only what *this* view imported would leave a plugin another view
-        built still on its old code, and a plugin the user deleted altogether
-        would never be forgotten at all: it is no longer on the folder to be
-        found. What is dropped is therefore the whole subtree of the user's
+        catalog happens to have built. `sys.modules` is one table for the process,
+        so forgetting only what *this* place imported would leave a plugin another
+        place built still on its old code, and a plugin the user deleted
+        altogether would never be forgotten at all: it is no longer on the folder
+        to be found. What is dropped is therefore the whole subtree of the user's
         folder, however it got there.
 
         A shipped plugin is never re-imported in the middle of a session: the
@@ -200,10 +197,10 @@ class QVizPluginCatalog:
         ends up with two figures that refuse each other. What the user just
         changed is their own file, and that is the one that comes back.
 
-        Nothing here opens a window or touches a menu. The sub-menu is rebuilt on
-        every right click, so the next one shows what the disk holds; and a view
-        whose catalog was never built has nothing to put back, since it will build
-        it fresh from the same folder.
+        Nothing here opens a window or touches a menu. The menus are rebuilt on
+        each gesture, so the next shows what the disk holds; and a place whose
+        catalog was never built has nothing to put back, since it will build it
+        fresh from the same folder.
         """
         forgetUserModules()
         self._plugins = None
@@ -258,7 +255,7 @@ class QVizPluginCatalog:
         return window
 
     def _pluginsNow(self):
-        """Import and build every plugin this view may offer, once, each on its own."""
+        """Import and build every plugin this place may offer, once, each on its own."""
         if self._plugins is not None:
             return self._plugins
         self._plugins = []
@@ -282,15 +279,14 @@ class QVizPluginCatalog:
                 self._refuse(pluginName, '%s: %s' % (type(error).__name__, error))
                 del self._sourceOf[pluginName]
                 continue
-            # A plugin reaches its case through `self.dataTreeView`, which the
-            # contract says is set when the menu is built. The catalog bound the
-            # node only, so a plugin reading its view answered AttributeError on
-            # the first line of execute() -- measured with the Profiles plugin,
-            # the one registered plugin that reads it -- and the guard in `run`
-            # hid that behind a line saying "Plugin ... failed".
-            bindView = getattr(plugin, 'setDataTreeView', None)
-            if callable(bindView):
-                bindView(self.dataTreeView)
+            # A plugin that declares no scope is not offered anywhere: it was
+            # never a question of which node to gate on -- it simply says nothing
+            # about where it sits -- so it is named, not handed a silence.
+            if getattr(plugin, 'SCOPE', None) is None:
+                self._refuse(pluginName, 'it names no SCOPE (IDS, NODE, CASE or '
+                                         'APP), so it is not offered anywhere')
+                del self._sourceOf[pluginName]
+                continue
             self._plugins.append((pluginName, plugin))
         return self._plugins
 
@@ -298,143 +294,170 @@ class QVizPluginCatalog:
         return self._pluginsNow()
 
     def sourceOf(self, pluginName):
-        """Where that plugin came from, once the view has been asked once."""
+        """Where that plugin came from, once this place has been asked once."""
         self._pluginsNow()
         return self._sourceOf.get(pluginName)
 
-    def entriesFor(self, node):
-        """The lines this node earns, in registration order.
+    def _contextFor(self, kind, node=None):
+        """The context one line of this place runs in, with nothing yet answered.
 
-        Each plugin is asked separately and bound to `node` first: the manual
-        says a plugin decides from the node it was offered on, and the framework
-        used to hand it the view's selection instead of the node under the mouse.
+        The occurrence is the first the case holds for the IDS -- the same
+        default a menu-click used to take -- and a session replay overrides it
+        through `answers` at run time.
         """
-        entries = []
+        api = self._apiObject()
+        view = self.dataTreeView
+        if kind == APP:
+            return QVizPluginContext(api=api, view=None, node=None, scope=APP)
+        occurrence = 0
+        if view is not None and node is not None:
+            idsName = node.getIDSName()
+            if idsName is not None:
+                occurrences = view.occurrences.occurrencesOf(idsName)
+                occurrence = occurrences[0] if occurrences else 0
+        return QVizPluginContext(api=api, view=view, node=node, scope=kind,
+                                 occurrence=occurrence)
+
+    def _offers(self, kind, node=None):
+        """The lines the plugins of this place offer, for this one.
+
+        Each plugin is asked on its own, bound to the place it is offered at: a
+        plugin that fails to say what it offers is named and left out, and the
+        others keep their lines. A line is an action declared by the plugin; the
+        plugin's ``offered`` may offer a subset of them for this place, or refuse.
+        """
+        from PySide6.QtWidgets import QMainWindow
+
+        offers = []
         for pluginName, plugin in self._pluginsNow():
-            if isinstance(plugin, dict):
+            source = self._sourceOf.get(pluginName)
+            if isinstance(plugin, QMainWindow):
+                # A .ui window has no methods to ask: it names one fixed IDS, and
+                # its one line is the window itself, offered on that root.
+                if kind != IDS or node is None or not node.isIDSRoot() \
+                        or plugin.targetIDSroot != node.getIDSName():
+                    continue
+                action = QVizPluginAction(0, 'Show the %s panel' % pluginName)
+                offers.append(QVizPluginEntry(pluginName, plugin, action.key,
+                                              action.label, source=source,
+                                              node=node, action=action))
                 continue
+
+            scope = getattr(plugin, 'SCOPE', None)
+            if scope is None:
+                continue
+            if kind in (IDS, NODE):
+                if scope.kind != kind:
+                    continue
+                if not scope.appliesToNode(node):
+                    continue
+            elif kind == CASE:
+                if not scope.appliesToCase():
+                    continue
+            elif kind == APP:
+                if not scope.appliesToApp():
+                    continue
+            else:
+                continue
+
             try:
-                entries.extend(self._entriesOf(pluginName, plugin, node))
+                context = self._contextFor(kind, node)
+                actions = plugin.offered(context)
             except Exception as error:
-                self._refuse(pluginName, 'it failed while answering what it '
-                                         'offers (%s: %s)'
+                self._refuse(pluginName, 'it refused this place (%s: %s)'
                              % (type(error).__name__, error))
-        return entries
-
-    def _entriesOf(self, pluginName, plugin, node):
-        from PySide6.QtWidgets import QMainWindow
-
-        source = self._sourceOf.get(pluginName)
-        if isinstance(plugin, QMainWindow):
-            # A .ui window has no methods to ask: it claims one fixed IDS, and
-            # its one entry is the window itself.
-            if plugin.targetIDSroot != node.getIDSName():
-                return []
-            return [QVizPluginEntry(pluginName, plugin, 0,
-                                   'Show the %s panel' % pluginName,
-                                   source=source, node=node)]
-
-        bind = getattr(plugin, 'setSelectedTreeNode', None)
-        if callable(bind):
-            bind(node)
-        if not plugin.isEnabled():
-            return []
-
-        numbers = plugin.getEntries()
-        if not numbers:
-            return []
-
-        descriptions = plugin.getAllEntries()
-        if descriptions is None:
-            raise ValueError('getAllEntries() answered nothing, so entry %r has '
-                             'no text to show' % (numbers,))
-        labels = {}
-        for described in descriptions:
-            labels[described[0]] = described[1]
-
-        description = getattr(plugin, 'getDescription', None)
-        tip = description() if callable(description) else pluginName
-
-        entries = []
-        for number in numbers:
-            if number not in labels:
-                # Measured: reading the position instead of the number answered
-                # IndexError and took the menu with it.
-                self._refuse(pluginName, 'it asks for entry %r, which its '
-                                         'getAllEntries() does not describe (it '
-                                         'describes %s)'
-                             % (number, sorted(labels)))
                 continue
-            entries.append(QVizPluginEntry(pluginName, plugin, number,
-                                          labels[number], tip, source=source,
-                                          node=node))
-        return entries
+            for action in (actions or []):
+                if not callable(getattr(action, 'run', None)):
+                    self._refuse(pluginName, 'its action %s has no run to call'
+                                 % (getattr(action, 'key', action),))
+                    continue
+                # A label (or a tooltip) may be said once, or of the place it is
+                # offered from: the `equilibrium` root earns "the equilibrium IDS"
+                # while `magnetics` earns its own under the line, the way the old
+                # per-node `getAllEntries()` answered it.
+                offers.append(QVizPluginEntry(
+                    pluginName, plugin, action.key,
+                    _word(action.label, context),
+                    _word(action.description, context),
+                    source=source, node=node, action=action,
+                    context=context))
+        return offers
 
-    def run(self, entry, answers=None):
-        """Hand one entry to the plugin it names.
+    def entriesFor(self, node):
+        """The lines a node earns: what an IDS root earns, and what a quantity does.
 
-        Returns nothing; a plugin that refuses says so in the log with its name.
-        The framework used to catch everything with a bare `except:` and print a
-        traceback on stdout, so the user of the GUI saw the entry do nothing.
+        A node is one or the other -- an IDS root (``isIDSRoot``) or a quantity
+        under it -- and a plugin is offered at the one it declared, so an
+        ``equilibrium`` root earns the plugins that name that IDS and a quantity
+        under it the ones that handle it.
+        """
+        return self._offers(IDS, node) + self._offers(NODE, node)
 
-        `answers` is what a session already gave the entry in the user's place
-        (a `QVizPluginAnswers`); from the menu it is None, and the entry asks its
-        own question as it always did. An entry that cannot take the answers is
-        refused here rather than run without them: run without them, it would ask
-        its question again, and the Profiles plugin asks it through a modal
-        `QInputDialog` -- measured, a probe waiting on that dialog sat for 240 s.
+    def caseEntries(self):
+        """The lines the case's own menu bar earns -- its ``CASE`` plugins."""
+        return self._offers(CASE)
+
+    def appEntries(self):
+        """The lines the application menu bar earns -- its ``APP`` plugins."""
+        return self._offers(APP)
+
+    def run(self, offer, answers=None):
+        """Hand one line to the action it names, with the context it ran in.
+
+        A plugin that refuses says so in the log with its name. `answers` is what
+        a session already gave in the user's place (a `QVizPluginAnswers`); from
+        a menu it is None, and the action asks its own question as it always did.
+        The context the action reads is the one this line was offered in, with the
+        occurrence a session named taking the place of the one the case first holds.
         """
         from PySide6.QtWidgets import QMainWindow
 
-        if isinstance(entry.plugin, QMainWindow):
-            self._showUiWindow(entry)
+        if isinstance(offer.plugin, QMainWindow):
+            self._showUiWindow(offer)
             return
-        execute = getattr(entry.plugin, 'execute', None)
-        if not callable(execute):
-            self._refuse(entry.pluginName, 'it has no execute() to run')
+        action = offer.action
+        if action is None or not callable(action.run):
+            self._refuse(offer.pluginName, 'the line named here has no run to call')
             return
-        if answers is not None and not _acceptsAnswers(execute):
-            self._log().error(
-                'The %s entry of plugin %s is not replayed: its execute() takes '
-                'no answers, so it would ask its question again -- a session has '
-                'no one to answer it.' % (entry.number, entry.pluginName))
-            return
-        self._log().info('Running plugin %s, entry %s.'
-                         % (entry.pluginName, entry.number))
-        # The entry is answered on the node it was offered on, whatever the
-        # plugin is bound to now: the binding is set by the last `entriesFor`,
-        # which need not be the offer this entry came out of. A node the tree
-        # took away in between is no node, and the plugin answers for itself.
-        node = getattr(entry, 'node', None)
-        bind = getattr(entry.plugin, 'setSelectedTreeNode', None)
-        if callable(bind) and node is not None and shiboken6.isValid(node):
-            bind(node)
+
+        context = QVizPluginContext(
+            api=self._apiObject(),
+            view=self.dataTreeView,
+            node=offer.node,
+            scope=(offer.context.scope if offer.context is not None else IDS),
+            occurrence=(offer.context.occurrence
+                        if offer.context is not None else 0),
+            answers=answers)
+        if answers is not None:
+            # The occurrence a session named is the one drawn -- not the one the
+            # case first holds -- so a file naming occurrence 1 of `equilibrium`
+            # opens on 1 rather than being quietly answered on 0.
+            context.occurrence = answers.occurrence
+
+        self._log().info('Running plugin %s, action %s.'
+                         % (offer.pluginName, action.key))
         try:
-            if answers is None:
-                execute(self.dataTreeView.imas_viz_api, entry.number)
-            else:
-                execute(self.dataTreeView.imas_viz_api, entry.number,
-                        answers=answers)
+            action.run(context)
         except ValueError as error:
             self._log().error('Plugin %s could not run: %s'
-                              % (entry.pluginName, error))
+                              % (offer.pluginName, error))
         except Exception as error:
             self._log().error('Plugin %s failed: %s: %s'
-                              % (entry.pluginName, type(error).__name__, error))
+                              % (offer.pluginName, type(error).__name__, error))
 
-    def _showUiWindow(self, entry):
+    def _showUiWindow(self, offer):
         """Open the window of a .ui plugin, with the IDS it was drawn around.
 
         The window used to ask for that IDS through `dataSource.load` with the
-        occurrence the registration names, which after T12 is the whole question
-        an IDS load has to answer; going through the same command as every other
-        load keeps the guard on the view and the label of the view.
+        occurrence the registration names, going through the same command as every
+        other load keeps the guard on the view and the label of the view.
         """
         from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadOccurrence \
             import QVizLoadOccurrence
 
-        window = entry.plugin
-        self._log().info('Showing the panel of plugin %s.' % entry.pluginName)
+        window = offer.plugin
+        self._log().info('Showing the panel of plugin %s.' % offer.pluginName)
         QVizLoadOccurrence(dataTreeView=self.dataTreeView,
                            idsName=window.targetIDSroot,
                            occurrence=window.targetOccurrence).execute()
@@ -442,41 +465,47 @@ class QVizPluginCatalog:
 
 
 def reloadEverywhere(api):
-    """Put the plugins of every open shot view back to what the disk says now.
+    """Put the plugins of every open place back to what the disk says now.
 
-    One edited file has to reach every view, and a view that has never built its
-    catalog needs nothing: it has nothing cached, so it reads the folder the next
-    time a menu asks. The modules of the user's plugins are dropped even then --
-    something else may have imported one (the plugin manager does, to tell the
-    user what it holds) -- and the answer is how many views were put back, because
-    a reload nobody can count is a reload nobody believes.
+    One edited file has to reach every place, and a place that has never built
+    its catalog needs nothing: it has nothing cached, so it reads the folder the
+    next time a menu asks. The modules of the user's plugins are dropped even
+    then -- something else may have imported one (the plugin manager does, to tell
+    the user what it holds) -- and the answer is how many places were put back,
+    because a reload nobody can count is a reload nobody believes. The
+    application's own catalog, when one has been built yet, is put back too.
     """
     forgetUserModules()
-    views = getattr(api, 'DTVlist', None) or []
-    reloaded = 0
-    for view in views:
+    places = []
+    for view in getattr(api, 'DTVlist', None) or []:
         catalog = getattr(view, 'pluginCatalog', None)
-        if catalog is None:
-            continue
+        if catalog is not None:
+            places.append(catalog)
+    appCatalog = getattr(api, 'appPluginCatalog', None)
+    if appCatalog is not None:
+        places.append(appCatalog)
+    for catalog in places:
         catalog.reload()
-        reloaded += 1
-    return reloaded
+    return len(places)
 
 
 def refusalsOf(api):
-    """What the opened views refused, by plugin name.
+    """What the opened places refused, by plugin name.
 
     Read off the catalogs that already exist, so asking it costs nothing: a plugin
     is refused while a menu is being built, and the reason stays in the catalog of
-    that view. A view nobody has right-clicked has no catalog, so an empty answer
-    here is not the same as "nothing is wrong" -- the plugin manager says which of
-    the two it is rather than leaving the column blank.
+    that place. A place nobody has asked has no catalog, so an empty answer here
+    is not the same as "nothing is wrong" -- the plugin manager says which of the
+    two it is rather than leaving the column blank.
     """
     refusals = {}
     for view in getattr(api, 'DTVlist', None) or []:
         catalog = getattr(view, 'pluginCatalog', None)
         if catalog is not None:
             refusals.update(catalog.refused)
+    appCatalog = getattr(api, 'appPluginCatalog', None)
+    if appCatalog is not None:
+        refusals.update(appCatalog.refused)
     return refusals
 
 
@@ -502,36 +531,14 @@ def _apiOf(widget):
     """The api of the session a widget belongs to, or None.
 
     Walked the way the *File* menu walks it -- the window that owns the widget,
-    the start window's menu controller, the open gesture's api. `Viz_API` is not a
-    singleton, so an api built here would be a second bookkeeping holding none of
-    the windows on screen.
+    the start window's menu controller, the open gesture's api. `Viz_API` is not
+    a singleton, so an api built here would be a second bookkeeping holding none
+    of the windows on screen.
     """
     window = widget
     while window is not None and getattr(window, 'sessionApi', None) is None:
         window = window.parent()
     return window.sessionApi() if window is not None else None
-
-
-def _acceptsAnswers(execute):
-    """Whether this `execute` can take an `answers=` keyword.
-
-    Asked of the signature, not tried and caught: running an entry that cannot
-    take the answers would not fail, it would open its own question -- and the
-    Profiles plugin asks its one through a modal `QInputDialog` parented to the
-    shot view, which is where a probe once sat for 240 s with no one to answer.
-    A plugin written against the older two-argument contract is therefore named
-    and left alone, and the session keeps the rest of the screen.
-    """
-    try:
-        parameters = inspect.signature(execute).parameters
-    except (TypeError, ValueError):
-        # A callable this Python cannot describe: assume the older contract,
-        # which is the safe answer -- the entry is refused rather than run blind.
-        return False
-    parameter = parameters.get('answers')
-    return (parameter is not None
-            or any(p.kind is inspect.Parameter.VAR_KEYWORD
-                   for p in parameters.values()))
 
 
 def _readFile(path):
@@ -540,3 +547,16 @@ def _readFile(path):
             return handle.read()
     except OSError:
         return None
+
+
+def _word(word, context):
+    """The words of an action's label/tooltip, resolved for the place they are shown.
+
+    A word is either said already (a plain string) or said of the place it is
+    offered from -- a ``callable(context)`` that spells it with the node under the
+    cursor. The second is how "the ``equilibrium`` IDS" / "the ``magnetics`` IDS"
+    lands on the same line, each under its own root.
+    """
+    if callable(word):
+        return word(context)
+    return word

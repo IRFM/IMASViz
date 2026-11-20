@@ -66,21 +66,15 @@ from support.fakes import FakeTreeNode
 CATALOG = importlib.import_module('imasviz.VizPlugins.QVizPluginCatalog')
 
 PLUGIN = '''
-from imasviz.VizPlugins.VizPlugin import VizPlugin
+from imasviz.VizPlugins.VizPlugin import (IDS, QVizPluginAction,
+                                          QVizPluginScope, VizPlugin)
 
 
 class MyAnalysisPlugin(VizPlugin):
-    def isEnabled(self):
-        return True
-
-    def getEntries(self):
-        return [0]
-
-    def getAllEntries(self):
-        return [(0, %r)]
-
-    def execute(self, vizAPI, pluginEntry, answers=None):
-        pass
+    def __init__(self):
+        super().__init__()
+        self.SCOPE = QVizPluginScope(IDS)
+        self.ACTIONS = (QVizPluginAction(0, %r, run=lambda ctx: None),)
 '''
 
 
@@ -103,6 +97,12 @@ class StubView(QTreeWidget):
         self.uri = uri
         self.pluginCatalog = None
         self.imas_viz_api = 'the-api-of-this-view'
+
+        import types as _types
+        class _Occ:
+            def occurrencesOf(self, ids): return [0]
+        self.occurrences = _Occ()
+        self.dataSource = _types.SimpleNamespace(uri=uri)
 
 
 class Api:
