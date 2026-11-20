@@ -2879,6 +2879,38 @@ class McpGuiCore:
             raise ValueError('The report could not be written to %s: %s'
                              % (path, error))
 
+    def greenwald(self, uri, n_e_path, ip_path, area_path,
+                  along=None, indices=None, indices_ip=None, indices_area=None):
+        """The Greenwald fraction of a case, over the time the three read.
+
+        `f_G` = `n_e / n_G`, with the Greenwald limit the standard gives,
+        `n_G = (I_pl / A) x 1e20`, `I_pl` in mega-Ampere and `A` in square
+        metre, so the ratio is metre-cubed. The three reads are the ones a
+        figure draws -- `get_signal`, the value the three leaves show -- so a
+        case that does not hold one, or holds the three at different lengths,
+        is refused the way `cross_correlation` refuses a pair it cannot hold.
+        The answer is the fraction, the limit, and the three leaves, so the
+        numbers a physicist checks come from the case, not from this method.
+        """
+        from imasviz.VizAnalysis import greenwald_fraction as ask
+
+        ne = self._readCurveSignal(uri, n_e_path, along, indices)
+        ip = self._readCurveSignal(uri, ip_path, along, indices_ip)
+        area = self._readCurveSignal(uri, area_path, along, indices_area)
+        answer = ask(ne[1], ip[1], area[1])
+        answer['n_e_path'] = n_e_path
+        answer['ip_path'] = ip_path
+        answer['area_path'] = area_path
+        limit = answer['greenwald_limit']
+        frac = answer['greenwald_fraction']
+        self._logFor([uri], 'greenwald: f_G = %g at t=%g, '
+                     'n_G = %g (n_e=%s / n_G=%s x 1e20), on %d point(s).'
+                     % (frac[0] if frac else -1.0,
+                        ne[0][0] if ne[0] is not None and ne[0] else -1.0,
+                        limit[0] if limit else -1.0,
+                        n_e_path, area_path, answer['points']))
+        return answer
+
     def export_curve(self, figure_key, curve=None, format='csv', name=None):
         """The x/y of a figure's drawn curves, as a file.
 

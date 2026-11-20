@@ -238,3 +238,41 @@ def cross_correlation(t1, y1, t2, y2):
             'correlation': corr,
             'dominant_shared_frequency': dominantFreq,
             'dominant_shared_period': float(1.0 / dominantFreq) if dominantFreq > 0 else None}
+
+
+def greenwald_fraction(n_e, ip, area):
+    """The Greenwald fraction `f_G = n_e / n_G`, point by point.
+
+    `n_G` is the Greenwald limit, the one the standard gives:
+
+        n_G = (I_pl / A) x 1e20   [m  -3]
+
+    with `I_pl` in mega-Ampere, `A` in square metre, so `1/A` has the inverse
+    Ampere a mega-Ampere needs to make a current density. `n_e` in metre-cubed.
+    A point with any of the three non-finite is out of the answer, and a series
+    that is flat where a division is owed is refused by the reason it is
+    flat, never a number that would not mean one.
+    """
+    ne = np.asarray(n_e, dtype=float)
+    ip = np.asarray(ip, dtype=float)
+    ar = np.asarray(area, dtype=float)
+    if not (ne.size == ip.size == ar.size):
+        raise ValueError(
+            'the three series answer %d, %d and %d points: f_G is a ratio of '
+            'three at the same time, so they must be of one length.'
+            % (ne.size, ip.size, ar.size))
+    keep = np.isfinite(ne) & np.isfinite(ip) & np.isfinite(ar) & (ar != 0.0)
+    if not keep.any():
+        raise ValueError(
+            'none of the %d points of the three series has a finite value '
+            'with a non-zero area: f_G cannot be made of them.' % ne.size)
+    ne, ip, ar = ne[keep], ip[keep], ar[keep]
+    if not (np.any(ne != 0.0) and np.any(ip != 0.0) and np.any(ar != 0.0)):
+        raise ValueError(
+            'one of the three series is flat at zero, so the Greenwald '
+            'limit (or the ratio of one) would be undefined here.')
+    limit = (ip / ar) * 1.0e20
+    fg = ne / limit
+    return {'greenwald_fraction': fg.tolist(),
+            'greenwald_limit': limit.tolist(),
+            'points': int(keep.sum())}

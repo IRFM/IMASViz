@@ -937,6 +937,38 @@ TOOLS = [
     ),
 
     _tool(
+        'greenwald',
+        'The Greenwald fraction of a case, over the time the three read. '
+        'f_G = n_e / n_G, with n_G = (I_pl / A) x 1e20 (I_pl in mega-Ampere, '
+        'A in square metre). The three leaves -- n_e (m^-3), I_pl (A), A (m^2) '
+        '-- are named by the caller, so the formula and the numbers come from '
+        'the case, not from this method. A case that does not hold one, or '
+        'holds the three at different lengths, is refused by name.',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+            'n_e_path': {'type': 'string',
+                         'description': 'the electron density, in m^-3, '
+                                        'over time.'},
+            'ip_path': {'type': 'string',
+                        'description': 'the plasma current, in A, over time.'},
+            'area_path': {'type': 'string',
+                          'description': 'the cross-section, in m^2, over '
+                                         'time.'},
+            'along': {'type': ['string', 'null']},
+            'indices': {'type': ['object', 'null'],
+                        'description': 'the element of the density series '
+                                       'fixed by name.'},
+            'indices_ip': {'type': ['object', 'null'],
+                           'description': 'the element of the current '
+                                          'series fixed by name.'},
+            'indices_area': {'type': ['object', 'null'],
+                             'description': 'the element of the area series '
+                                            'fixed by name.'},
+        }, 'required': ['uri', 'n_e_path', 'ip_path', 'area_path'],
+           'additionalProperties': False},
+    ),
+
+    _tool(
         'export_curve',
         'Take a figure\'s drawn curve(s) out to a file: the values as they '
         'stand (a scale/shift/normalize is in the file). `format` csv or '

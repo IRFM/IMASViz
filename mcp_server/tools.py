@@ -685,6 +685,22 @@ def buildServer(core, dispatcher, name='imasviz'):
                             along=along, indices=indices,
                             figure_key=figure_key, name=name))
 
+    @server.tool(name='greenwald')
+    def greenwald(uri: str, n_e_path: str, ip_path: str, area_path: str,
+                  along: Optional[str] = None,
+                  indices: Optional[dict] = None,
+                  indices_ip: Optional[dict] = None,
+                  indices_area: Optional[dict] = None):
+        """The Greenwald fraction of a case, over the time the three read.
+        f_G = n_e / n_G, n_G = (I_pl/A) x 1e20 (I_pl in A, A in m^2). The three
+        leaves are named by the caller, so the formula and the numbers come
+        from the case. A case that does not hold one is refused by name.
+        """
+        return _run(partial(core.greenwald, uri, n_e_path, ip_path,
+                            area_path,
+                            along=along, indices=indices,
+                            indices_ip=indices_ip, indices_area=indices_area))
+
     # -------------------------------------------------------------- windows
 
     @server.tool(name='list_windows')
