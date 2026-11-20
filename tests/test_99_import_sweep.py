@@ -23,14 +23,12 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PACKAGE = 'imasviz'
 
 # Qt Designer custom-widget scaffolding. QPyDesignerCustomWidgetPlugin does not
-# exist in PySide6 6.6 (QtDesigner only exports QPyDesignerCustomWidgetCollection).
-# Four of the five entries this list used to carry belonged to the SOLPS plugin,
-# which is out of the package; the one that stays is not registered in
-# VizPlugins.VizPlugin.RegisteredPlugins either, so it is on no code path.
-KNOWN_UNIMPORTABLE = {
-    'imasviz.VizPlugins.viz_example.exampleplugin':
-        'QPyDesignerCustomWidgetPlugin is gone in PySide6 6.6',
-}
+# Every module of the package must import: a module that raises at import
+# time is a bug the suite names by name (the xfail list is the last
+# resort, and an entry that stays is a defect to fix — a module that
+# imports now must be dropped from the list, pinned by the stale test
+# below).
+KNOWN_UNIMPORTABLE = {}
 
 # Demo scripts and standalone runners are not importable modules: they build a
 # QApplication and call app.exec_() at module level.

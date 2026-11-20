@@ -814,22 +814,38 @@ def test_opening_that_window_loads_the_ids_it_was_drawn_around(monkeypatch,
 
 
 def test_a_window_drawn_around_a_widget_this_qt_cannot_build_is_refused_by_name(
-        monkeypatch, view):
-    # Measured: the file loads, Qt answers "unable to create a custom widget of
-    # the class 'exampleWidget'; defaulting to base class 'QWidget'" and drops
-    # the 10 connections that .ui makes to it. Overriding createWidget changes
-    # nothing: it is never called. The SOLPS plugin's window answered the same
-    # way -- 3 connections dropped, and no child of the SOLPSwidget class it
-    # declares -- and is out of the repository now, so this stands on the one
-    # .ui left in the tree.
-    directory = os.environ['VIZ_HOME'] + '/imasviz/VizPlugins/viz_example/'
+        monkeypatch, view, tmp_path):
+    # Measured: the file loads, Qt answers "unable to create a custom widget
+    # of the class '...'; defaulting to base class 'QWidget'" and drops the
+    # connections the .ui makes to it. Overriding createWidget changes
+    # nothing: it is never called (PySide6 6.6.3, this node). A .ui with
+    # a custom widget class is thus not a plugin the run can show, and is
+    # refused by name so the user reads the class and the file, not an
+    # empty window.
+    ui_dir = str(tmp_path)
+    with open(os.path.join(ui_dir, 'custom.ui'), 'w') as f:
+        f.write('<?xml version="1.0" encoding="UTF-8"?>\n'
+                '<ui version="4.0">\n'
+                ' <class>MainWindow</class>\n'
+                ' <widget class="QMainWindow" name="MainWindow">\n'
+                '  <widget class="QWidget" name="centralwidget">\n'
+                '   <widget class="noSuchWidgetClass" name="mainPluginWidget"/>\n'
+                '  </widget>\n'
+                ' </widget>\n'
+                ' <customwidgets>\n'
+                '  <customwidget>\n'
+                '   <class>noSuchWidgetClass</class>\n'
+                '   <extends>QWidget</extends>\n'
+                '  </customwidget>\n'
+                ' </customwidgets>\n'
+                '</ui>\n')
     registerUiPlugins(monkeypatch, {
-        'someUiPlugin': {'UiFile': 'examplePlugin.ui', 'dir': directory,
+        'someUiPlugin': {'UiFile': 'custom.ui', 'dir': ui_dir,
                          'targetIDSroot': 'magnetics', 'targetOccurrence': 0}})
     catalog = QVizPluginCatalog(view)
     assert catalog.entriesFor(FakeTreeNode(idsName='magnetics')) == []
-    assert 'exampleWidget' in catalog.refusals[0]
-    assert 'examplePlugin.ui' in catalog.refusals[0]
+    assert 'noSuchWidgetClass' in catalog.refusals[0]
+    assert 'custom.ui' in catalog.refusals[0]
 
 
 def test_a_window_that_cannot_be_opened_is_refused_with_the_file_it_is(monkeypatch,
