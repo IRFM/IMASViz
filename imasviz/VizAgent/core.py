@@ -3453,7 +3453,7 @@ class McpGuiCore:
         # to the caller to spell exactly right. A name it does not settle --
         # and a case URI, which is not a figure -- falls through to the read
         # below, whose refusal names what IS open.
-        if not (window or '').startswith('imas:'):
+        if not (window or '').startswith('imas:') and '/' not in (window or ''):
             try:
                 key = resolveFigureKey(window, self.api.figureframes,
                                        order=list(self.api.figureframes))
