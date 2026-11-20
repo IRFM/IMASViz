@@ -866,6 +866,77 @@ TOOLS = [
     ),
 
     _tool(
+        'spectrum',
+        'What a leaf\'s time series oscillates at: the dominant frequency '
+        'and its period, the leading peaks (most power first) with their '
+        'power and share, and -- when a band is named -- the share of the '
+        'power between its two bounds. The read is the one get_signal answers '
+        'for the leaf, so the frequency read is the one a figure of the same '
+        'leaf draws. A flat or too-short series is refused by name.',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+            'path': {'type': 'string'},
+            'n_peaks': {'type': ['integer', 'null'],
+                        'description': 'how many leading peaks come back; '
+                                       'five when left out.'},
+            'band_low': {'type': ['number', 'null'],
+                         'description': 'lower bound of the band, in Hz.'},
+            'band_high': {'type': ['number', 'null'],
+                          'description': 'upper bound of the band, in Hz.'},
+            'along': {'type': ['string', 'null']},
+            'indices': {'type': ['object', 'null'],
+                        'description': 'each other axis fixed by name, '
+                                       'the way plot_one does.'},
+        }, 'required': ['uri', 'path'],
+           'additionalProperties': False},
+    ),
+    _tool(
+        'cross_correlation',
+        'How far one leaf\'s time series lags or leads another, and at what '
+        'the two oscillate together. Both reads are the ones a figure draws '
+        'for the two leaves, so a pair the case does not hold on one clock, '
+        'or at one length, is refused by name. Answers the lag in samples '
+        'and in time, the correlation of the peak, and the shared '
+        'dominant frequency.',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+            'path': {'type': 'string',
+                     'description': 'the first series.'},
+            'path_b': {'type': 'string',
+                       'description': 'the second series, lagged against '
+                                      'the first.'},
+            'along': {'type': ['string', 'null']},
+            'indices': {'type': ['object', 'null']},
+            'indices_b': {'type': ['object', 'null'],
+                          'description': 'the element of the second series '
+                                         'fixed by name.'},
+        }, 'required': ['uri', 'path', 'path_b'],
+           'additionalProperties': False},
+    ),
+    _tool(
+        'spectrum_report',
+        'The spectral facts of a leaf\'s time series as a self-contained '
+        'HTML report: the same read and spectrum as spectrum, the leading '
+        'peaks in a table, the band when one is named, and the figure when a '
+        'curve figure is named. Lands in ~/.imasviz/reports like the other '
+        'reports; a name that names a place is refused by name.',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+            'path': {'type': 'string'},
+            'n_peaks': {'type': ['integer', 'null']},
+            'band_low': {'type': ['number', 'null']},
+            'band_high': {'type': ['number', 'null']},
+            'along': {'type': ['string', 'null']},
+            'indices': {'type': ['object', 'null']},
+            'figure_key': {'type': ['string', 'null'],
+                           'description': 'put the picture of this curve '
+                                          'figure on the page.'},
+            'name': {'type': ['string', 'null']},
+        }, 'required': ['uri', 'path'],
+           'additionalProperties': False},
+    ),
+
+    _tool(
         'export_curve',
         'Take a figure\'s drawn curve(s) out to a file: the values as they '
         'stand (a scale/shift/normalize is in the file). `format` csv or '

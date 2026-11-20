@@ -635,6 +635,56 @@ def buildServer(core, dispatcher, name='imasviz'):
                             along=along, indices=indices,
                             figure_key=figure_key, name=name))
 
+    @server.tool(name='spectrum')
+    def spectrum(uri: str, path: str,
+                 n_peaks: Optional[int] = None,
+                 band_low: Optional[float] = None,
+                 band_high: Optional[float] = None,
+                 along: Optional[str] = None,
+                 indices: Optional[dict] = None):
+        """What a leaf's time series oscillates at: the dominant frequency and
+        period, the leading peaks (most power first), and the band's share when
+        a band is named. The read is the one get_signal answers for the leaf,
+        so the frequency read is the one a figure of the same leaf draws. A band
+        named with only one bound is refused by name.
+        """
+        return _run(partial(core.spectrum, uri, path,
+                            n_peaks=n_peaks, band_low=band_low,
+                            band_high=band_high,
+                            along=along, indices=indices))
+
+    @server.tool(name='cross_correlation')
+    def cross_correlation(uri: str, path: str, path_b: str,
+                          along: Optional[str] = None,
+                          indices: Optional[dict] = None,
+                          indices_b: Optional[dict] = None):
+        """How far one leaf's time series lags or leads another, and at what
+        the two ring together. Both reads are the ones a figure draws, so a
+        pair the case does not hold on one clock, or at one length, is refused
+        by name.
+        """
+        return _run(partial(core.cross_correlation, uri, path, path_b,
+                            along=along, indices=indices, indices_b=indices_b))
+
+    @server.tool(name='spectrum_report')
+    def spectrum_report(uri: str, path: str,
+                        n_peaks: Optional[int] = None,
+                        band_low: Optional[float] = None,
+                        band_high: Optional[float] = None,
+                        along: Optional[str] = None,
+                        indices: Optional[dict] = None,
+                        figure_key: Optional[str] = None,
+                        name: Optional[str] = None):
+        """The spectral facts of a leaf's series as a self-contained HTML
+        report: the peaks in a table, the band when named, and the figure when
+        one is named. Lands in `~/.imasviz/reports`.
+        """
+        return _run(partial(core.spectrum_report, uri, path,
+                            n_peaks=n_peaks, band_low=band_low,
+                            band_high=band_high,
+                            along=along, indices=indices,
+                            figure_key=figure_key, name=name))
+
     # -------------------------------------------------------------- windows
 
     @server.tool(name='list_windows')

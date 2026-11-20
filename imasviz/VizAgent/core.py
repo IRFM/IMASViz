@@ -2495,6 +2495,15 @@ class McpGuiCore:
                 'is fixed on.' % path)
         return x, y
 
+    def _readCurveSignal(self, uri, path, along, indices):
+        """The two axes the leaf answers as a curve, one array at a time.
+
+        The generic read the event detection, the spectrum and the
+        cross-correlation all run on -- the value a figure of the same leaf
+        draws, so the analysis and the plot are one read. `_readSignalForEvents`
+        is that same read, kept under the earlier name."""
+        return self._readSignalForEvents(uri, path, along, indices)
+
     def _addEventMarkers(self, frame, figure_key, block):
         """The event marks on a curve figure: one vertical per event, capped.
 
@@ -2703,6 +2712,165 @@ class McpGuiCore:
             % (block['count'], show(period['span']),
                show(period['period_mean']), show(period['period_min']),
                show(period['period_max']), show(period['mean_rate_hz'])))
+        parts.append('</body></html>')
+        try:
+            with open(path, 'w', encoding='utf-8') as file:
+                file.write('\n'.join(parts))
+        except OSError as error:
+            raise ValueError('The report could not be written to %s: %s'
+                             % (path, error))
+
+    # ------------------------------------------------------------ the spectrum
+    # The read the three spectral asks run on is the one a figure of the same
+    # leaf draws, so a leaf that is not a time series along `along` is refused
+    # the way the event read refuses a multi-array answer.
+
+    def spectrum(self, uri, path, n_peaks=None, band_low=None, band_high=None,
+                 along=None, indices=None):
+        """What the leaf's time series oscillates at, and where its power is.
+
+        The read is the one `spectrum` is drawn from -- `get_signal`, the value
+        a figure of the same leaf shows -- so the frequency read is the one the
+        curve is. `n_peaks` is how many leading peaks come back (five); a band
+        is two bounds, `band_low` and `band_high`, and a band asked for only one
+        of them is refused by name; the share of the power in it is `band`.
+        `along` and `indices` address the leaf the way `plot_one` and
+        `get_signal` do.
+
+        A flat series, or one too short to spread its power over a frequency,
+        is refused the way the analysis layer says it, never a plausible-looking
+        number.
+        """
+        from imasviz.VizAnalysis import band_power
+        from imasviz.VizAnalysis import spectrum as ask
+
+        if (band_low is None) != (band_high is None):
+            present, absent = (('band_high', 'band_low')
+                               if band_low is None else ('band_low', 'band_high'))
+            raise ValueError(
+                '%s is named with %s absent: a band is its two bounds, so name '
+                'both or neither.' % (present, absent))
+        x, y = self._readCurveSignal(uri, path, along, indices)
+        block = ask(x, y, n_peaks=5 if n_peaks is None else int(n_peaks))
+        dominant = block['dominant']
+        answer = dict(block)
+        if band_low is not None and band_high is not None:
+            answer['band'] = band_power(x, y, band_low, band_high)
+        self._logFor([uri], 'spectrum: %s reads dominant %g Hz (period %g s), '
+                     '%d peak(s) answered.'
+                     % (path, dominant['frequency'],
+                        dominant['period'] or -1.0, len(block['peaks'])))
+        return answer
+
+    def cross_correlation(self, uri, path, path_b, along=None, indices=None,
+                          indices_b=None):
+        """How far `path_b` lags or leads `path`, and at what the two ring.
+
+        Both reads are the ones a figure draws (`get_signal`, the value the two
+        curves carry), so a pair the case does not hold at one length, or on two
+        clocks, is refused the way the analysis says it, not a lag that would
+        not mean one. The lag is in samples and in the time those samples are on
+        the shared clock; the correlation is that of the peak; the shared
+        frequency is the one the two agree to oscillate at.
+        """
+        from imasviz.VizAnalysis import cross_correlation as ask
+
+        x, y = self._readCurveSignal(uri, path, along, indices)
+        xb, yb = self._readCurveSignal(uri, path_b, along, indices_b)
+        answer = ask(x, y, xb, yb)
+        self._logFor([uri], 'cross_correlation: %s lags %s by %d sample(s) '
+                     '(%g s), correlation %g, ringing together at %g Hz.'
+                     % (path_b, path, answer['lag_samples'],
+                        answer['lag_time'], answer['correlation'],
+                        answer['dominant_shared_frequency']))
+        return answer
+
+    def spectrum_report(self, uri, path, n_peaks=None, band_low=None,
+                        band_high=None, along=None, indices=None, figure_key=None,
+                        name=None):
+        """The spectral facts of a leaf's series as a self-contained HTML page.
+
+        The same read and the same `spectrum` the facts run on -- nothing is
+        read from memory -- with the leading peaks in a table, the band when one
+        is named, and the picture of the figure when a curve figure is named.
+        The file lands under `~/.imasviz/reports` like the other reports.
+        """
+        from imasviz.VizAnalysis import band_power
+        from imasviz.VizAnalysis import spectrum as ask
+
+        if (band_low is None) != (band_high is None):
+            raise ValueError('a band is its two bounds, so name both or neither')
+        x, y = self._readCurveSignal(uri, path, along, indices)
+        block = ask(x, y, n_peaks=5 if n_peaks is None else int(n_peaks))
+        band = band_power(x, y, band_low, band_high) \
+            if (band_low is not None and band_high is not None) else None
+        image = None
+        if figure_key is not None:
+            try:
+                image = self.screenshot(figure_key)
+            except ValueError:
+                image = None
+        out = self._namedReport(name, len(block['peaks']))
+        self._writeSpectrumReport(out, uri=uri, leaf=path, block=block,
+                                  band=band, figure_key=figure_key,
+                                  image=image)
+        cases = [uri] + ([figure_key] if figure_key is not None else [])
+        self._logFor(cases, 'spectrum_report wrote %s: %s dominant %g Hz.'
+                     % (out, path, block['dominant']['frequency']))
+        return {'saved_to': out,
+                'dominant_frequency': block['dominant']['frequency'],
+                'peaks': len(block['peaks'])}
+
+    def _writeSpectrumReport(self, path, uri, leaf, block, band,
+                             figure_key, image):
+        """The spectrum page: the leading peaks in a table, the band when there
+        is one, the figure's picture when it is named, nothing to fetch -- the
+        shape the other reports keep, in the same little style."""
+        import base64
+        import html
+
+        def show(value):
+            if value is None:
+                return '—'
+            return ('%g' % float(value)) if isinstance(value, float) \
+                else str(value)
+
+        dominant = block['dominant']
+        parts = [
+            '<!doctype html>',
+            '<html lang="en"><head><meta charset="utf-8">',
+            '<meta name="viewport" content="width=device-width, initial-scale=1">',
+            '<title>%s</title><style>%s</style></head><body>' % (
+                html.escape('spectrum of %s' % leaf), _REPORT_CSS),
+            '<h1>%s</h1>' % html.escape('spectrum of %s' % leaf),
+            '<p class="sub">%s — dominant %s Hz (period %s s) · '
+            '%d sample(s)</p>'
+            % (html.escape(uri), show(dominant['frequency']),
+               show(dominant['period']), block['samples']),
+        ]
+        if image:
+            parts.append(
+                '<img alt="figure" src="data:image/png;base64,%s">' %
+                base64.b64encode(image).decode('ascii'))
+        parts.append('<table>')
+        parts.append('<tr><th>#</th><th>frequency (Hz)</th><th>period (s)</th>'
+                     '<th>power</th><th>share</th></tr>')
+        for i, peak in enumerate(block['peaks']):
+            parts.append(
+                '<tr><td class="s">%d</td><td class="s">%s</td>'
+                '<td class="s">%s</td><td class="s">%s</td>'
+                '<td class="s">%s</td></tr>'
+                % (i, self._num(peak['frequency']), self._num(peak['period']),
+                   self._num(peak['power']),
+                   ('%.3f' % peak['fraction']) if peak['fraction'] is not None
+                   else '—'))
+        parts.append('</table>')
+        foot = 'total power %s' % show(block['total_power'])
+        if band is not None:
+            lo, hi = band['band']
+            foot += (' · band %g—%g Hz holds %.1f%% of it'
+                     % (lo, hi, 100.0 * band['fraction']))
+        parts.append('<p class="sub">%s</p>' % foot)
         parts.append('</body></html>')
         try:
             with open(path, 'w', encoding='utf-8') as file:
