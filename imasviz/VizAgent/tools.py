@@ -784,6 +784,87 @@ TOOLS = [
             'curve': {'type': ['string', 'integer', 'null']},
         }, 'required': ['figure_key'], 'additionalProperties': False},
     ),
+
+    _tool(
+        'detect_events',
+        'The events of one kind, read off the leaf\'s signal: \'elm\' '
+        '(an excursion up), \'sawtooth\' (a crash down), or \'lh\' (a '
+        'threshold crossing). The signal is the one get_signal answers for '
+        'the leaf, so what is detected and what a figure of the same leaf '
+        'draws are the same read. ELM/sawtooth are gated by threshold '
+        '(value floor), prominence, min_distance; lh by threshold, direction '
+        '(up/down/both), hysteresis -- a kind refuses a parameter it does '
+        'not take, by name. `figure_key` marks the events on that curve '
+        'figure (capped at 40, refused when it would be a wall).',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+            'path': {'type': 'string'},
+            'kind': {'type': 'string',
+                     'enum': ['elm', 'sawtooth', 'lh']},
+            'threshold': {'type': ['number', 'null'],
+                          'description': 'ELM/sawtooth: value floor. '
+                                         'lh: the level crossed.'},
+            'prominence': {'type': ['number', 'null'],
+                           'description': 'ELM/sawtooth: how far the '
+                                          'excursion must rise off the '
+                                          'baseline.'},
+            'min_distance': {'type': ['integer', 'number', 'null'],
+                             'description': 'ELM/sawtooth: keep the most '
+                                            'prominent of peaks nearer '
+                                            'than this many samples.'},
+            'direction': {'type': ['string', 'null'],
+                          'enum': ['up', 'down', 'both'],
+                          'description': 'lh: L-H (up), H-L (down), or '
+                                         'both.'},
+            'hysteresis': {'type': ['number', 'null'],
+                           'description': 'lh: band the signal must clear '
+                                          'off the level before it '
+                                          're-triggers.'},
+            'along': {'type': ['string', 'null']},
+            'indices': {'type': ['object', 'null'],
+                        'description': 'each other axis fixed by name, '
+                                       'the way plot_one does.'},
+            'figure_key': {'type': ['string', 'null'],
+                           'description': 'mark the events on this curve '
+                                          'figure.'},
+        }, 'required': ['uri', 'path', 'kind'],
+           'additionalProperties': False},
+    ),
+    _tool(
+        'clear_event_marks',
+        'The event marks off a curve figure, one detect_events put there. '
+        'Safe when the figure holds none: it answers the number it took '
+        'off.',
+        {'type': 'object', 'properties': {
+            'figure_key': {'type': 'string'},
+        }, 'required': ['figure_key'], 'additionalProperties': False},
+    ),
+    _tool(
+        'events_report',
+        'The events of one kind as a self-contained HTML report: the same '
+        'read and detection as detect_events, the events in a table, the '
+        'period of their times, and the figure when one is named. Lands in '
+        '~/.imasviz/reports like the other reports; a name that names a '
+        'place is refused by name.',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+            'path': {'type': 'string'},
+            'kind': {'type': 'string',
+                     'enum': ['elm', 'sawtooth', 'lh']},
+            'threshold': {'type': ['number', 'null']},
+            'prominence': {'type': ['number', 'null']},
+            'min_distance': {'type': ['integer', 'number', 'null']},
+            'direction': {'type': ['string', 'null'],
+                          'enum': ['up', 'down', 'both']},
+            'hysteresis': {'type': ['number', 'null']},
+            'along': {'type': ['string', 'null']},
+            'indices': {'type': ['object', 'null']},
+            'figure_key': {'type': ['string', 'null']},
+            'name': {'type': ['string', 'null']},
+        }, 'required': ['uri', 'path', 'kind'],
+           'additionalProperties': False},
+    ),
+
     _tool(
         'export_curve',
         'Take a figure\'s drawn curve(s) out to a file: the values as they '

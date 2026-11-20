@@ -574,6 +574,67 @@ def buildServer(core, dispatcher, name='imasviz'):
         return _run(partial(core.export_curve, figure_key, curve=curve,
                             format=format, name=name))
 
+    # -------------------------------------------------------------- events
+
+    @server.tool(name='detect_events')
+    def detect_events(uri: str, path: str, kind: str,
+                      threshold: Optional[float] = None,
+                      prominence: Optional[float] = None,
+                      min_distance: Optional[int] = None,
+                      direction: Optional[str] = None,
+                      hysteresis: Optional[float] = None,
+                      along: Optional[str] = None,
+                      indices: Optional[dict] = None,
+                      figure_key: Optional[str] = None):
+        """The events of one kind read off the leaf's signal: `elm`
+        (an excursion up), `sawtooth` (a crash down), or `lh` (a threshold
+        crossing). The signal is the one get_signal answers, so what is
+        detected and what a figure of the same leaf draws are the same
+        read. A kind refuses a parameter it does not take, by name. `figure_key`
+        marks the events on that curve figure (capped), and clear_event_marks
+        takes them off again.
+        """
+        return _run(partial(core.detect_events, uri, path, kind,
+                            threshold=threshold,
+                            prominence=prominence,
+                            min_distance=min_distance,
+                            direction=direction,
+                            hysteresis=hysteresis,
+                            along=along, indices=indices,
+                            figure_key=figure_key))
+
+    @server.tool(name='clear_event_marks')
+    def clear_event_marks(figure_key: str):
+        """The event marks off a curve figure, one detect_events put there.
+        Safe when the figure holds none: it answers the number it took off.
+        """
+        return _run(partial(core.clear_event_marks, figure_key))
+
+    @server.tool(name='events_report')
+    def events_report(uri: str, path: str, kind: str,
+                      threshold: Optional[float] = None,
+                      prominence: Optional[float] = None,
+                      min_distance: Optional[int] = None,
+                      direction: Optional[str] = None,
+                      hysteresis: Optional[float] = None,
+                      along: Optional[str] = None,
+                      indices: Optional[dict] = None,
+                      figure_key: Optional[str] = None,
+                      name: Optional[str] = None):
+        """The events of one kind as a self-contained HTML report: the same
+        read and detection as detect_events, the events in a table, the
+        period of their times, and the figure when one is named. Lands in
+        `~/.imasviz/reports` like the other reports.
+        """
+        return _run(partial(core.events_report, uri, path, kind,
+                            threshold=threshold,
+                            prominence=prominence,
+                            min_distance=min_distance,
+                            direction=direction,
+                            hysteresis=hysteresis,
+                            along=along, indices=indices,
+                            figure_key=figure_key, name=name))
+
     # -------------------------------------------------------------- windows
 
     @server.tool(name='list_windows')

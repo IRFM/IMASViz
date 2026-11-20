@@ -25,6 +25,10 @@ FIRST = 'first'
 ALL = 'all'
 _SLICERS = {FIRST: 'FIRST_SLICE', ALL: 'ALL_SLICE'}
 
+# A curve figure carries at most this many event marks: past it, a mark per
+# event is a wall, and the report is the shape that many events want.
+EVENT_MARKER_CAP = 40
+
 
 # The little style every report wears: self-contained, no fetch, the same
 # ground on every page. `.ref` is the word for what the read refused or
@@ -2463,6 +2467,249 @@ class McpGuiCore:
                      'curve_stats: %d curve(s) of %s.'
                      % (len(out), figure_key))
         return {'window': figure_key, 'count': len(out), 'curves': out}
+
+    # -------------------------------------------------------------- events
+
+    def _readSignalForEvents(self, uri, path, along, indices):
+        """The two axes an event is read on: what get_signal answers for the
+        leaf, one array at a time. A leaf the read answers as more than one
+        array is refused by name, because one event kind is read on one axis
+        -- the value a figure of the same leaf draws, so detection and the
+        plot are the same read."""
+        payload = self.get_signal(
+            uri, path, along=along,
+            indices=None if indices is None else indices)
+        if not isinstance(payload, dict) or payload.get('kind') != 'curve':
+            kind = payload.get('kind') if isinstance(payload, dict) \
+                else type(payload).__name__
+            raise ValueError(
+                'The leaf "%s" answers %r: an event is read on the one '
+                'axis the read gives (name it with `along` and `indices`), '
+                'not on a multi-array answer.' % (path, kind))
+        x = payload.get('x')
+        y = payload.get('y')
+        if x is None or y is None:
+            raise ValueError(
+                'The read of "%s" answered but has no x and y an event can '
+                'be read off: name the axis it runs on, or the element it '
+                'is fixed on.' % path)
+        return x, y
+
+    def _addEventMarkers(self, frame, figure_key, block):
+        """The event marks on a curve figure: one vertical per event, capped.
+
+        A mark is a pyqtgraph InfiniteLine on the abscissa the curve runs
+        along; the frame holds the set so clear_event_marks takes them off.
+        More than the cap is refused by name, because dozens of lines are a
+        wall across the curve, and the report is the shape that many events
+        want.
+        """
+        import pyqtgraph as pg
+
+        events = block['events']
+        if len(events) > EVENT_MARKER_CAP:
+            raise ValueError(
+                'The signal holds %d %s event(s): a figure carries at most '
+                '%d marks, and past that the lines are a wall -- the report '
+                'is the shape that many want.'
+                % (len(events), block['kind'], EVENT_MARKER_CAP))
+        plot = getattr(frame, 'pgPlotWidget', None)
+        if plot is None or not hasattr(plot, 'addItem'):
+            raise ValueError(
+                'The window "%s" is not a curve figure: a mark sits on the '
+                'axis a curve was drawn along, so name the figure a curve '
+                'was drawn in.' % figure_key)
+        pen = pg.mkPen((255, 122, 40), width=2)
+        markers = []
+        for event in events:
+            line = pg.InfiniteLine(pos=float(event['t']), angle=90,
+                                   pen=pen, movable=False)
+            plot.addItem(line)
+            markers.append(line)
+        frame._eventMarkers = markers
+        return len(markers)
+
+    def detect_events(self, uri, path, kind, threshold=None,
+                      prominence=None, min_distance=None, direction=None,
+                      hysteresis=None, along=None, indices=None,
+                      figure_key=None):
+        """The events of one kind, read off the leaf's signal.
+
+        `kind` `'elm'` (an excursion up), `'sawtooth'` (a crash down), or
+        `'lh'` (a threshold crossing). The signal is the one `get_signal`
+        answers for the leaf -- the value a figure of the same leaf draws --
+        so what is detected and what is plotted are the same read. `threshold`
+        / `prominence` / `min_distance` gate an ELM or a sawtooth;
+        `threshold` / `direction` / `hysteresis` gate an L-H crossing, and a
+        kind the caller did not pick refuses a parameter it does not take,
+        by name. `along` and `indices` address the leaf the way `plot_one`
+        and `get_signal` do, so the read is theirs.
+
+        When `figure_key` names a curve figure, the events are marked on it
+        (capped; clear_event_marks takes the marks off). A figure that is
+        not a curve figure, or a leaf the read answers as more than one
+        axis, is refused by name.
+        """
+        from imasviz.VizAnalysis import detect
+
+        x, y = self._readSignalForEvents(uri, path, along, indices)
+        params = {}
+        for pname, given in (('threshold', threshold),
+                             ('prominence', prominence),
+                             ('min_distance', min_distance),
+                             ('direction', direction),
+                             ('hysteresis', hysteresis)):
+            if given is not None:
+                params[pname] = given
+        block = detect(kind, x, y, **params)
+        self._logFor([uri],
+                     'detect_events: %d %s event(s) read off %s (the mean '
+                     'spacing is %s s).'
+                     % (block['count'], block['kind'], path,
+                        block['period']['period_mean']))
+        answer = dict(block)
+        if figure_key is not None:
+            _record, frame = self._windowForKey(figure_key)
+            answer['figure'] = figure_key
+            answer['markers'] = self._addEventMarkers(frame, figure_key,
+                                                       block)
+        return answer
+
+    def clear_event_marks(self, figure_key):
+        """The event marks off a curve figure, one the detect_events put there.
+
+        Safe to call when the figure holds no marks: it answers the number
+        it took off, which is zero in that case. A figure that is not in the
+        session is refused the way the rest of the window gestures refuse.
+        """
+        record, frame = self._windowForKey(figure_key)
+        markers = list(getattr(frame, '_eventMarkers', None) or [])
+        plot = getattr(frame, 'pgPlotWidget', None)
+        if plot is not None:
+            for line in markers:
+                try:
+                    plot.removeItem(line)
+                except Exception:
+                    pass
+        frame._eventMarkers = []
+        self._logFor(record.cases,
+                     'clear_event_marks: %d mark(s) off %s.'
+                     % (len(markers), figure_key))
+        return {'figure': figure_key, 'cleared': len(markers)}
+
+    def events_report(self, uri, path, kind, threshold=None,
+                      prominence=None, min_distance=None, direction=None,
+                      hysteresis=None, along=None, indices=None,
+                      figure_key=None, name=None):
+        """The events of one kind as a self-contained HTML report.
+
+        The same read and the same detection detect_events uses -- nothing is
+        detected from memory -- with the events in their own table, the
+        period of their times, and the figure when one is named (the picture
+        of it). The file lands under `~/.imasviz/reports` like the other
+        reports, and a name that names a place, not a report, is refused by
+        name.
+        """
+        from imasviz.VizAnalysis import detect
+
+        x, y = self._readSignalForEvents(uri, path, along, indices)
+        params = {}
+        for pname, given in (('threshold', threshold),
+                             ('prominence', prominence),
+                             ('min_distance', min_distance),
+                             ('direction', direction),
+                             ('hysteresis', hysteresis)):
+            if given is not None:
+                params[pname] = given
+        block = detect(kind, x, y, **params)
+
+        image = None
+        if figure_key is not None:
+            try:
+                image = self.screenshot(figure_key)
+            except ValueError:
+                image = None
+
+        out = self._namedReport(name, block['count'])
+        self._writeEventReport(out, kind=kind, uri=uri, leaf=path,
+                               block=block, image=image)
+        cases = [uri] + ([figure_key] if figure_key is not None else [])
+        self._logFor(cases,
+                     'events_report wrote %s: %d %s event(s) read off %s.'
+                     % (out, block['count'], block['kind'], path))
+        return {'saved_to': out, 'count': block['count'],
+                'kind': block['kind']}
+
+    def _writeEventReport(self, path, kind, uri, leaf, block, image):
+        """The event report's own page: the events in a table, the period of
+        their times, the image when there is one, and nothing to fetch --
+        the shape the other reports keep, in the same little style."""
+        import base64
+        import html
+
+        period = block['period']
+
+        if kind in ('lh', 'l_h', 'mode', 'transition'):
+            header = ('<tr><th>#</th><th>time</th><th>value</th>'
+                      '<th>direction</th></tr>')
+
+            def row(i, event):
+                return (
+                    '<tr><td class="s">%d</td><td class="s">%s</td>'
+                    '<td class="s">%s</td><td class="s">%s</td></tr>'
+                    % (i, self._num(event['t']), self._num(event['value']),
+                       html.escape(str(event.get('direction', '')))))
+        else:
+            header = ('<tr><th>#</th><th>time</th><th>value</th>'
+                      '<th>prominence</th></tr>')
+
+            def row(i, event):
+                return (
+                    '<tr><td class="s">%d</td><td class="s">%s</td>'
+                    '<td class="s">%s</td><td class="s">%s</td></tr>'
+                    % (i, self._num(event['t']), self._num(event['value']),
+                       self._num(event.get('prominence'))))
+
+        def show(value):
+            if value is None:
+                return '—'
+            return ('%g' % float(value)) if isinstance(value, float) \
+                else str(value)
+
+        parts = [
+            '<!doctype html>',
+            '<html lang="en"><head><meta charset="utf-8">',
+            '<meta name="viewport" content="width=device-width, initial-scale=1">',
+            '<title>%s</title><style>%s</style></head><body>' % (
+                html.escape('%s events' % kind), _REPORT_CSS),
+            '<h1>%s</h1>' % html.escape('%s events read off %s' % (kind, leaf)),
+            '<p class="sub">%s — %d event(s) · mean spacing %s s</p>' % (
+                html.escape(uri), block['count'],
+                show(period['period_mean'])),
+        ]
+        if image:
+            parts.append(
+                '<img alt="%s events" src="data:image/png;base64,%s">' % (
+                    html.escape(kind),
+                    base64.b64encode(image).decode('ascii')))
+        parts.append('<table>')
+        parts.append(header)
+        for i, event in enumerate(block['events']):
+            parts.append(row(i, event))
+        parts.append('</table>')
+        parts.append(
+            '<p class="sub">count %d · span %s · mean %s · min %s · '
+            'max %s · rate %s Hz</p>'
+            % (block['count'], show(period['span']),
+               show(period['period_mean']), show(period['period_min']),
+               show(period['period_max']), show(period['mean_rate_hz'])))
+        parts.append('</body></html>')
+        try:
+            with open(path, 'w', encoding='utf-8') as file:
+                file.write('\n'.join(parts))
+        except OSError as error:
+            raise ValueError('The report could not be written to %s: %s'
+                             % (path, error))
 
     def export_curve(self, figure_key, curve=None, format='csv', name=None):
         """The x/y of a figure's drawn curves, as a file.
