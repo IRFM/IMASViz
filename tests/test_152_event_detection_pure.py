@@ -33,7 +33,7 @@ same read: this tests only the reading, not the wiring.
 import numpy as np
 import pytest
 
-from imasviz.VizAnalysis import detect as ask
+from imasviz.VizAnalysis.detect import detect as ask
 from imasviz.VizAnalysis.detect import peaks, period_stats
 
 

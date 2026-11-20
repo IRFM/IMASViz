@@ -30,7 +30,7 @@ not the specific physics of the triple.
 
 import pytest
 
-from imasviz.VizAnalysis import greenwald_fraction
+from imasviz.VizAnalysis.spectra import greenwald_fraction
 from mcp_server.core import McpGuiCore
 from conftest import (CASE_DATA_DICTIONARY_VERSION, CASE_URI,
                       case_uri_or_skip)

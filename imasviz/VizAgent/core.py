@@ -2559,7 +2559,7 @@ class McpGuiCore:
         not a curve figure, or a leaf the read answers as more than one
         axis, is refused by name.
         """
-        from imasviz.VizAnalysis import detect
+        from imasviz.VizAnalysis.detect import detect
 
         x, y = self._readSignalForEvents(uri, path, along, indices)
         params = {}
@@ -2619,7 +2619,7 @@ class McpGuiCore:
         reports, and a name that names a place, not a report, is refused by
         name.
         """
-        from imasviz.VizAnalysis import detect
+        from imasviz.VizAnalysis.detect import detect
 
         x, y = self._readSignalForEvents(uri, path, along, indices)
         params = {}
@@ -2741,8 +2741,8 @@ class McpGuiCore:
         is refused the way the analysis layer says it, never a plausible-looking
         number.
         """
-        from imasviz.VizAnalysis import band_power
-        from imasviz.VizAnalysis import spectrum as ask
+        from imasviz.VizAnalysis.spectra import band_power
+        from imasviz.VizAnalysis.spectra import spectrum as ask
 
         if (band_low is None) != (band_high is None):
             present, absent = (('band_high', 'band_low')
@@ -2773,7 +2773,7 @@ class McpGuiCore:
         the shared clock; the correlation is that of the peak; the shared
         frequency is the one the two agree to oscillate at.
         """
-        from imasviz.VizAnalysis import cross_correlation as ask
+        from imasviz.VizAnalysis.spectra import cross_correlation as ask
 
         x, y = self._readCurveSignal(uri, path, along, indices)
         xb, yb = self._readCurveSignal(uri, path_b, along, indices_b)
@@ -2795,8 +2795,8 @@ class McpGuiCore:
         is named, and the picture of the figure when a curve figure is named.
         The file lands under `~/.imasviz/reports` like the other reports.
         """
-        from imasviz.VizAnalysis import band_power
-        from imasviz.VizAnalysis import spectrum as ask
+        from imasviz.VizAnalysis.spectra import band_power
+        from imasviz.VizAnalysis.spectra import spectrum as ask
 
         if (band_low is None) != (band_high is None):
             raise ValueError('a band is its two bounds, so name both or neither')
@@ -2892,7 +2892,7 @@ class McpGuiCore:
         The answer is the fraction, the limit, and the three leaves, so the
         numbers a physicist checks come from the case, not from this method.
         """
-        from imasviz.VizAnalysis import greenwald_fraction as ask
+        from imasviz.VizAnalysis.spectra import greenwald_fraction as ask
 
         ne = self._readCurveSignal(uri, n_e_path, along, indices)
         ip = self._readCurveSignal(uri, ip_path, along, indices_ip)

@@ -27,7 +27,7 @@ seconds), so the frequencies read are the ones Hz means.
 import numpy as np
 import pytest
 
-from imasviz.VizAnalysis import band_power, cross_correlation, spectrum
+from imasviz.VizAnalysis.spectra import band_power, cross_correlation, spectrum
 
 DT = 0.01
 N = 200

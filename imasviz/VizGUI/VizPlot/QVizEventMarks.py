@@ -34,7 +34,7 @@ import pyqtgraph as pg
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QMenu, QMessageBox
 
-from imasviz.VizAnalysis import detect as ask
+from imasviz.VizAnalysis.detect import detect as ask
 
 # The kinds the offer, in the order a physicist asks for them and in the words
 # the manual and the tool surface use.
