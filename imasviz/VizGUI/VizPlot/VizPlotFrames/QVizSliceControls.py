@@ -26,7 +26,7 @@ controls and a mapping back.
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (QHBoxLayout, QLabel, QSizePolicy, QSlider,
-                               QToolButton, QVBoxLayout, QWidget)
+                               QSpinBox, QToolButton, QVBoxLayout, QWidget)
 
 
 class QVizSliceRow(QWidget):
@@ -273,6 +273,11 @@ class QVizFramesWindow(QWidget):
     """
 
     moved = Signal()
+    # `countChanged` is the resize of the window: the pictures are rebuilt, so
+    # the caller repoints them -- `moved` is a read of the same pictures the
+    # window already holds, and conflating the two is a repaint the window does
+    # not need, or a rebuild it is owed and never gets.
+    countChanged = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -292,21 +297,39 @@ class QVizFramesWindow(QWidget):
         self.slider.setPageStep(1)
         self.slider.setEnabled(False)
 
+        # How many images the window holds: the slider says where it sits on
+        # the axis, the box says how wide it is. Both are the window's own
+        # state, and moving one moves the other's bounds (a window of one
+        # image sits anywhere the axis does, one of all of it sits nowhere).
+        self.countBox = QSpinBox(self)
+        self.countBox.setRange(1, 1)
+        self.countBox.setValue(1)
+        self.countBox.setEnabled(False)
+        self.countBox.setToolTip('How many pictures the window holds')
+
         layout.addWidget(self.nameLabel)
         layout.addWidget(self.slider, 1)
+        layout.addWidget(self.countBox)
 
         self.slider.valueChanged.connect(self._onValueChanged)
+        self.countBox.valueChanged.connect(self._onCountBox)
         self.setVisible(False)
 
     def setWindow(self, sl, count):
-        """The axis read across the images, and how many images it feeds."""
+        """The axis read across the images, and how many images it feeds.
+
+        The state setters of the window: it derives its slider from the count
+        and poses both controls, emitting nothing -- the one asking is the
+        hand of the caller, and a `moved` or a `countChanged` from a state
+        it was only given would read or rebuild pictures for a window no one
+        moved. `setStart` and `setCount` are the moves, and only they emit.
+        """
         if sl is None:
             self._key = None
             self._count = 0
             self._length = None
-            self.slider.blockSignals(True)
-            self.slider.setEnabled(False)
-            self.slider.blockSignals(False)
+            self._deriveSlider()
+            self._showBox()
             self.setVisible(False)
             return
 
@@ -318,23 +341,87 @@ class QVizFramesWindow(QWidget):
         self._count = count
         self._length = length
 
+        if start is None:
+            start = 0
+        self._start = start
+        self._deriveSlider()
+        self._showBox()
+
+        self._showLabel()
+        self.setVisible(True)
+
+    def _deriveSlider(self):
+        """The slider's range and start from the count and length, no signals.
+
+        Where the window can sit depends on how wide it is: a window of one
+        image sits anywhere the axis does, one of all of it sits nowhere, and
+        the one a hand moved to stays where it can, clamped to where it must.
+        """
         self.slider.blockSignals(True)
-        if length is None:
+        if self._length is None:
             self.slider.setEnabled(False)
             self.slider.setToolTip('Number of values in this axis is unknown')
         else:
-            last = max(int(length) - count, 0)
+            last = max(int(self._length) - self._count, 0)
             self.slider.setRange(0, last)
             self.slider.setEnabled(last > 0)
             if last == 0:
                 self.slider.setToolTip('This axis holds fewer elements than the '
                                        'figure has images')
-        self._start = self._clamp(start)
+        self._start = self._clamp(self._start)
         self.slider.setValue(self._start)
         self.slider.blockSignals(False)
 
-        self._showLabel()
-        self.setVisible(True)
+    def _showBox(self):
+        """The count box from the length and count, no signals.
+
+        One up to the axis: there is no window wider than what the axis holds,
+        and the number a hand put in stays put -- `setCount` is where a count
+        changes and is where it is said.
+        """
+        self.countBox.blockSignals(True)
+        if self._key is None or self._length is None:
+            self.countBox.setRange(1, 1)
+            self.countBox.setValue(1)
+            self.countBox.setEnabled(False)
+        else:
+            top = max(int(self._length), 1)
+            self.countBox.setRange(1, top)
+            self.countBox.setValue(min(self._count, top))
+            self.countBox.setEnabled(top > 1)
+        self.countBox.blockSignals(False)
+
+    def setCount(self, count):
+        """How many pictures the window holds, from 1 up to the axis.
+
+        The resize of the window: it moves the slider's reach as much as the
+        count, and it is the only thing that emits `countChanged`, because the
+        pictures are rebuilt when -- and only when -- the count is not the one
+        the window already holds. A count the window already answers is not a
+        move, and saying it is a repaint owed to nobody.
+        """
+        if self._key is None:
+            return False
+        try:
+            count = int(count)
+        except (TypeError, ValueError):
+            raise ValueError(
+                'The window holds a whole number of pictures, not %r.'
+                % (count,))
+        if count < 1:
+            raise ValueError(
+                'The window holds at least one picture, not %d.' % count)
+        if self._length is not None:
+            count = min(count, max(int(self._length), 1))
+        if count == self._count:
+            self._showBox()
+            self._deriveSlider()
+            return False
+        self._count = count
+        self._deriveSlider()
+        self._showBox()
+        self.countChanged.emit()
+        return True
 
     def start(self):
         return self._start if self._key is not None else 0
@@ -370,6 +457,12 @@ class QVizFramesWindow(QWidget):
         self._start = int(value)
         self._showLabel()
         self.moved.emit()
+
+    def _onCountBox(self, value):
+        # The box is a state, the count is the move: one asking for four
+        # pictures gets four pictures, and the `countChanged` that says so
+        # comes out of setCount, not of the box.
+        self.setCount(int(value))
 
     def __repr__(self):
         return '<QVizFramesWindow %s start=%s count=%s length=%s>' % (

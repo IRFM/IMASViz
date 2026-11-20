@@ -323,6 +323,29 @@ def _figureIsLast(reference):
         ('dernier' in text or 'dernière' in text or 'derniere' in text)
 
 
+# A loose reference with no number is a word a person uses for a figure --
+# in the languages the user speaks the window to. It is what separates "the
+# figure" from a name the session does not hold: the former is a reference
+# the sole open figure answers, the latter a fabricated key, and resolving a
+# fabricated key to the only window that happens to be open is a wrong guess
+# reaching a wrong window silently.
+_FIGURE_WORDS = frozenset((
+    'figure', 'figures', 'figure', 'figures', 'figure', 'figures',
+    'plot', 'plots', 'plot', 'plots', 'image', 'images', 'table', 'tables',
+    'stack', 'stacks', 'stacked', 'courbe', 'courbes', 'curve', 'curves',
+    'vue', 'fenetre', 'fenêtre', 'graph', 'graphe', 'graphique', 'graphiques',
+    'diagram', 'diagramme', 'diagrammes', 'schéma', 'schema'))
+
+
+def _figuresMention(name):
+    """Whether a figure reference names a figure: at least one word of it is
+    a word a person uses for a figure, in the languages the report is in."""
+    import re
+
+    words = re.findall(r'[a-zà-öø-ÿ]+', (name or ' ').lower())
+    return bool(words) and any(word in _FIGURE_WORDS for word in words)
+
+
 def resolveFigureKey(name, held, order=None):
     """The one held key a loose figure reference stands for.
 
@@ -336,10 +359,19 @@ def resolveFigureKey(name, held, order=None):
     A key the session answers exactly is the one it is. A reference with a
     number is the one figure the session holds at that number, the kind the
     number already fixes, and the number the user spells however --
-    "plot3", "3", "figure 3". A reference with no number and not "last" is
-    the only open figure when there is one, and is refused, naming the
-    figures the session does hold, when there are several or when it can
-    hold only none of them.
+    "plot3", "3", "figure 3". A reference with no number and not "last"
+    names a figure -- at least one word of it is a word a person uses for a
+    figure ("figure", "plot", "la table") -- and is the only open figure
+    when there is one.
+
+    A name no figure word in it mentions at all is not a reference but a
+    fabricated key, and it is refused, naming the figures the session does
+    hold -- handed over to the only window that happens to be open, the
+    wrong guess would reach a wrong window silently, and the model would
+    believe it asked for the window it named. When there are several open
+    figures the no-number name is refused the same way.
+    `tests/test_100` pins the refusal at the screenshot and `tests/test_146`
+    the loose side of the line.
     """
     held = list(held)
     if name in held:
@@ -367,7 +399,7 @@ def resolveFigureKey(name, held, order=None):
         raise ValueError(
             'no open figure is numbered %d -- the session holds: %s'
             % (number, ', '.join(sorted(held))))
-    if len(held) == 1:
+    if len(held) == 1 and _figuresMention(name):
         return held[0]
     raise ValueError(
         '%r does not name one of the open figures -- the session holds: %s'
@@ -1857,15 +1889,17 @@ class McpGuiCore:
         pyqtgraph holds on screen after the call, returned so the caller
         reads the same numbers the figure shows.
 
-        A curve figure is one the axis set of; a table, a stacked view and
-        the flux-surface figure each draw their own and are not this one,
-        so naming one of them is refused by name, the shape that names the
-        figure the single curve was drawn in.
+        A curve figure takes one axis set. A picture window takes the same
+        span on the axis set of **each** of its pictures -- the window is
+        one scale and one span, so a time zoom of a strip whose abscissa is
+        its time is the `x` range, in the seconds its time axis holds, and
+        the answer reports that one span. A table and a stacked view keep
+        one axis set per panel and are refused by name.
         """
         import math
 
         record, frame = self._windowForKey(figure_key)
-        box = self._viewBoxOf(frame, figure_key)
+        boxes = self._viewBoxesOf(frame, figure_key)
 
         def finite(bound, value):
             if value is None:
@@ -1894,8 +1928,9 @@ class McpGuiCore:
                 'the auto ask or the manual one, not both.')
 
         if auto:
-            box.enableAutoRange()
-            xR, yR = box.state['viewRange']
+            for box in boxes:
+                box.enableAutoRange()
+            xR, yR = boxes[0].state['viewRange']
             self._logFor(record.cases,
                          'set_axis_range: %s re-fits (the auto range is '
                          'back on).' % figure_key)
@@ -1916,12 +1951,14 @@ class McpGuiCore:
             raise ValueError(
                 'The y range is inverted (%g >= %g): `ymin` must be less '
                 'than `ymax`.' % (ymin, ymax))
-        box.disableAutoRange()
-        if xmin is not None:
-            box.setXRange(xmin, xmax)
-        if ymin is not None:
-            box.setYRange(ymin, ymax)
-        xR, yR = box.state['viewRange']
+        for box in boxes:
+            box.disableAutoRange()
+        for box in boxes:
+            if xmin is not None:
+                box.setXRange(xmin, xmax)
+            if ymin is not None:
+                box.setYRange(ymin, ymax)
+        xR, yR = boxes[0].state['viewRange']
         self._logFor(record.cases,
                      'set_axis_range: %s pinned, x=%s, y=%s.'
                      % (figure_key,
@@ -2038,6 +2075,325 @@ class McpGuiCore:
         return {'window': figure_key,
                 'xInverted': bool(state.get('xInverted', False)),
                 'yInverted': bool(state.get('yInverted', False))}
+
+    def set_image_window(self, figure_key, start=None, count=None):
+        """The window a figure's pictures sit on: moved, or resized, by name.
+
+        `start` is where the window sits on the axis it reads across -- the
+        pictures are re-read in place, one of them per element, and the scale
+        and the controls stay put while the window moves; `count` is how
+        many pictures the window holds and the resize rebuilds them on the
+        same start, the same pinned axes, and the scale a hand settled.
+        The ask names neither bound and is refused: a window someone moved
+        is named by where it sits and how wide it is, and an ask that says
+        nothing is not a move the window can answer.
+
+        The answer is the state the window holds after the call -- the axis
+        it reads across, its start and its count, the extent the axis holds,
+        and the label of each picture the window shows, the element it is
+        and, when the axis carries a value at that element (a time axis does),
+        the value it carries, so a window of three pictures answers the three
+        elements it holds and the answer is the same numbers the titles of
+        the pictures spell.
+
+        Refused by name, and each refusal says the shape of the window that
+        was tried and the gesture that answers the question instead of
+        repeating the one that failed: a window that is not an image window
+        has no pictures and no axis read across them; an image window that
+        holds a single picture has no window to move or resize, and the span
+        of that one picture is the axis range -- `set_axis_range` -- of the
+        axis it drew; a `start` or `count` past the extent the axis holds is
+        the extent itself, named, not a slip past it.
+        """
+        record, frame = self._windowForKey(figure_key)
+        pictures = getattr(frame, 'plotItems', None)
+        if not callable(pictures):
+            # Naming the shape the window holds is what tells the caller
+            # which gesture it asked -- the curves one, or the panels' own.
+            pgPlot = getattr(frame, 'pgPlotWidget', None)
+            if pgPlot is not None and hasattr(pgPlot, 'getViewBox'):
+                raise ValueError(
+                    'The window "%s" is a figure of curves: it holds traces, '
+                    'not a window of pictures, so there is no window to move '
+                    'or resize on it, and the span of its axes is the one '
+                    'set_axis_range pins. Name the figure the pictures were '
+                    'drawn in.' % figure_key)
+            raise ValueError(
+                'The window "%s" is not an image window: it is not a figure '
+                'of pictures, so there is no window of them to move or '
+                'resize, and the panels it holds each keep their own '
+                'answers. Name the figure the pictures were drawn in.'
+                % figure_key)
+        sl = getattr(frame, 'frameAxis', None)
+        sl = sl() if callable(sl) else None
+        if sl is None:
+            raise ValueError(
+                'The window "%s" holds one picture, not a window of them: '
+                'it was not read across an axis, so there is no window to '
+                'move or resize, and the span of the one it holds is what '
+                'set_axis_range pins on the axis it drew.' % figure_key)
+        controls = getattr(frame, 'framesControls', None)
+        if controls is None:
+            raise ValueError(
+                'The window "%s" is an image window but holds no control on '
+                'the axis it reads across, so the window there is not one '
+                'that can be moved or resized.' % figure_key)
+        if start is None and count is None:
+            raise ValueError(
+                'A window moved, or resized: `start` is where it sits on '
+                'the axis it reads across, `count` how many pictures it '
+                'holds -- and naming neither says nothing the window can '
+                'answer.')
+        if start is not None:
+            try:
+                start = int(start)
+            except (TypeError, ValueError):
+                raise ValueError(
+                    'The window sits on the axis its pictures are '
+                    'elements of, at a whole element: %r is not one.'
+                    % (start,))
+            if start < 0:
+                raise ValueError(
+                    'The window sits from element 0 of the axis its '
+                    'pictures are elements of, and %d is before it.'
+                    % start)
+            if length_known := (getattr(sl, 'length', None) is not None):
+                extent = int(sl.length)
+                if start >= extent:
+                    raise ValueError(
+                        'The axis this window reads across holds %d '
+                        'elements (0 to %d), and %d is past the last one: '
+                        'a window with no picture to draw would be blank '
+                        'to the eye and blank to the answer.'
+                        % (extent, extent - 1, start))
+
+        if count is not None:
+            # The resize is the window's own: it derives the slider's reach
+            # from the new count and rebuilds the pictures on the start the
+            # window holds, refusing by name a count the axis cannot hold.
+            frame.frameCount(count)
+        if start is not None:
+            frames = controls.setStart(start)
+            if frames is False:
+                raise ValueError(
+                    'The window "%s" has no control on the axis its '
+                    'pictures are elements of, so a position to sit it at '
+                    'is not one it holds.' % figure_key)
+
+        count_actual = int(controls.count())
+        start_actual = int(controls.start())
+        length = None if getattr(sl, 'length', None) is None \
+            else int(sl.length)
+        # The label of each picture the window shows -- the element it is,
+        # and the value the axis carries at that element when it carries
+        # one. A time axis does, and a window of three slices is the only
+        # way to compare them, so the answer says the three times, not
+        # three element ranks. The value is read once, and the label is
+        # posed on it per element, in the same shape the titles of the
+        # pictures spell.
+        axis = getattr(sl, 'axis', None)
+        values = None
+        if axis is not None and getattr(axis, 'is_time', False):
+            try:
+                from imasviz.VizDataAccess.QVizTensorDataAccess \
+                    import QVizTensorExtractor
+                node = frame.treeNode()
+                axesSpec = frame.accessFor(node).plan(
+                    node, frame, as_function_of_time=False)[0]
+                values = QVizTensorExtractor(node.getIDSRef()).timeBase(axesSpec)
+            except Exception:
+                values = None
+        images = []
+        for index in range(start_actual, start_actual + count_actual):
+            if values is not None:
+                from imasviz.VizDataAccess.QVizSlices import frameLabel
+                images.append(frameLabel(axis, index, values))
+            else:
+                images.append(index)
+        self._logFor(record.cases,
+                     'set_image_window: %s moved to start=%d, %d picture(s) '
+                     'of the %s it reads across.'
+                     % (figure_key, start_actual, count_actual,
+                        getattr(sl, 'label', 'axis')))
+        return {'window': figure_key,
+                'axis': getattr(sl, 'label', None),
+                'start': start_actual,
+                'count': count_actual,
+                'length': length,
+                'pictures': images}
+
+    def set_slice_index(self, figure_key, axis=None, index=None):
+        """The slider of a band, posed at a named index, on the window
+        that holds the band.
+
+        `axis` is the row of the band the gesture names -- `time_slice`,
+        `psi`, `profiles_2d` -- in the words the band spells the axis in,
+        and `index` is the element the row is posed at, the bound the row
+        holds being the one a refusal names when the index passes it. The
+        row moves the band the way the user moves it: the slider of the
+        row, and the window re-reads the one the row is posed at, without
+        the other rows moving under them.
+
+        The answer is the state the band holds after the call: the rows
+        it is, the one that moved, the index it is posed at, and its
+        length -- so the caller reads back the state the window holds,
+        and a row the band holds that the gesture did not move says so
+        in the answer, not in a guess.
+
+        Refused by name, each refusal saying the shape of the window
+        that was tried and the gesture that answers the question instead
+        of repeating the one that failed: a window not one the band of
+        the gesture sits on (a table keeps one answer per panel, and a
+        stacked window one per panel of the two); a window that is a
+        picture window but holds no band for it (a strip whose axis the
+        pictures were laid on is on screen, side by side, and is what
+        the `set_image_window` gesture moves and resizes -- there is no
+        row for an axis the window already shows); a window that holds
+        the band but not the axis it was asked to move (the rows it does
+        hold are the ones the refusal names, and the span of the axis it
+        drew is `set_axis_range`); an index outside the extent the row
+        holds (the bound it holds, named, not a slip past it).
+        """
+        record, frame = self._windowForKey(figure_key)
+
+        def _framesPointer():
+            # The axis the pictures are laid across: it is already on
+            # screen, one picture per element, so a row of a band would
+            # ask for what the window shows -- the window it sits on is
+            # what `set_image_window` moves and resizes. The frame axis
+            # is a QVizSlice; its `label` is the `sliceLabel` of the
+            # axis underneath it, already spelled the way the band
+            # spells the axes it holds.
+            sl_axis = getattr(frame, 'frameAxis', None)
+            sl_axis = sl_axis() if callable(sl_axis) else None
+            word = (str(sl_axis.label)
+                    if sl_axis is not None else 'the strip')
+            return ValueError(
+                'The window "%s" holds no row for that axis: its '
+                'pictures are the axis it reads across (here %s), one '
+                'picture per element, side by side, and the window '
+                'they sit on is what set_image_window moves (start) '
+                'and resizes (count) -- a row of a band is not one '
+                'for an axis the window already shows.'
+                % (figure_key, word))
+
+        def _frameAxisWord():
+            sl_axis = getattr(frame, 'frameAxis', None)
+            sl_axis = sl_axis() if callable(sl_axis) else None
+            return str(getattr(sl_axis, 'label', '')
+                       or '') if sl_axis is not None else ''
+
+        frames_key = getattr(frame, 'framesKey', None)
+        frames_key = frames_key() if callable(frames_key) else None
+        sliceControls = getattr(frame, 'sliceControls', None)
+        if sliceControls is None:
+            raise ValueError(
+                'The window "%s" is not one the band of sliders of the '
+                'gesture sits on: a curve figure of one axis is (the rows '
+                'of the band the gesture addresses), an image window is '
+                '(one row per axis it pins), and this one is not, holding '
+                'no band and no row to move. Name the curve figure, or '
+                'the image window, that holds the axis.' % figure_key)
+        rows = list(sliceControls.rows())
+        word = str(axis if axis is not None else '').strip().lower()
+        if not rows:
+            fa_word = _frameAxisWord()
+            if frames_key is not None:
+                if not word or word == fa_word:
+                    # The axis the gesture named is the one the window
+                    # is read across, or it is not one at all: the
+                    # refusal is the one that moves the window, and it
+                    # names the axis the window moves on.
+                    raise _framesPointer()
+                # The axis is drawn inside the pictures, where a slider
+                # would sit under it: it is on screen, not a control,
+                # and its span is the range set_axis_range pins on each
+                # of the pictures.
+                raise ValueError(
+                    'The window "%s" holds no row for that axis: it is '
+                    'drawn inside the pictures, and a slider under an '
+                    'axis that is on screen would move a window the '
+                    'picture already shows. Its pictures are the axis the '
+                    'window is read across (here %s), which is what '
+                    'set_image_window moves (start) and resizes (count); '
+                    'the span of the axis it drew is what set_axis_range '
+                    'pins, on each of its pictures.'
+                    % (figure_key, fa_word or 'the strip'))
+            raise ValueError(
+                'The window "%s" holds no band of sliders: the axes it '
+                'pins are none, so the axis the gesture names is not a '
+                'row of it, and the one it drew is on screen rather than '
+                'a control to move -- the span of the axes it drew is '
+                'what set_axis_range pins.' % figure_key)
+        if not word:
+            raise ValueError(
+                'The axis of the row to move is named in the words the '
+                'band spells the axes it holds, not the empty string: %s.'
+                % ', '.join(sorted(row.label for row in rows)))
+        if frames_key is not None and word == _frameAxisWord():
+            # The axis the pictures are laid across is already on
+            # screen: a row for it would ask for what they show.
+            raise _framesPointer()
+        exact = [row for row in rows
+                 if str(row.label).strip().lower() == word
+                 or str(row.key).strip().lower() == word]
+        if exact:
+            row = exact[0]
+        else:
+            partial = [row for row in rows
+                       if word in str(row.label).strip().lower()
+                       or word in str(row.key).strip().lower()]
+            if not partial:
+                raise ValueError(
+                    'The band of the window "%s" holds: %s -- "%s" names '
+                    'no row this band holds. Name one of the rows of the '
+                    'band this figure holds, in the words the band spells '
+                    'the axis it pins.'
+                    % (figure_key,
+                       ', '.join(sorted(row.label for row in rows)),
+                       axis))
+            if len(partial) > 1:
+                raise ValueError(
+                    '"%s" names several rows of the band of the window '
+                    '"%s": %s -- name the one, in full, that the gesture '
+                    'is moving.'
+                    % (axis, figure_key,
+                       ', '.join(sorted(row.label for row in partial))))
+            row = partial[0]
+        try:
+            index = int(index)
+        except (TypeError, ValueError):
+            raise ValueError(
+                'The index of the row "%s" is a whole number, not %r: the '
+                'row holds a range from 0 to its extent, and a value in '
+                'that range is what the row is posed at.'
+                % (row.label, index))
+        if row.length is not None:
+            bound = max(int(row.length), 1)
+            if index < 0 or index >= bound:
+                raise ValueError(
+                    'The row "%s" of the window "%s" holds an element '
+                    'from 0 to %d, and %d is outside it: the bound the '
+                    'row holds is the one the row holds, not a guess '
+                    'past the extent the tree names.'
+                    % (row.label, figure_key, bound - 1, index))
+        # The row moves and the window re-reads the one the row is posed
+        # at, in the place the row is posed to move it: the other rows of
+        # the band stay where they are, because the gesture is one row,
+        # one index, and the window is the one the slider of the row is
+        # the control of.
+        row.setIndex(index)
+        self._logFor(record.cases,
+                     'set_slice_index: %s posed the row "%s" at index %d '
+                     '(%s held, %d to %d).'
+                     % (figure_key, row.label, index,
+                        'the bound' if row.length is None
+                        else 'held', 0, max(int(row.length or 1), 1) - 1))
+        return {'window': figure_key,
+                'axis': row.label,
+                'index': int(row.index()),
+                'length': (None if row.length is None else int(row.length)),
+                'rows': {row2.label: int(row2.index()) for row2 in rows}}
 
     # -------------------------------- figures: read the numbers under the picture
 
@@ -3260,21 +3616,74 @@ class McpGuiCore:
             'The curve is a substring of a quantity name or a 0-based '
             'index into the traces the figure drew, not %r.' % (curve,))
 
-    def _viewBoxOf(self, frame, figure_key=None):
-        """The single axis set of a curve figure: `pgPlotWidget`'s ViewBox.
+    def _viewBoxesOf(self, frame, figure_key=None):
+        """One axis set per drawn picture: the one of a curve figure, or the
+        one of each picture of a picture window, in screen order.
 
-        A curve figure (a QVizCurvePlot) has one plot widget and one axis
-        set; a table and a stacked window have one panel per picture, and
-        the flux-surface figure draws its own plot inside a graphics
-        layout -- none of them have the single `pgPlotWidget.getViewBox()`
-        this asks for, and the refusal says why, so the caller learns the
-        window is not one the figure-axes tools address.
+        A picture window answers the span with **one** number pair and wears
+        it on all of its pictures: the window is one scale and one span, so
+        a time zoom of a strip whose abscissa is its time is the `x` range
+        in the seconds the time axis holds. A curve figure answers with its
+        single `pgPlotWidget.getViewBox()`. A table and a stacked view keep
+        one axis set per panel, and a picture window that has drawn nothing
+        has no axis set at all -- each refusal names the window and the
+        shape it holds, and the caller learns what to ask next.
         """
+        pictures = getattr(frame, 'plotItems', None)
+        if callable(pictures):
+            items = list(pictures())
+            if items:
+                boxes = []
+                for item in items:
+                    view = getattr(item, 'getViewBox', None)
+                    if view is None:
+                        raise ValueError(
+                            'The window "%s" holds pictures with no axis set '
+                            'a span can be set on, so a range cannot be '
+                            'pinned on them.' % (figure_key or 'this window'))
+                    boxes.append(view())
+                if boxes:
+                    return boxes
+            raise ValueError(
+                'The window "%s" is a picture window that drew no picture, '
+                'and a range needs the drawn picture to sit on: draw the '
+                'quantity first, and the span is the one set_axis_range '
+                'pins.' % (figure_key or 'this window'))
         pgPlot = getattr(frame, 'pgPlotWidget', None)
         if pgPlot is None or not hasattr(pgPlot, 'getViewBox'):
             raise ValueError(
-                'The window "%s" draws no single figure whose axes a range, '
-                'a log scale, or an inversion can be set on: a curve figure '
+                'The window "%s" is not a single figure whose span this '
+                'gesture pins: a figure of curves holds one axis set, and '
+                'a picture window takes the span of its pictures -- this '
+                'one is neither, its panels each keeping their own answer '
+                'on their own. Name the figure a curve was drawn in, or '
+                'the one the pictures of one quantity are drawn in.'
+                % (figure_key or 'this window'))
+        return [pgPlot.getViewBox()]
+
+    def _viewBoxOf(self, frame, figure_key=None):
+        """The single axis set of a curve figure: `pgPlotWidget`'s ViewBox.
+
+        The log and inversion gestures address curve figures: a table and a
+        stacked window have one panel per picture and keep their own, the
+        flux-surface figure draws inside a graphics layout, and a picture
+        window is the span of its own pictures -- the one `set_axis_range`
+        answers. Each refusal names the window the caller tried, and the
+        gesture that answers it, so the refusal the caller reads says what
+        to do next instead of repeating the call.
+        """
+        if callable(getattr(frame, 'plotItems', None)):
+            raise ValueError(
+                'The window "%s" is a picture window: the log and inversion '
+                'gestures address the figure a single curve was drawn in, '
+                'and this one holds pictures, whose span is the one '
+                'set_axis_range pins. Name the figure the curve was drawn '
+                'in.' % (figure_key or 'this window'))
+        pgPlot = getattr(frame, 'pgPlotWidget', None)
+        if pgPlot is None or not hasattr(pgPlot, 'getViewBox'):
+            raise ValueError(
+                'The window "%s" draws no single figure whose axes a log '
+                'scale or an inversion can be set on: a curve figure '
                 'does, and the table panels and the flux-surface figure do '
                 'not. Name the figure the single curve was drawn in.'
                 % (figure_key or 'this window'))

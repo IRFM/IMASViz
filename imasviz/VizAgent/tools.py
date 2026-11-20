@@ -84,7 +84,18 @@ How to work with it:
    every one; a log on values that cross zero is refused by name, and a
    figure that is not a single one (a table, or the flux-surface figure)
    is refused the same way -- name the figure the single curve was drawn
-   in. A gesture of this section changes what the figure shows without
+   in. A picture window is addressed by the axis it holds, not the one it
+   drew: set_axis_range pins the span of each of its pictures (the time
+   zoom of a strip whose abscissa is a time is the x range, in the
+   seconds the time axis holds), set_image_window moves (start) or
+   resizes (count) the window of time slices the pictures sit on, and
+   set_slice_index poses one of the slider rows of a band at the named
+   index; a window that holds a picture and not a window of them has no
+   window to move, and the refusal names it and the gesture that answers
+   the question the ask is asking (the span of the picture it drew, or
+   the window of the pictures it holds) -- a move refused by name has not
+   changed the window; the answer is what it held before the ask, as
+   before. A gesture of this section changes what the figure shows without
    redrawing it: the answer names the figure the work was on (the key
    is how the user acts on it), and the numbers it answers are the ones
    the curve now holds -- it is not an ask to show anything, and the
@@ -669,9 +680,12 @@ TOOLS = [
         'set_axis_range',
         'The window (the range) of a figure\'s axes, by name and number: '
         'pin `xmin`/`xmax` together, `ymin`/`ymax` together, or both; '
-        '`auto=true` clears the pins and re-fits. A partial pair is '
-        'refused (a range is two bounds); a window not a single figure is '
-        'refused by name.',
+        '`auto=true` clears the pins and re-fits. A curve figure takes one '
+        'axis set; a picture window takes the same span on each of its '
+        'pictures, and a time zoom of a strip whose abscissa is its time '
+        'is the `x` range, in the seconds the time axis holds. A partial '
+        'pair is refused (a range is two bounds); a table or stacked '
+        'window is refused by name.',
         {'type': 'object', 'properties': {
             'figure_key': {'type': 'string'},
             'xmin': {'type': ['number', 'null']},
@@ -680,6 +694,55 @@ TOOLS = [
             'ymax': {'type': ['number', 'null']},
             'auto': {'type': 'boolean', 'default': False},
         }, 'required': ['figure_key'], 'additionalProperties': False},
+    ),
+    _tool(
+        'set_image_window',
+        'The window a picture window\'s pictures sit on: moved with '
+        '`start` (where it sits on the axis it reads across; the pictures '
+        'are re-read in place, the scale and the band stay put) and resized '
+        'with `count` (how many pictures it holds; the scale a hand settled '
+        'is not moved off by the rebuild). Name at least one. The answer '
+        'carries the axis, the start, the count, the extent the axis '
+        'holds and the label of each picture the window shows, the time it '
+        'is in seconds when the axis is the time. Refused by name: a window '
+        'that is not a picture window (the shape it holds, named), a '
+        'picture window that holds one picture, not a window of them (the '
+        'span of that one is set_axis_range), and an ask that names '
+        'neither bound.',
+        {'type': 'object', 'properties': {
+            'figure_key': {'type': 'string'},
+            'start': {'type': ['integer', 'null'],
+                      'description': 'where the window sits on the axis '
+                                     'it reads across (0-based element)'},
+            'count': {'type': ['integer', 'null'],
+                      'description': 'how many pictures the window '
+                                     'holds (1 up to the extent of '
+                                     'the axis)'},
+        }, 'required': ['figure_key'], 'additionalProperties': False},
+    ),
+    _tool(
+        'set_slice_index',
+        'A row of the slider band of a figure, posed at a named index: '
+        '`axis` the row in the words the band spells it (an array of '
+        'structures by its name -- `time_slice`, `profiles_2d` -- or the '
+        'coordinate it carries), `index` the element it is posed at. The '
+        'window re-reads the one the row is posed at, the other rows of '
+        'the band stay where they are; the answer carries the rows of the '
+        'band, the index the one moved is posed at and its extent. It '
+        'addresses a curve figure that pins an axis and an image window '
+        'that does; a table and a stacked window are refused by name, and '
+        'so is a row the band does not hold (the rows it does, named), and '
+        'an index past the extent the row holds (the bound it holds, '
+        'named). A picture window whose pictures sit on the axis the '
+        'gesture names holds no row for it, and the refusal names '
+        'set_image_window (start and count of that window) as the '
+        'gesture that answers the question the ask is asking.',
+        {'type': 'object', 'properties': {
+            'figure_key': {'type': 'string'},
+            'axis': {'type': 'string'},
+            'index': {'type': 'integer'},
+        }, 'required': ['figure_key', 'axis', 'index'],
+         'additionalProperties': False},
     ),
     _tool(
         'set_log_scale',

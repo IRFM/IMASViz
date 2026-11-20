@@ -64,13 +64,14 @@ def _isolated_home(tmp_path, monkeypatch):
 # ------------------------------------------------------------------- captureAsk
 
 def test_captureAsk_reads_the_figure_of_the_mutation_gestures():
-    """The eight gestures that change what a figure shows without
+    """The ten gestures that change what a figure shows without
     redrawing it are all capture asks, on the figure they work on --
     and the two READS (`curve_stats`, `export_curve`) are not: they
     answer numbers, they do not move the picture the user sees."""
     assert set(FIGURE_MUTATIONS) == {
         'scale_curve', 'shift_curve', 'normalize_curve', 'reset_curve',
-        'remove_curve', 'set_axis_range', 'set_log_scale', 'invert_axis'}
+        'remove_curve', 'set_axis_range', 'set_image_window',
+        'set_slice_index', 'set_log_scale', 'invert_axis'}
     for name in FIGURE_MUTATIONS:
         assert captureAsk(name, {'figure_key': 'SlicesPlot1'}) \
             == 'SlicesPlot1', name

@@ -138,6 +138,32 @@ def test_a_name_when_the_session_holds_none_is_refused():
     assert 'none' in str(refused.value).lower()
 
 
+def test_a_name_with_no_figure_word_in_it_is_rejected_as_the_name_it_is():
+    # A loose reference is a word a person uses for a figure: "figure",
+    # "plot3", "la dernière figure". A name no such word in spells is not
+    # a reference but a made-up name, and a session that happens to hold
+    # exactly one figure does not hand it over: the wrong guess would
+    # reach a wrong window silently, and the model would believe it asked
+    # for the window it named. The refusal, instead, names what the
+    # session holds, the way the rest of the loop answers a name it does
+    # not settle.
+    for name in ('no/such/thing', 'no such thing', ''):
+        with pytest.raises(ValueError) as refused:
+            resolveFigureKey(name, ['SlicesPlot7'])
+        assert 'SlicesPlot7' in str(refused.value), \
+            'the refusal does not name the figure the session holds: %r' \
+            % str(refused.value)
+
+
+def test_a_reference_with_a_figure_word_resolves_the_sole_figure():
+    # The other side of the line: a reference that names a figure resolves
+    # the one open figure, whatever other words it carries.
+    assert resolveFigureKey('la figure', ['SlicesPlot7']) == 'SlicesPlot7'
+    assert resolveFigureKey('plot', ['SlicesPlot7']) == 'SlicesPlot7'
+    assert resolveFigureKey('ma table', ['TablePlotView:2']) \
+        == 'TablePlotView:2'
+
+
 # --------------------------------------------------------------- the capture
 
 def test_saveShots_saves_a_loose_reference_under_the_key_it_stands_for(

@@ -465,12 +465,65 @@ def buildServer(core, dispatcher, name='imasviz'):
 
         Pin `xmin`/`xmax` together (the abscissa) and/or `ymin`/`ymax`
         (the ordinate); a partial ask (one bound of a pair) is refused
-        because a range is two. `auto=True` clears the pins and re-fits. A
-        window that is not a single figure is refused by name.
+        because a range is two. `auto=True` clears the pins and re-fits.
+        A curve figure takes one axis set; a picture window takes the same
+        span on the axis set of each of its pictures, so the time zoom of
+        a strip whose abscissa is its time is the `x` range, in the
+        seconds its time axis holds. A table and a stacked window keep
+        one axis set per panel and are refused by name.
         """
         return _run(partial(core.set_axis_range, figure_key,
                             xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax,
                             auto=auto))
+
+    @server.tool(name='set_image_window')
+    def set_image_window(figure_key: str, start: Optional[int] = None,
+                         count: Optional[int] = None):
+        """The window a picture window's pictures sit on: moved with
+        `start` (where it sits on the axis it reads across; the pictures
+        are re-read in place, the scale and the band stay put), and
+        resized with `count` (how many pictures it holds; the scale a hand
+        settled is not moved off by the rebuild). Name at least one of
+        the two.
+
+        The answer carries the axis it reads across, its start and count,
+        the extent the axis holds, and the label of each picture the
+        window shows (the element it is, and the value the axis carries
+        there when the axis is the time), so a window of three time slices
+        answers the three slices it holds by their time, not by rank. A
+        window that is not a picture window is refused by name (the shape
+        it holds, and the gesture the question it was asked belongs to);
+        so is one that holds a single picture, not a window of them (the
+        span of that one is `set_axis_range`), and an ask that names
+        neither the start nor the count of the window.
+        """
+        return _run(partial(core.set_image_window, figure_key,
+                            start=start, count=count))
+
+    @server.tool(name='set_slice_index')
+    def set_slice_index(figure_key: str, axis: str, index: int):
+        """A row of the slider band of a figure, posed at a named index:
+        `axis` the row in the words the band spells it (an array of
+        structures by its name -- `time_slice`, `profiles_2d` -- or the
+        coordinate it holds), and `index` the element it is posed at (a
+        0-based whole number, within the extent the row holds).
+
+        The window re-reads the one the row is posed at -- the same read
+        the slider drives, and the other rows of the band stay where they
+        are -- and the answer carries the rows of the band it holds and
+        the index each one is posed at, so one asks, reads, and confirms
+        in the same call. It addresses a curve figure that pins an axis
+        and an image window that pins one; a table and a stacked window
+        are refused by name, and so is a row the band does not hold (the
+        rows it does, named), and an index past the extent the row holds
+        (the bound it holds, named). A picture window whose pictures hold
+        the axis the gesture names holds no row for it: the axis is on
+        screen, one picture per element, and the refusal names
+        `set_image_window` (the start and count of that window) as the
+        gesture the question it was asked belongs to.
+        """
+        return _run(partial(core.set_slice_index, figure_key,
+                            axis=axis, index=index))
 
     @server.tool(name='set_log_scale')
     def set_log_scale(figure_key: str, x: Optional[bool] = None,

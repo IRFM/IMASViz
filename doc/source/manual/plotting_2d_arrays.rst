@@ -92,6 +92,15 @@ where the axis does, and a case holding fewer elements than the window takes dra
 only what exists. A quantity with nothing to spread over pictures shows a single
 picture and no window control.
 
+The window also carries a **count box**, at the right of that control: how many
+pictures the window holds, from one up to the length of the axis it reads across.
+Changing it rebuilds the pictures on the start the window already sits on, and the
+slider reaches the new extent -- a window of one picture sits anywhere the axis
+does, one of the whole axis sits nowhere. A range a hand put on the colour scale
+comes back after the rebuild, because a span was set for the question being
+asked, and the pictures moving underneath it are not an answer to it; a range
+nobody touched settles again over the pictures the window holds now.
+
 Each picture is titled with the quantity and the element it stands for, for example
 :guilabel:`psi[Pa] - time_slice 1 (t = 1)`. When the axis carries values they are
 spelled out: three pictures saying when they were taken can be read in order, three
@@ -268,6 +277,11 @@ All**, **X axis** and **Y axis** (range, auto-range, invert and link in their
 sub-window) and **Mouse Mode**, and the scene adds **Export...**, as described for
 1D plots in :ref:`plotting_1d_arrays`. To those the picture adds one IMASViz line,
 :guilabel:`Colour Scale...` (:ref:`above <2d_colour_scale>`).
+
+A zoom of a picture is a zoom of the window: the window is one scale and one span,
+so a span set on one picture -- a zoom in the time axis of a soft x-ray strip, for
+instance -- is the span of **each** picture it holds, in the units that axis
+carries on it, and the window answers that one span rather than one per picture.
 
 The :guilabel:`Configure Plot` dialog of a curve figure is not offered here: it
 dresses the traces one by one, and a picture has no trace to dress. What a picture
