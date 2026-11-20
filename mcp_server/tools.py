@@ -52,10 +52,15 @@ How to work with it:
    version), and list_quantities (the filled tensors of one occurrence,
    grouped by array of structures) -- answers, not guesses, and empty is
    an answer too;
-7. a report is self-contained HTML on disk, with the statistics of each
-   curve: plot_report names one window of curves (its image, one row per
-   trace it drew), and case_report names the whole loaded tree of a case
-   (one row per curve, in tree order).
+7. a report is self-contained HTML on disk: plot_report names one window
+   of curves (its image, one row per curve it drew, with the statistics
+   of each), case_report names the whole loaded tree of a case (one row
+   per curve it holds, in tree order), and case_ids_report names the
+   case itself -- every IDS the case holds and the occurrences each
+   holds, the ones the user loaded, a header of the `ids_properties`
+   values per loaded occurrence, and the signals the tree holds for each
+   (the ones it carries as available, a 0-D scalar held by the dynamic
+   array among them).
 8. manipulating a figure is work on what it holds, by name of the figure
    and of the curve: scale_curve multiplies its value by a constant,
    shift_curve adds one, normalize_curve divides by its own peak/first/
@@ -654,6 +659,25 @@ def buildServer(core, dispatcher, name='imasviz'):
         loaded tree has no curve is refused by name.
         """
         return _run(partial(core.case_report, uri, name=name))
+
+    @server.tool(name='case_ids_report')
+    def case_ids_report(uri: str, name: Optional[str] = None):
+        """The case itself as a self-contained HTML report on disk.
+
+        The inventory of the case under one page: every IDS the case's
+        data dictionary holds and the occurrences each one holds (read
+        through DBEntry.list_all_occurrences, not listed from memory),
+        which of those the session loaded, and for each loaded occurrence
+        a header of the `ids_properties` values of that occurrence plus
+        its available signals -- the signals the tree holds for it, kept
+        to the ones the tree carries as available (the same test its own
+        colouring applies), a 0-D scalar held by the dynamic array among
+        them. A property the case leaves empty is named empty, an
+        occurrence without an available signal is named as such, and a
+        case that holds no data at all is refused by name. `name` is the
+        report name (a place, not a report, is refused).
+        """
+        return _run(partial(core.case_ids_report, uri, name=name))
 
     # ---------------------------------------------------------------- export
 

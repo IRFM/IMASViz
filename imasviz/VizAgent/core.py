@@ -26,6 +26,25 @@ ALL = 'all'
 _SLICERS = {FIRST: 'FIRST_SLICE', ALL: 'ALL_SLICE'}
 
 
+# The little style every report wears: self-contained, no fetch, the same
+# ground on every page. `.ref` is the word for what the read refused or
+# found empty, so the page says so in the same colour a refusal does.
+_REPORT_CSS = """
+body { font-family: Cantarell, 'Open Sans', 'DejaVu Sans', sans-serif;
+       margin: 2rem; color: #182430; background: #ffffff; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #dde3e7; padding: .35rem .6rem;
+         text-align: left; font-size: .95rem; }
+th { background: #f0f4f5; }
+h2 { margin-top: 1.8rem; border-bottom: 1px solid #dde3e7; padding-bottom: .2rem; }
+.q  { font-family: 'DejaVu Sans Mono', monospace; font-size: .85rem; }
+.s  { font-variant-numeric: tabular-nums; }
+img { max-width: 90%; border: 1px solid #dde3e7; margin-bottom: 1.2rem; }
+.sub { color: #5a6672; margin-top: .1rem; }
+.ref { color: #a03030; }
+"""
+
+
 # --------------------------------------------------------------------- addressing
 #
 # `axesAddressing` is the one answer to "which axis does this quantity run
@@ -2604,6 +2623,299 @@ class McpGuiCore:
                      % (path, len(rows), uri))
         return {'saved_to': path, 'curves': len(rows), 'uri': uri}
 
+    def case_ids_report(self, uri, name=None):
+        """The IDSs of one case as a self-contained HTML report.
+
+        Three reads under one page, each of them the read the surface
+        already answers -- nothing is listed from memory:
+
+        * the case, through ``view.occurrencesOf`` (the same
+          ``DBEntry.list_all_occurrences`` that colours the tree): every
+          IDS the case's data dictionary declares, the occurrences each
+          holds, and which of those this view loaded -- the loaded ones
+          from the view's own ``loadedOccurrences``;
+        * the header of every loaded occurrence, ``ids_properties``: the
+          values of its fields read off the loaded instance, the same
+          instance ``describe_ids`` reads -- a structure field is opened
+          on its children, an empty one is named empty, and an occurrence
+          whose instance this view no longer holds is named as such rather
+          than answered from a guess;
+        * the available signals of every loaded occurrence: the signals
+          the tree holds for it -- ``view.signalsList``, the list the
+          selection and the Profiles panel ask -- kept to the ones the
+          tree carries as available (``hasAvailableData``, the same test
+          the tree's own colouring applies), so what is blue in the tree
+          is in the section and what is not blue is named out; a 0-D
+          scalar held by the dynamic array (``global_quantities.ip`` on
+          the reference case) is a signal the draw runs along the case's
+          clock, and it is listed with the scalar type the tree reads it.
+
+        A case that holds no data at all is refused by name, the way
+        ``case_report`` refuses a loaded tree with no curve: a page whose
+        only sentence is "the case holds nothing" is the refusal spoken
+        as a deliverable. ``name`` is the report name under
+        ``~/.imasviz/reports``, the guard ``_namedReport`` applies.
+        """
+        view = self._viewForUri(uri)
+
+        summary = []
+        for ids_name in sorted(view.IDSRoots):
+            held = sorted(view.occurrencesOf(ids_name))
+            loaded = sorted(view.loadedOccurrences(ids_name))
+            if loaded:
+                state = 'loaded'
+            elif held:
+                state = 'not loaded'
+            else:
+                state = 'the case holds no data for it'
+            summary.append({'name': ids_name, 'held': held,
+                            'loaded': loaded, 'state': state})
+        if not any(row['held'] for row in summary):
+            raise ValueError(
+                'The case %s holds no data at all (list_case_idss answers '
+                'the same): there is nothing to report.' % uri)
+
+        sections = []
+        for key in sorted(view.ids_roots_occurrence):
+            ids_name, _, occurrence = key.rpartition('/')
+            occurrence = int(occurrence)
+            node = view.ids_roots_occurrence[key]
+            instance = getattr(node, 'idsRef', None)
+            if instance is not None:
+                props = self._idsPropertiesRows(instance)
+                propsNote = None if props is not None else (
+                    'the data dictionary of this occurrence declares no '
+                    'ids_properties structure.')
+            else:
+                props = None
+                propsNote = (
+                    'this view no longer holds the loaded instance of %s '
+                    'occurrence %d in memory: the header cannot be read '
+                    'without a guess.' % (ids_name, occurrence))
+            signals = self._availableSignals(view, ids_name, occurrence)
+            sections.append({
+                'ids': ids_name,
+                'occurrence': occurrence,
+                'properties': props,
+                'propertiesNote': propsNote,
+                'signals': signals,
+            })
+
+        path = self._namedReport(name, len(sections))
+        self._writeIdsReport(
+            path,
+            title='IDSs of %s' % uri,
+            sub='%d IDS(s) declared by the case, %d occurrence(s) loaded'
+                % (len(summary), len(sections)),
+            summary=summary, sections=sections)
+        self._logFor([uri],
+                     'case_ids_report wrote %s: %d IDS(s) of %s, '
+                     '%d loaded occurrence(s).'
+                     % (path, len(summary), uri, len(sections)))
+        return {'saved_to': path, 'uri': uri,
+                'idss': len(summary), 'loaded': len(sections)}
+
+    def _idsPropertiesRows(self, instance):
+        """The (field, type, value) rows of one loaded IDS occurrence.
+
+        Read from the ``ids_properties`` structure the IDS holds -- that is
+        where the fields sit, the level ``describe_ids`` reads them at: on
+        this HLI the IDS root itself has no such field, and a lookup at the
+        root level refused every one of them by name (measured on the
+        reference case: ``IDS structure '' has no attribute 'comment'``),
+        so the base of the read is the substructure and the dictionary node
+        only names the fields. ``None`` when the dictionary of this
+        occurrence declares no such structure.
+        """
+        from imasviz.VizDataAccess.QVizIDSViewParser import \
+            dataTypeName, metadataForPath
+        propsMeta = metadataForPath(instance.metadata, ['ids_properties'])
+        if propsMeta is None:
+            return None
+        try:
+            base = getattr(instance, 'ids_properties')
+        except (AttributeError, KeyError) as error:
+            return [('(all fields)', 'structure',
+                     'unavailable (%s: %s)'
+                     % (type(error).__name__, error), False)]
+        rows = []
+        for field in list(propsMeta):
+            text, filled = self._propValue(base, field)
+            rows.append((field.name, dataTypeName(field), text, filled))
+        return rows
+
+    def _propValue(self, instance, field, limit=8):
+        """(text, filled) of one ``ids_properties`` field, for the header.
+
+        Read off the instance, the ``describe_ids`` way: a scalar or a
+        string answers its value, an array its count with a bounded
+        preview of its first elements, a structure opens on its children,
+        and what the read refuses or finds empty comes back named -- the
+        page prints the refusal with the ``ref`` colour it wears for a
+        refusal, so a value that is not there cannot read as one that is.
+        """
+        from imasviz.VizDataAccess.QVizAccessLayerHLI import IDSDataType
+        try:
+            value = getattr(instance, field.name)
+        except (AttributeError, KeyError) as error:
+            return ('unavailable (%s: %s)'
+                    % (type(error).__name__, error), False)
+        if field.data_type is IDSDataType.STRUCTURE:
+            parts = []
+            filled = False
+            for child in list(field):
+                text, childFilled = self._propValue(value, child, limit)
+                parts.append('%s %s' % (child.name, text))
+                filled = filled or childFilled
+            return ('{ ' + '; '.join(parts) + ' }' if parts else '{ }'), filled
+        plain = getattr(value, 'value', None)
+        if plain is None:
+            plain = value
+        if isinstance(plain, bytes):
+            plain = plain.decode('utf-8', 'replace')
+        if isinstance(plain, str):
+            return (plain if plain.strip() else '(empty)',
+                    bool(plain.strip()))
+        if plain is None:
+            return ('(empty)', False)
+        try:
+            elements = list(plain)
+        except TypeError:
+            return (self._num(plain) if plain is not None else '(empty)',
+                    plain is not None)
+        if not elements:
+            return ('(empty)', False)
+        scalar = all(isinstance(element, (bool, int, float))
+                     for element in elements[:limit])
+        if not scalar:
+            return ('array of %d structures' % len(elements), True)
+        shown = ', '.join(self._num(element)
+                          for element in elements[:limit])
+        more = '' if len(elements) <= limit else ', …'
+        return ('[%d] %s%s' % (len(elements), shown, more), True)
+
+    def _availableSignals(self, view, ids_name, occurrence=0):
+        """The signals the tree holds for one loaded occurrence, in tree order.
+
+        ``view.signalsList`` -- the same list the selection, the plot
+        gestures and the Profiles panel ask -- restricted to the one
+        occurrence, kept to the leaves (the structures and the roots are
+        not signals), and kept to the ones the tree carries as available:
+        ``hasAvailableData`` is the tree's own available-data test, the one
+        its colouring applies and the same panel asks a leaf before it
+        offers it, so what is blue in the tree is in the list and a signal
+        the case never filled is out of it. A 0-D scalar held by the
+        dynamic array is a signal -- the one the draw runs along the case's
+        clock (measured on the reference case:
+        ``equilibrium.time_slice[0].global_quantities.ip`` answers
+        ``FLT_0D``, draws a 49-sample curve along ``equilibrium.time``,
+        and the arrays-only reads of a report miss it) -- and it is
+        listed with the scalar type it has, rather than dropped as if the
+        case did not hold it.
+        """
+        found = []
+        for node in view.signalsList:
+            try:
+                if node.getIDSName() != ids_name:
+                    continue
+                if int(node.getOccurrence() or 0) != occurrence:
+                    continue
+                if node.isIDSRoot() \
+                        or node.getDataType() in ('structure', 'struct_array'):
+                    continue
+                if not node.hasAvailableData():
+                    continue
+            except Exception:
+                continue
+            found.append({
+                'data_name': node.getDataName()
+                or node.getPath() or node.getName() or str(node),
+                'data_type': node.getDataType() or '',
+                'units': node.getUnits() or '',
+            })
+        return found
+
+    def _writeIdsReport(self, path, title, sub, summary, sections):
+        """The self-contained page one ``case_ids_report`` is: the case's
+        IDSs under one heading, one section per loaded occurrence -- its
+        ``ids_properties`` header first, its available signals under --
+        the same style as the other reports, and nothing to fetch."""
+        import html
+        import time
+
+        parts = [
+            '<!doctype html>',
+            '<html lang="en"><head><meta charset="utf-8">',
+            '<meta name="viewport" content="width=device-width, initial-scale=1">',
+            '<title>%s</title><style>%s</style></head><body>' % (
+                html.escape(title), _REPORT_CSS),
+            '<h1>%s</h1>' % html.escape(title),
+            '<p class="sub">%s — %s</p>' % (html.escape(sub),
+                                            time.strftime('%Y-%m-%d %H:%M:%S')),
+        ]
+        parts.append('<h2>The IDSs of the case</h2>')
+        parts.append('<table>')
+        parts.append('<tr><th>IDS</th><th>occurrences held</th>'
+                     '<th>occurrences loaded</th><th>state</th></tr>')
+        for row in summary:
+            parts.append(
+                '<tr><td class="q">%s</td><td class="s">%s</td>'
+                '<td class="s">%s</td><td class="%s">%s</td></tr>' % (
+                    html.escape(row['name']),
+                    ', '.join(str(o) for o in row['held']) or 'none',
+                    ', '.join(str(o) for o in row['loaded']) or 'none',
+                    '' if row['state'] != 'the case holds no data for it'
+                    else 'ref',
+                    html.escape(row['state'])))
+        parts.append('</table>')
+        for section in sections:
+            parts.append(
+                '<h2>%s — occurrence %d</h2>'
+                % (html.escape(section['ids']), section['occurrence']))
+            parts.append('<h3>ids_properties</h3>')
+            if section['properties'] is None:
+                parts.append('<p class="ref">%s</p>'
+                             % html.escape(section['propertiesNote']))
+            else:
+                parts.append('<table>')
+                parts.append('<tr><th>field</th><th>type</th>'
+                             '<th>value</th></tr>')
+                for name, spelling, text, filled in section['properties']:
+                    parts.append(
+                        '<tr><td class="q">%s</td><td>%s</td>'
+                        '<td class="%s">%s</td></tr>' % (
+                            html.escape(name), html.escape(spelling),
+                            '' if filled else 'ref', html.escape(text)))
+                parts.append('</table>')
+            parts.append(
+                '<h3>Available signals — %d</h3>' % len(section['signals']))
+            if not section['signals']:
+                parts.append(
+                    '<p class="ref">The loaded tree of this occurrence '
+                    'holds no signal it carries as available: the tree '
+                    'carries it in no blue leaf, and the list says so '
+                    'rather than naming one from memory.</p>')
+            else:
+                parts.append('<table>')
+                parts.append(
+                    '<tr><th>signal</th><th>data type</th><th>units</th>'
+                    '</tr>')
+                for signal in section['signals']:
+                    parts.append(
+                        '<tr><td class="q">%s</td><td>%s</td><td>%s</td>'
+                        '</tr>' % (
+                            html.escape(signal['data_name']),
+                            html.escape(signal['data_type']),
+                            html.escape(signal['units'])))
+                parts.append('</table>')
+        parts.append('</body></html>')
+        try:
+            with open(path, 'w', encoding='utf-8') as file:
+                file.write('\n'.join(parts))
+        except OSError as error:
+            raise ValueError('The report could not be written to %s: %s'
+                             % (path, error))
+
     # ---------------------------------------------------------------- journals
 
     def _noteEmbedder(self):
@@ -3344,25 +3656,12 @@ class McpGuiCore:
         import html
         import time
 
-        style = ("""
-        body { font-family: Cantarell, 'Open Sans', 'DejaVu Sans', sans-serif;
-               margin: 2rem; color: #182430; background: #ffffff; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #dde3e7; padding: .35rem .6rem;
-                 text-align: left; font-size: .95rem; }
-        th { background: #f0f4f5; }
-        .q  { font-family: 'DejaVu Sans Mono', monospace; font-size: .85rem; }
-        .s  { font-variant-numeric: tabular-nums; }
-        img { max-width: 90%; border: 1px solid #dde3e7; margin-bottom: 1.2rem; }
-        .sub { color: #5a6672; margin-top: .1rem; }
-        .ref { color: #a03030; }
-        """ )
         parts = [
             '<!doctype html>',
             '<html lang="en"><head><meta charset="utf-8">',
             '<meta name="viewport" content="width=device-width, initial-scale=1">',
             '<title>%s</title><style>%s</style></head><body>' % (
-                html.escape(title), style),
+                html.escape(title), _REPORT_CSS),
             '<h1>%s</h1>' % html.escape(title),
             '<p class="sub">%s — %s</p>' % (html.escape(sub),
                                             time.strftime('%Y-%m-%d %H:%M:%S')),

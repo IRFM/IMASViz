@@ -379,7 +379,8 @@ class AgentLoop(QObject):
                         # that earned them: a report path the answer may
                         # name, a figure the close ran. Grounded by a
                         # success -- a refused call is not a deliverable.
-                        if (name in ('plot_report', 'case_report')
+                        if (name in ('plot_report', 'case_report',
+                                    'case_ids_report')
                                 and isinstance(result, dict)
                                 and result.get('saved_to')):
                             reports_written.add(result['saved_to'])
@@ -738,10 +739,10 @@ class AgentLoop(QObject):
         if reportClaimed(content) and not reports_written:
             return (
                 'the answer says a report was written, but no '
-                'plot_report or case_report call succeeded this '
-                'request -- the file it names was never produced. '
-                'Write it: call plot_report(figure_key) or '
-                'case_report(uri) and answer with the path that '
+                'report call succeeded this request -- the file it '
+                'names was never produced. Write it: call '
+                'plot_report(figure_key), case_report(uri) or '
+                'case_ids_report(uri) and answer with the path that '
                 'call returns.')
         # Only when the core can say which figures stand: with no ground
         # truth to answer against, a figure claim cannot be accused. A
@@ -771,9 +772,10 @@ class AgentLoop(QObject):
             'does not stand and a report that was never written '
             'are not what the user asked for. Do the work: draw '
             'the figure with plot_one(uri, path, ...) and write '
-            'the report with plot_report(figure_key) or '
-            'case_report(uri) -- and answer only from what those '
-            'calls return. The request was: "%s".' % user_prompt)
+            'the report with plot_report(figure_key), '
+            'case_report(uri) or case_ids_report(uri) -- and '
+            'answer only from what those calls return. The '
+            'request was: "%s".' % user_prompt)
 
     def _unperformedWorkRefusal(self, content, acted_on, read_from,
                                 closed_figures):

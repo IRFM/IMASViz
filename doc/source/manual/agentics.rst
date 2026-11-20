@@ -184,10 +184,16 @@ the same descriptions. The tools, in the order the faces group them:
        IDSs the case would need and does not hold are loaded first, the way
        the menu does it), and the two saves.
    * - the reports
-     - ``plot_report``, ``case_report``
+     - ``plot_report``, ``case_report``, ``case_ids_report``
      - a window of curves as a self-contained HTML file on disk (the image of
-       the window and one row per trace, with its statistics), and the loaded
-       tree of a case the same way.
+       the window and one row per curve, with its statistics), the loaded tree
+       of a case the same way, and the case itself: every IDS the case holds
+       and the occurrences each holds, the ones the session loaded, the
+       header of each loaded occurrence's ``ids_properties`` values, and
+       the signals the tree holds for each occurrence -- the ones the
+       tree carries as available (the same test its own colouring
+       applies), a 0-D scalar held by the dynamic array among them
+       (``global_quantities.ip`` on the reference case).
    * - the export
      - ``export_to_ids``
      - the opened IDSs of a case into the target case, under the data
