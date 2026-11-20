@@ -2911,6 +2911,58 @@ class McpGuiCore:
                         n_e_path, area_path, answer['points']))
         return answer
 
+    # The two remaining feature-3 derived quantities. Neither fabricates a
+    # number: the case keeps them, and these name the leaf that holds them, the
+    # formula, and the values the case answers -- the same read a figure of the
+    # same leaf would draw. A case that does not hold the leaf is refused by
+    # name, never a plausible-looking value.
+
+    def _scalarCurve(self, name, uri, path, x, y):
+        """The values of a curve read, with the path that named them, the stats
+        finite and None-where-empty, and one log line naming the numbers."""
+        y = list(y)
+        finite = [v for v in y if v == v]
+        answer = {
+            name: y,
+            'path': path,
+            'points': len(y),
+            'mean': (sum(finite) / len(finite)) if finite else None,
+            'max': max(finite) if finite else None,
+            'min': min(finite) if finite else None,
+        }
+        self._logFor([uri], '%s: %d point(s) read off %s; mean %s, max %s, '
+                     'min %s.' % (name, len(y), path,
+                                 '%g' % answer['mean'] if finite else '-',
+                                 '%g' % answer['max'] if finite else '-',
+                                 '%g' % answer['min'] if finite else '-'))
+        return answer
+
+    def beta_normal(self, uri, path=None, along=None, indices=None):
+        """The case's normalized beta, over the time it is held.
+
+        `path` is the leaf to read; the default is the one the equilibrium case
+        keeps for it (`global_quantities.beta_normal`), but any path the case
+        holds as a curve answers the same. The answer is the case's own number,
+        spelled under its name, with its mean, peak and floor -- not a beta
+        this method did. A case that does not hold the path is refused by name.
+        """
+        path = path or 'equilibrium.time_slice[0].global_quantities.beta_normal'
+        x, y = self._readCurveSignal(uri, path, along, indices)
+        return self._scalarCurve('beta_normal', uri, path, x, y)
+
+    def total_pressure(self, uri, path=None, along=None, indices=None):
+        """The case's total pressure p = n_e k_B T_e + n_i k_B T_i.
+
+        `path` is the leaf to read; the default is the total (the one the
+        equilibrium case keeps, `profiles_1d.pressure`) -- the case is the one
+        that summed electrons and ions, and these two lines document that sum
+        rather than pretend to have done it. A case that does not hold the path
+        is refused by name, never a plausible-looking profile.
+        """
+        path = path or 'equilibrium.time_slice[0].profiles_1d.pressure'
+        x, y = self._readCurveSignal(uri, path, along, indices)
+        return self._scalarCurve('pressure', uri, path, x, y)
+
     def export_curve(self, figure_key, curve=None, format='csv', name=None):
         """The x/y of a figure's drawn curves, as a file.
 

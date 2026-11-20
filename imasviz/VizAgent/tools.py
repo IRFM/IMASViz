@@ -969,6 +969,50 @@ TOOLS = [
     ),
 
     _tool(
+        'beta_normal',
+        'The normalized beta beta_N = 2 mu_0 p / (B^2 a^2 / I_pl^-2) of a '
+        'case, over the time the case holds it. The value is the case\'s own '
+        'number read off its leaf (`beta_normal`), not one computed here. '
+        'The answer carries the path that named it, the values, the points '
+        'and the mean, max and min. `path`, `along` and `indices` are the '
+        'seams the case keeps. A case that does not hold the leaf is '
+        'refused by name, never a plausible-looking value.',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+            'path': {'type': ['string', 'null'],
+                     'description': 'the beta leaf. Defaults to the one the '
+                                    'equilibrium case keeps '
+                                    '(global_quantities.beta_normal).'},
+            'along': {'type': ['string', 'null'],
+                      'description': 'the axis of the node, for an array that '
+                                     'has one; the clock (equilibrium.time) '
+                                     'where it holds one.'},
+            'indices': {'type': ['object', 'null'],
+                        'description': 'the element of the node, for a node '
+                                       'of one.'},
+        }, 'required': ['uri'], 'additionalProperties': False},
+    ),
+
+    _tool(
+        'total_pressure',
+        'The total pressure p = n_e k_B T_e + n_i k_B T_i of a case, read off '
+        'the leaf the case holds for it. The answer names the path that read '
+        'it, the values, the points and the mean, max and min. `path`, '
+        '`along` and `indices` are the seams the case keeps. A case that does '
+        'not hold the leaf is refused by name, never a plausible-looking '
+        'profile.',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+            'path': {'type': ['string', 'null'],
+                     'description': 'the pressure leaf. Defaults to the total '
+                                    'the equilibrium case keeps '
+                                    '(profiles_1d.pressure).'},
+            'along': {'type': ['string', 'null']},
+            'indices': {'type': ['object', 'null']},
+        }, 'required': ['uri'], 'additionalProperties': False},
+    ),
+
+    _tool(
         'export_curve',
         'Take a figure\'s drawn curve(s) out to a file: the values as they '
         'stand (a scale/shift/normalize is in the file). `format` csv or '

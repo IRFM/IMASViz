@@ -701,6 +701,33 @@ def buildServer(core, dispatcher, name='imasviz'):
                             along=along, indices=indices,
                             indices_ip=indices_ip, indices_area=indices_area))
 
+    @server.tool(name='beta_normal')
+    def beta_normal(uri: str, path: Optional[str] = None,
+                    along: Optional[str] = None,
+                    indices: Optional[dict] = None):
+        """The normalized beta of a case, over the time the case holds it.
+
+        The value is the case's own number read off its leaf (`beta_normal`),
+        not one computed here. The answer carries the path that named it, the
+        values, the points and the mean, max and min. A case that does not
+        hold the leaf is refused by name.
+        """
+        return _run(partial(core.beta_normal, uri, path, along=along,
+                            indices=indices))
+
+    @server.tool(name='total_pressure')
+    def total_pressure(uri: str, path: Optional[str] = None,
+                       along: Optional[str] = None,
+                       indices: Optional[dict] = None):
+        """The total pressure p = n_e k_B T_e + n_i k_B T_i of a case.
+
+        Read off the leaf the case holds for it; the answer names the path
+        that read it, the values, the points and the mean, max and min. A
+        case that does not hold the leaf is refused by name.
+        """
+        return _run(partial(core.total_pressure, uri, path, along=along,
+                            indices=indices))
+
     # -------------------------------------------------------------- windows
 
     @server.tool(name='list_windows')
