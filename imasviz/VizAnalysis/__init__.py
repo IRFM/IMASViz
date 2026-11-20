@@ -16,6 +16,7 @@ timing. It is driven by a test on a synthetic signal, and the agent core
 already gives, so what is detected and what is plotted are the same read.
 """
 
-from .detect import detect, peaks, transitions, period_stats
+from .spectra import band_power, cross_correlation, spectrum
 
-__all__ = ['detect', 'peaks', 'transitions', 'period_stats']
+__all__ = ['detect', 'peaks', 'transitions', 'period_stats',
+           'spectrum', 'band_power', 'cross_correlation']
