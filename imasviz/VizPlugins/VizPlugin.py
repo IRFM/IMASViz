@@ -7,32 +7,181 @@
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
 
-"""What a plugin is, and which ones this application offers.
+"""What a plugin is, and which ones IMASViz ships.
 
-The registration table is the only place a plugin is named -- which is what the
-howto says ("add the plugin in RegisteredPlugins"). It used to not be: three more
-tables lived in this module and named the same plugins again, keyed by plugin name
-by hand. Measured, all three answered `KeyError` for the two plugins that *are*
-registered -- they only knew the two that are not -- and `getEntriesFor` and
-`getAllEntries` were the fallback the menu took for anything that did not inherit
-this class, which is how a plugin honouring every documented method stayed
-invisible without a word. `getAllEntries` also carried a second meaning, as a
-static lookup table declared after the instance method of the same name, so the
-base-class contract the howto documents was unreachable: `VizPlugin().getAllEntries()`
-answered `TypeError: missing 1 required positional argument: 'pluginsName'`.
+The contract is **declarative**. A plugin class states, at the top of its body,
+two things and none other are asked of it:
 
-`getMenuItem` was worse than unused: it read `self.getSubjects()`, which no class
-in the package defines, so calling it answered `AttributeError`.
+* **where it is offered** -- ``SCOPE``, one of the four scopes ``IDS``,
+  ``NODE``, ``CASE`` or ``APP``; for ``IDS`` it may name which IDS, for ``NODE``
+  a predicate over the node; and
+* **what it can do** -- ``ACTIONS``, a tuple of :class:`QVizPluginAction`, each
+  with a stable key, the words the menu says, and the call that does the work.
 
-What is left here is the contract the howto documents and the table that
-registration is read from. Deciding what a registered plugin offers, and running
-it, is `QVizPluginCatalog`.
+The framework reads those two attributes, offers the plugin at that place and
+nowhere else, and -- a line clicked -- calls the action with a
+:class:`QVizPluginContext` that already holds the api, the case, the node it was
+offered on, the occurrence to draw, and -- when a saved session is replaying --
+the answers the session already gave. A plugin no longer tests
+``self.selectedTreeNode`` to work out where it applies, and it no longer
+dispatches on an opaque number: where it applies is declared where it sits, and
+each action owns the work of its own line.
 
-The two records below belong to the contract because they are what a plugin and
-the framework agree on about a window the plugin drew -- see `QVizPluginWindow`.
+What the old contract made the plugin write -- ``isEnabled``, ``getEntries``,
+``getAllEntries``, ``getPluginsConfiguration`` and ``execute`` -- is gone.
+``isEnabled`` became "a ``SCOPE`` is declared at all"; the split of
+``getEntries`` + ``getAllEntries`` + ``execute(number)`` became the ``ACTIONS``
+tuple; and the two that nobody read -- ``getPluginsConfiguration`` and
+``getDescription`` -- are said as words on an action instead of returned by a
+method.
+
+Also kept here: :class:`QVizPluginWindow`, the record a plugin stamps on the
+frame it draws so a session can put that window back;
+:class:`QVizPluginAnswers`, what a session hands back in the user's place; and
+``RegisteredPlugins``, the table of the plugins IMASViz itself ships.
 """
 
 from collections import namedtuple
+
+# The four places a plugin may be offered. A plugin class names exactly one of
+# them in its ``SCOPE``: where it applies is declared, and the framework reads
+# that instead of asking a method which node to gate on.
+IDS, NODE, CASE, APP = 'ids', 'node', 'case', 'app'
+SCOPES = (IDS, NODE, CASE, APP)
+
+
+class QVizPluginScope:
+    """Where one plugin is offered -- and which of them.
+
+    ``kind`` is one of the four scopes. For ``IDS``, ``ids`` names the IDS roots
+    it applies to; an empty set means **any** IDS root. For ``NODE``, ``where``,
+    when given, is a ``callable(node)`` saying whether that quantity node is one
+    the plugin handles; ``None`` means any. ``CASE`` and ``APP`` take no filter
+    -- the answer of a case, or of the whole application, is not something to
+    match, so passing one is refused.
+    """
+
+    def __init__(self, kind, ids=(), where=None):
+        if kind not in SCOPES:
+            raise ValueError('%r is not a scope -- one of %s'
+                             % (kind, ', '.join(SCOPES)))
+        if kind in (CASE, APP):
+            if ids or where is not None:
+                raise ValueError(
+                    'a %s scope has nothing to match: drop the names/predicate'
+                    % kind)
+        self.kind = kind
+        self.ids = frozenset(ids)
+        self.where = where
+
+    def __repr__(self):
+        if self.kind == IDS:
+            which = 'any IDS' if not self.ids else 'IDS %s' \
+                    % ', '.join(sorted(self.ids))
+            return '<scope IDS on %s>' % which
+        if self.kind == NODE and self.where is not None:
+            return '<scope NODE where %s>' % getattr(self.where, '__name__',
+                                                     self.where)
+        return '<scope %s>' % (self.kind.upper(),)
+
+    def appliesToNode(self, node):
+        """Whether this scope takes part at that node's gesture.
+
+        ``IDS`` is only an IDS root -- a quantity has no IDS to name -- and, when
+        names are declared, only one of them. ``NODE`` is only a quantity, and,
+        when a predicate is declared, only one it passes. ``CASE`` and ``APP``
+        never take part on a node.
+        """
+        if self.kind == IDS:
+            if not node.isIDSRoot():
+                return False
+            return (not self.ids) or (node.getIDSName() in self.ids)
+        if self.kind == NODE:
+            if node.isIDSRoot():
+                return False
+            return self.where is None or bool(self.where(node))
+        return False
+
+    def appliesToCase(self):
+        """Whether this scope takes part on a case's own menu bar."""
+        return self.kind == CASE
+
+    def appliesToApp(self):
+        """Whether this scope takes part on the application's own menu bar."""
+        return self.kind == APP
+
+
+class QVizPluginAction:
+    """One thing a plugin can do, and the line it earns on a menu.
+
+    ``key`` is a stable identifier the plugin picks and the menu, the session
+    and the agent all key it by; ``label`` is what the line says;
+    ``description`` is the line's tooltip (defaulting to the label); ``run`` is
+    the callable that does the work, handed the :class:`QVizPluginContext`.
+
+    A window a plugin draws is stamped with its ``key`` for the session, the way
+    ``QVizPluginWindow.entry`` always was.
+    """
+
+    def __init__(self, key, label, run=None, description=None):
+        self.key = key
+        self.label = label
+        self.run = run
+        self.description = description or label
+
+    def __repr__(self):
+        return '<action %s "%s">' % (self.key, self.label)
+
+    def __eq__(self, other):
+        return isinstance(other, QVizPluginAction) and self.key == other.key \
+            and self.label == other.label
+
+    def __hash__(self):
+        return hash((self.key, self.label))
+
+
+class QVizPluginContext:
+    """What a plugin can read while it runs, from the place it was offered from.
+
+    ``api`` is always the session's own. ``view``, when the plugin was offered
+    from a case, is that shot view; ``node``, from a node's gesture, that node.
+    ``scope`` names the place -- so ``run`` can tell a node-run from a case-run
+    from an app-run. ``occurrence`` is the one to draw -- from a session replay
+    it is the one the file named, from the menu the first the case holds -- and
+    ``answers`` is the full ``QVizPluginAnswers`` a session gave in the user's
+    place, ``None`` from the menu.
+
+    A plugin offered on an IDS or a quantity reads its case and node from here
+    rather than reaching them off ``self``; a plugin offered on the case or the
+    application finds ``view`` / ``node`` are ``None`` and ``api`` the one it is
+    meant to work with.
+    """
+
+    def __init__(self, api=None, view=None, node=None, scope=CASE,
+                 occurrence=0, answers=None):
+        self.api = api
+        self.view = view
+        self.node = node
+        self.scope = scope
+        self.occurrence = occurrence
+        self.answers = answers
+
+    @property
+    def uri(self):
+        """The case this ran on, or ``None`` when it ran on the application."""
+        return self.view.uri if self.view is not None else None
+
+    @property
+    def idsName(self):
+        """The IDS this node sits under, read off the node when there is one.
+
+        A plugin offered on a case without a node under the cursor cannot know a
+        single IDS, so the answer is ``None`` rather than a guess.
+        """
+        if self.node is not None:
+            return self.node.getIDSName()
+        return None
+
 
 # What a plugin says about the window it registered, so a session can put that
 # window back. Measured on the reference case, neither registered window answers
@@ -50,7 +199,7 @@ QVizPluginWindow = namedtuple('QVizPluginWindow',
 
 # The answers a session hands back to a plugin entry it is replaying, so the
 # entry draws the window without asking the user a second time. The Profiles
-# plugin asks which occurrence to plot through a modal `QInputDialog`: measured,
+# plugin asked which occurrence to plot through a modal `QInputDialog`: measured,
 # a probe left to answer that dialog sat in `askForOccurrence` for 240 s until a
 # watchdog killed it, which is why a restore cannot go through the question.
 # `figureKey` is here for the same reason the plot commands take one: the key is
@@ -61,6 +210,7 @@ QVizPluginWindow = namedtuple('QVizPluginWindow',
 QVizPluginAnswers = namedtuple('QVizPluginAnswers',
                                'occurrence figureKey time',
                                defaults=(None,))
+
 
 RegisteredPlugins = {'equilibriumcharts': 'viz_equi.equilibriumcharts',
                      'equilibriumsurfaces': 'viz_equi.equilibriumsurfaces',
@@ -106,63 +256,31 @@ def getRegisteredPlugins():
 
 
 class VizPlugin:
-    """The contract a plugin honours.
+    """What a plugin is, declared.
 
-    A plugin decides from `self.selectedTreeNode`, the node it was offered on, and
-    reaches its case through `self.dataTreeView`; both are set when the menu is
-    built, so a plugin keeps no case of its own.
+    Name a ``SCOPE`` and list your ``ACTIONS``. The default -- neither present
+    -- is **no line**: a plugin that declares neither is not offered, and it is
+    named in the log of the case it would have sat in, like a plugin that used
+    not to honour the contract was. A plugin that names a scope offers, by
+    default, every action it lists; override :meth:`offered` to offer a subset
+    of them for one place and not another.
 
-    The base class answers **no** to everything it cannot know. A plugin that
-    declares nothing is refused in words, not handed a default entry: an entry
-    invented here -- a number the plugin never asked for, a label read out of its
-    docstring -- would sit on the menu exactly like one that works, and the only
-    way the user would tell them apart is that nothing happens when it is clicked.
+    The work of a line is the ``run`` of the action it names: it is handed the
+    :class:`QVizPluginContext` and says what it did through the case's log --
+    ``logging.getLogger(context.uri)`` -- or, when it ran on the application and
+    nothing to log about, by raising a ``ValueError`` with the reason in words,
+    which the catalog puts in the log of the case.
     """
 
-    def __init__(self, *args, **kwargs):
-        if len(args) == 2:
-            self.selectedTreeNode = args[0]
-            self.dataTreeView = args[1]
-        else:
-            self.selectedTreeNode = None
-            self.dataTreeView = None
+    SCOPE = None
+    ACTIONS = ()
 
-    def setSelectedTreeNode(self, selectedTreeNode):
-        self.selectedTreeNode = selectedTreeNode
+    def offered(self, context):
+        """Which of your ACTIONS apply in this context. Default: all of them.
 
-    def setDataTreeView(self, dataTreeView):
-        self.dataTreeView = dataTreeView
-
-    def isEnabled(self):
-        """Whether this plugin takes part at all. A plugin says yes for itself."""
-        return False
-
-    def getEntries(self):
-        """Which of `getAllEntries` this node earns, by their numbers."""
-        raise ValueError('plugin getEntries() method should be implemented!')
-
-    def getAllEntries(self):
-        """What this plugin can do, as `[(number, what the menu says)]`."""
-        raise ValueError('plugin getAllEntries() method should be implemented!')
-
-    def execute(self, vizAPI, pluginEntry=None, answers=None):
-        """Do one of them. `pluginEntry` is the number `getAllEntries` gave it.
-
-        `answers` is what a session already answered in the place of the user --
-        a `QVizPluginAnswers`, or None when the entry was chosen from the menu.
-        A plugin whose entry asks a question of its own must take the answer from
-        here instead of asking it again: the Profiles plugin asks the occurrence
-        through a modal `QInputDialog`, and a restore that went through that
-        dialog would sit waiting for a click nobody is going to give it. A plugin
-        that ignores `answers` is refused by name at the restore, not run blind.
+        The framework offers this many lines, in that order. Override it to offer
+        a subset (a feature that does not apply here) or to refuse -- raise a
+        ``ValueError`` and the framework says so in the log of the case and
+        drops the line, rather than show one that only does nothing.
         """
-        raise ValueError('plugin execute() method should be implemented!')
-
-    def getPluginsConfiguration(self):
-        """Anything extra this plugin needs to run, its own shape. None by default.
-
-        The howto asks a plugin for this; the framework never asked it, and asked
-        a per-name table instead -- which knew only plugins that were not
-        registered.
-        """
-        return None
+        return list(self.ACTIONS)

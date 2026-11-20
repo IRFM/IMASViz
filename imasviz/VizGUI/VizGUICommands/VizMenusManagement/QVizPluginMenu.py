@@ -7,115 +7,68 @@
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
 
-"""The Plugins sub-menu of the shot view.
+"""The Plugins menu, at the place one plugin is offered from.
 
-Three gestures open it -- the right click on an IDS root, the right click on a
-quantity, and Shift+right click anywhere -- and all three asked the same question
-of a framework that answered it again from scratch each time. What that cost, on
-the reference case: **0,999 s** for the first right click of a session, 0,0425 s
-for the second, 0,0008 s after that; a **sub-menu shown with nothing in it** for
-the 42 IDS names of the 55 no plugin claims; and **6 lines instead of 3** when
-the same handler was asked twice for the same menu, because the entries it had
-already added lived in a list that only grew.
+A plugin says, in its ``SCOPE``, which place it is offered at -- an IDS root, a
+quantity, the case, or the application -- and the framework that draws that place
+assembles the catalog for it and hangs the lines the plugins of that place offer.
 
-Two of its answers were silent failures rather than messages: a plugin that does
-not inherit the base class -- while implementing every documented method -- got
-**no line at all**, and a plugin raising while answering took the whole sub-menu
-with it. And every line carried the same id, 9999, under a
-`# TODO: properly set ID`, which was then read back and ignored: the click found
-the plugin by the **position** of its line in a list.
+The gesture is one of three, and each draws the lines the plugins of that place
+offer:
 
-Here the lines are built from the view's catalog, one plugin at a time; a line
-carries its plugin and the entry number the plugin declared for it; and the
-caller is told how many lines there are, so a menu that would be empty is not
-added at all.
+* on a node -- right click on an IDS root or a quantity, or Shift+right click,
+  into a fresh pop-up the caller builds; an empty set leaves no sub-menu at all;
+* on the case -- its own bar's *Plugins* line, kept filled on ``aboutToShow``
+  (the same way the application's *File* and *Windows* menus keep themselves);
+* on the application -- its own bar's *Plugins* line, kept the same way.
 
-A plugin of the user's own gets a second line, *Edit <plugin>...* -- the file
-that answers this menu is under the cursor, which is where the question "how do I
-change what it just did?" arrives. Only for their own: a plugin IMASViz ships is
-read through the Plugins window, where the copy gesture sits next to it, and
-offering to edit it here would be a line that can only answer "no".
+The lines are read off the catalog's offers for the place -- a plugin, the
+action it offers, and the words it gives. A plugin of the user's own earns a
+second line, *Edit <plugin>*, next to its own: the file that answers this menu is
+the one under the cursor, which is where the question "how do I change what it
+just did?" arrives. Only for their own: a plugin IMASViz ships is read-only, and
+``QVizPluginSource.writeSource`` refuses it the same way, so the line and the
+guard cannot disagree.
 """
 
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QApplication, QMenu
 
+from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizMenuRefill import refill
 from imasviz.VizPlugins.QVizPluginCatalog import QVizPluginCatalog, openEditor
 from imasviz.VizPlugins.QVizPluginSource import USER
 from imasviz.VizUtils import GlobalIcons
 
 
 class QVizPluginMenu:
-    """Add the lines the plugins of this view offer for this node."""
+    """Hang the lines the plugins of a place offer, onto that place's menu."""
 
     EDIT = 'Edit %s...'
 
+    # -- the node gesture: a fresh pop-up the caller builds ----------------
+
     def buildPluginsMenu(self, node, dataTreeView, parentMenu):
-        """Fill `parentMenu`, and answer how many lines were added.
+        """Fill a *fresh* menu with what this node earns, and answer how many.
 
         The caller adds the sub-menu before asking, so the count is what lets it
-        take the empty one back out again -- the behaviour measured for every IDS
-        no plugin claims. The count stays the number of **entries**: a plugin that
-        offers three features is three lines and one *Edit*, and the caller only
-        needs to know whether anything at all can be done here.
+        take the empty one back out again -- the behaviour measured for every
+        place no plugin claims. A node is an IDS root or a quantity, and a plugin
+        is offered at the one it declared: an ``equilibrium`` root earns what
+        names that IDS, and a quantity under it earns what handles it.
         """
-        entries = self.catalogOf(dataTreeView).entriesFor(node)
-        already = set()
-        for entry in entries:
-            action = QAction(GlobalIcons.getCustomQIcon(QApplication, 'new'),
-                             entry.label, dataTreeView)
-            action.setStatusTip(entry.description)
-            action.setToolTip(entry.description)
-            action.triggered.connect(lambda checked=False, line=entry:
-                                     self.run(dataTreeView, line))
-            parentMenu.setToolTipsVisible(True)
-            parentMenu.addAction(action)
-            if self.editable(entry) and entry.pluginName not in already:
-                # Once per plugin, right under the lines that plugin drew: a
-                # plugin with several entries would otherwise offer its file
-                # several times over, and a menu is not where the user should
-                # have to wonder which of the copies is the real one.
-                already.add(entry.pluginName)
-                parentMenu.addAction(self.editAction(entry, dataTreeView))
-        return len(entries)
-
-    @staticmethod
-    def editable(entry):
-        """Whether this entry's file is this user's to change.
-
-        Asked of the origin, not of a path on disk: a shipped plugin is read-only
-        whatever folder it lives in, and `QVizPluginSource.writeSource` refuses it
-        the same way, so the line and the guard cannot disagree.
-        """
-        source = getattr(entry, 'source', None)
-        return source is not None and source.origin == USER and source.writable
-
-    def editAction(self, entry, dataTreeView):
-        """The *Edit* line for one of the user's own plugins.
-
-        No icon: `GlobalIcons` has no picture for "edit", and asking it for one
-        answers None, which draws a gap where a glyph should be. The entry lines
-        above carry one because their icon says "this adds a window"; this line
-        says what it is in words, and the words are the whole answer.
-        """
-        action = QAction(self.EDIT % entry.pluginName, dataTreeView)
-        action.setStatusTip('Change %s -- the Plugins menu of every opened case '
-                            'answers with what you save.' % entry.pluginName)
-        action.setToolTip(action.statusTip())
-        action.triggered.connect(lambda checked=False, line=entry:
-                                 openEditor(line.source,
-                                            parent=dataTreeView))
-        return action
+        catalog = self.catalogOf(dataTreeView)
+        return self._hang(catalog.entriesFor(node), parentMenu, catalog,
+                          dataTreeView)
 
     def addPluginsMenu(self, node, dataTreeView, parentMenu, title='Plugins'):
         """Add a "Plugins" sub-menu, but only when a plugin has something to say.
 
         The sub-menu is given its parent at construction, not through
-        `parentMenu.addMenu(title)`: measured, the QMenu that call returns is
+        ``parentMenu.addMenu(title)``: measured, the QMenu that call returns is
         owned by the Python wrapper it comes back in, and the three gestures drop
         that wrapper as soon as this method returns -- reading the sub-menu back
-        from its action then answered `RuntimeError: Internal C++ object
-        (PySide6.QtWidgets.QMenu) already deleted`. A menu born with its parent
+        from its action then answered ``RuntimeError: Internal C++ object
+        (PySide6.QtWidgets.QMenu) already deleted``. A menu born with its parent
         belongs to Qt from the start, which is how the rest of this package
         builds a sub-menu.
         """
@@ -127,13 +80,92 @@ class QVizPluginMenu:
             return None
         return subMenu
 
+    # -- the case's own bar, kept filled while it is on screen --------------
+
+    def refillCasePluginMenu(self, dataTreeView, menu):
+        """Take the case's *Plugins* menu back and refill it with its ``CASE`` lines.
+
+        Called on ``aboutToShow`` so what the case offers does not go stale: a
+        plugin the user just edited must not wait for a restart to show on the
+        bar, the way the application's *File* and *Windows* menus keep themselves.
+        """
+        refill(menu)
+        catalog = self.catalogOf(dataTreeView)
+        return self._hang(catalog.caseEntries(), menu, catalog, dataTreeView)
+
+    # -- the application's own bar, kept filled while it is on screen -------
+
+    def refillAppPluginMenu(self, api, menu, window=None):
+        """Take the application's *Plugins* menu back and refill its ``APP`` lines.
+
+        The catalog is built for the application, not a case, and kept on the api
+        so the whole run shares one of them and a reload reaches it.
+        """
+        refill(menu)
+        catalog = self.appCatalogOf(api)
+        return self._hang(catalog.appEntries(), menu, catalog, window)
+
+    # -- the common shape: draw the offers, one plugin at a time ------------
+
+    def _hang(self, offers, menu, catalog, parentWidget):
+        """Add one line per offer, plus the *Edit* of a user's own plugin."""
+        if not offers:
+            return 0
+        already = set()
+        for entry in offers:
+            action = QAction(GlobalIcons.getCustomQIcon(QApplication, 'new'),
+                             entry.label, parentWidget)
+            action.setStatusTip(entry.description)
+            action.setToolTip(entry.description)
+            action.triggered.connect(lambda checked=False, line=entry, cat=catalog:
+                                     cat.run(line))
+            menu.setToolTipsVisible(True)
+            menu.addAction(action)
+            if self.editable(entry) and entry.pluginName not in already:
+                # Once per plugin, right under the lines that plugin drew: a
+                # plugin with several entries would otherwise offer its file
+                # several times over, and a menu is not where the user should
+                # have to wonder which of the copies is the real one.
+                already.add(entry.pluginName)
+                menu.addAction(self.editAction(entry, parentWidget))
+        return len(offers)
+
+    @staticmethod
+    def editable(entry):
+        """Whether this entry's file is this user's to change.
+
+        Asked of the origin, not of a path on disk: a shipped plugin is read-only
+        whatever folder it lives in, and ``QVizPluginSource.writeSource`` refuses
+        it the same way, so the line and the guard cannot disagree.
+        """
+        source = getattr(entry, 'source', None)
+        return source is not None and source.origin == USER and source.writable
+
+    def editAction(self, entry, parentWidget):
+        """The *Edit* line for one of the user's own plugins.
+
+        No icon: ``GlobalIcons`` has no picture for "edit", and asking it for one
+        answers None, which draws a gap where a glyph should be. The entry lines
+        above carry one because their icon says "this adds a window"; this line
+        says what it is in words, and the words are the whole answer.
+        """
+        action = QAction(self.EDIT % entry.pluginName, parentWidget)
+        action.setStatusTip('Change %s -- the Plugins menu of every opened case '
+                            'answers with what you save.' % entry.pluginName)
+        action.setToolTip(action.statusTip())
+        action.triggered.connect(lambda checked=False, line=entry:
+                                 openEditor(line.source, parent=parentWidget))
+        return action
+
+    # -- the catalogs the places draw from ---------------------------------
+
     @staticmethod
     def catalogOf(dataTreeView):
-        """The view's catalog: the plugins are built once for a view, not per click.
+        """The case's catalog: the plugins are built once for it, not per click.
 
         Built here rather than in the view's constructor so that a shot view
-        nobody right-clicks never pays for importing them -- measured at 0,999 s
-        for the first menu of a session, most of it matplotlib.
+        nobody asks never pays for importing them -- measured at 0,999 s for the
+        first menu of a session, most of it matplotlib.
         """
         catalog = getattr(dataTreeView, 'pluginCatalog', None)
         if catalog is None:
@@ -141,5 +173,20 @@ class QVizPluginMenu:
             dataTreeView.pluginCatalog = catalog
         return catalog
 
+    @staticmethod
+    def appCatalogOf(api):
+        """The application's catalog: built once for a run, and kept on the api.
+
+        Kept on the api -- the session's own object -- so a second *Plugins* menu
+        in the same run does not import the plugins twice, and ``reloadEverywhere``
+        can reach it whether or not a case is on screen.
+        """
+        catalog = getattr(api, 'appPluginCatalog', None)
+        if catalog is None:
+            catalog = QVizPluginCatalog(api=api)
+            api.appPluginCatalog = catalog
+        return catalog
+
     def run(self, dataTreeView, entry):
+        """One line, run on the case it was offered on (the node gesture's path)."""
         self.catalogOf(dataTreeView).run(entry)

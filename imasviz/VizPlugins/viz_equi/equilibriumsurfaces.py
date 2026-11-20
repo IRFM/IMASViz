@@ -35,7 +35,9 @@ does is what the manual describes and the suite pins, and a refusal is the
 named `ValueError` of the command rather than an empty window.
 """
 
-from imasviz.VizPlugins.VizPlugin import VizPlugin, QVizPluginWindow
+from imasviz.VizPlugins.VizPlugin import (IDS, QVizPluginAction,
+                                          QVizPluginScope, QVizPluginWindow,
+                                          VizPlugin)
 
 
 class equilibriumsurfaces(VizPlugin):
@@ -44,23 +46,28 @@ class equilibriumsurfaces(VizPlugin):
     IDS = 'equilibrium'
     PLUGIN_NAME = 'equilibriumsurfaces'
 
-    def isEnabled(self):
-        return True
-
-    def getEntries(self):
-        return [0, 1] if self.selectedTreeNode is not None \
-            and self.selectedTreeNode.getIDSName() == self.IDS else []
-
-    def getAllEntries(self):
-        return [(0, 'Surfaces de flux (début, milieu, fin)...'),
-                (1, 'Équilibre à un instant (surface + profils)...')]
-
-    def getDescription(self):
-        return ("Draw the equilibrium the way the application draws its figures: "
-                "the flux surfaces of several instants side by side, or one instant "
-                "with its radial profiles stacked under it. The same quantities "
-                "the Equilibrium overview plots, dressed on the same ground and "
-                "palette as every other window, so a session can put them back.")
+    def __init__(self):
+        # Offered on the `equilibrium` IDS only; nowhere else earns either line.
+        self.SCOPE = QVizPluginScope(IDS, ids=('equilibrium',))
+        self.ACTIONS = (
+            QVizPluginAction(
+                0,
+                'Surfaces de flux (début, milieu, fin)...',
+                run=self._drawSurfaces,
+                description=('Draw the equilibrium the way the application '
+                             'draws its figures: the flow surfaces of the '
+                             'first, middle and last instants of the case, '
+                             'side by side, in one figure.')),
+            QVizPluginAction(
+                1,
+                'Équilibre à un instant (surface + profils)...',
+                run=self._drawAtTime,
+                description=('Draw the equilibrium at one instant with its '
+                             'radial profiles stacked under it. The same '
+                             'quantities the Equilibrium overview plots, '
+                             'dressed on the same ground and palette as every '
+                             'other window, so a session can put them back.')),
+        )
 
     # ---------------------------------------------------------------- entry 0
 
@@ -102,68 +109,73 @@ class equilibriumsurfaces(VizPlugin):
                 'qu\'on n\'a pas demandée.')
         return float(value)
 
-    # --------------------------------------------------------------- execute
+    # ------------------------------------------------------------ entry 0 / 1
 
-    def execute(self, vizAPI, pluginEntry, answers=None):
-        """Draw one of the two windows, on the case the entry was offered on.
+    def _case(self, context):
+        """The shared half of the two entries: case URI, occurrence, clock, key.
 
-        `vizAPI` is the session's own api (the catalog hands it over), so the
-        figure lands in the `figureframes` the *Windows* menu reads, under the
-        key a session replay named — `FigureKeyFor` honours it and refuses a
-        key a live window already holds. An entry a session is replaying is
-        answered with the occurrence and the instant it held, not asked again:
-        a restore must not open a modal dialog that has no one to answer it.
+        `equilibriumcharts` reads occurrence 0 of `equilibrium` and refuses a
+        file naming another one; the same boundary here keeps the stamp the
+        session writes and the occurrence the read uses telling one story.
         """
-        node = self.selectedTreeNode
-        uri = self.dataTreeView.dataSource.uri
-
-        # `equilibriumcharts` reads occurrence 0 of `equilibrium` and refuses a
-        # file naming another one; the same boundary here keeps the stamp the
-        # session writes and the occurrence the read uses telling one story.
+        view = context.view
+        uri = view.dataSource.uri
         occurrence = 0
+        answers = context.answers
         if answers is not None and answers.occurrence != 0:
             raise ValueError(
                 'the Equilibrium surfaces read occurrence 0 of the equilibrium '
                 'IDS, so they cannot be opened on occurrence %d as "%s" asks.'
                 % (answers.occurrence, answers.figureKey))
-
         from imasviz.VizDataAccess.QVizEquilibriumRead import QVizEquilibriumRead
-        from imasviz.VizAgent.core import McpGuiCore
-        reader = QVizEquilibriumRead(self.dataTreeView.dataSource, occurrence)
-        times = reader.timeValues()
-        core = McpGuiCore(api=vizAPI)
-        figure_key = None if answers is None else answers.figureKey
+        reader = QVizEquilibriumRead(view.dataSource, occurrence)
+        figureKey = None if answers is None else answers.figureKey
+        return uri, occurrence, reader, figureKey
 
-        time_answer = None
-        if pluginEntry == 0:
-            instants = self._threeInstants(times)
-            result = core.equilibrium_surfaces(
-                uri, instants, occurrence=occurrence, figure_key=figure_key)
-        elif pluginEntry == 1:
-            if answers is not None and answers.time is not None:
-                time_answer = float(answers.time)
-            else:
-                time_answer = self._askTime(times)
-            result = core.equilibrium_at_time(
-                uri, time_answer, occurrence=occurrence, figure_key=figure_key)
-        else:
-            raise ValueError('entry %r is not offered by this plugin' % (pluginEntry,))
+    def _register(self, context, key, uri, occurrence, time_answer, entry):
+        """Register the drawn figure under its case and stamp it for a session.
 
-        key = result['figure']
-        frame = vizAPI.figureframes[key]
-
-        # Register the window under its case, so the *Windows* menu and the
-        # case gestures (*Close this case*, *Show only this case*) reach it
-        # the way `equilibriumcharts` reaches its own — `casesServedBy` reads
-        # this, and a figure registered without it serves no case.
-        vizAPI.AddNodeToFigure(key,
-                               self.dataTreeView.dataSource.dataKey2(key),
-                               (uri, None))
-
-        # What a session needs to put this window back: the entry, the case,
-        # the occurrence the read used, and — for entry 1 — the instant it
-        # answered, so the replay draws that one without opening the dialog.
+        `casesServedBy` reads the registry: a figure registered without it
+        serves no case, and the *Windows* menu and the case gestures cannot
+        reach it. The stamp carries what a session needs to put it back — the
+        entry, the occurrence, and for entry 1 the instant it answered, so a
+        replay draws that one rather than opening a dialog nobody is there
+        to answer.
+        """
+        api = context.api
+        frame = api.figureframes[key]
+        api.AddNodeToFigure(key, context.view.dataSource.dataKey2(key),
+                            (uri, None))
         frame.pluginWindow = QVizPluginWindow(
-            uri=uri, plugin=self.PLUGIN_NAME, entry=pluginEntry, ids=self.IDS,
+            uri=uri, plugin=self.PLUGIN_NAME, entry=entry, ids=self.IDS,
             occurrence=occurrence, time=time_answer)
         return frame
+
+    def _drawSurfaces(self, context):
+        """Entry 0 — the flux surfaces of the first, middle and last instant."""
+        uri, occurrence, reader, figureKey = self._case(context)
+        from imasviz.VizAgent.core import McpGuiCore
+        instants = self._threeInstants(reader.timeValues())
+        result = McpGuiCore(api=context.api).equilibrium_surfaces(
+            uri, instants, occurrence=occurrence, figure_key=figureKey)
+        return self._register(context, result['figure'], uri, occurrence,
+                              time_answer=None, entry=0)
+
+    def _drawAtTime(self, context):
+        """Entry 1 — one instant with its radial profiles under it.
+
+        The instant a session replay is answering in the user's place
+        (`answers.time`) must not be re-asked: a restore has no one to answer
+        the dialog. From the menu, the question is bounded to the case's clock.
+        """
+        uri, occurrence, reader, figureKey = self._case(context)
+        from imasviz.VizAgent.core import McpGuiCore
+        times = reader.timeValues()
+        if context.answers is not None and context.answers.time is not None:
+            time_answer = float(context.answers.time)
+        else:
+            time_answer = self._askTime(times)
+        result = McpGuiCore(api=context.api).equilibrium_at_time(
+            uri, time_answer, occurrence=occurrence, figure_key=figureKey)
+        return self._register(context, result['figure'], uri, occurrence,
+                              time_answer=time_answer, entry=1)

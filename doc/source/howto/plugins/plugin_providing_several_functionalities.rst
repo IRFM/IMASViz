@@ -9,26 +9,37 @@
 Example of a plugin providing several functionalities
 =====================================================
 
-The execute() plugin method has the following signature:
+Each feature a plugin offers is a ``QVizPluginAction`` in the ``ACTIONS`` tuple.
+The framework shows one line in the :guilabel:`Plugins` menu per action; clicking
+a line calls only that action's ``run`` method, with the :guilabel:`QVizPluginContext`.
 
-execute(vizAPI, pluginEntry)
+For example, a plugin with two features:
 
-Each time the user select a plugin menu item in the 'plugins' menu, the pluginEntry
-will be set to the value of the entry declared in the getAllEntries().
+.. code-block:: python
 
-For example, the viz_example_plugin provides 2 functionalities declared in the
-getAllEntries() as:
+    from imasviz.VizPlugins.VizPlugin import (IDS, QVizPluginAction,
+                                              QVizPluginScope, VizPlugin)
 
-def getAllEntries(self):
-    return [(0, 'Prints some node attributes to log using IMASViz API...'), (1, 'Shows a 2D plot...')]
+    class myPlugin(VizPlugin):
+        def __init__(self):
+            self.SCOPE = QVizPluginScope(IDS, ids=('equilibrium',))
+            self.ACTIONS = (
+                QVizPluginAction(0, 'Prints some node attributes to log...',
+                                 run=self._printInfo),
+                QVizPluginAction(1, 'Shows a 2D plot...',
+                                 run=self._show2D),
+            )
 
-The first entry (0) is diplayed with the menu item 'Prints node info to log using IMASViz API...',
-the second entry (1) is displayed with the menu item 'Shows a 2D plot...'
+        def _printInfo(self, context):
+            import logging
+            logging.getLogger(context.uri).info(
+                'equilibrium: %s', context.node.getParametrizedDataPath())
 
-When the user selects 'Show a 2D plot', pluginEntry is set to 1 and the plugin execute()
-method is executed, so the plugin can execute the right functionality using pluginEntry
-as a switch in the code of the plugin.
+        def _show2D(self, context):
+            # ... draw the 2D plot here ...
+            pass
 
-Please refers to the documented viz_example_plugin which is present in the
-VizPlugins folder for a detailed example.
+Each ``run`` method is independent: one cannot know the presence of the other.
+A saved session that names a particular line by its action ``key`` replays only
+that line, not both.
 

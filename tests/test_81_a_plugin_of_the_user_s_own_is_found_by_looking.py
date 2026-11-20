@@ -71,7 +71,8 @@ from support.fakes import FakeTreeNode
 CATALOG = importlib.import_module('imasviz.VizPlugins.QVizPluginCatalog')
 
 PLUGIN_SOURCE = '''
-from imasviz.VizPlugins.VizPlugin import VizPlugin
+from imasviz.VizPlugins.VizPlugin import (IDS, QVizPluginAction,
+                                          QVizPluginScope, VizPlugin)
 
 
 class {name}(VizPlugin):
@@ -79,19 +80,13 @@ class {name}(VizPlugin):
 
     CALLS = []
 
-    def isEnabled(self):
-        return True
+    def _run(self, context):
+        type(self).CALLS.append(0)
 
-    def getEntries(self):
-        if self.selectedTreeNode.getIDSName() == '{ids}':
-            return [0]
-        return []
-
-    def getAllEntries(self):
-        return [(0, {label!r})]
-
-    def execute(self, vizAPI, pluginEntry, answers=None):
-        type(self).CALLS.append(pluginEntry)
+    def __init__(self):
+        super().__init__()
+        self.SCOPE = QVizPluginScope(IDS, ids=('{ids}',))
+        self.ACTIONS = (QVizPluginAction(0, {label!r}, run=self._run),)
 '''
 
 
@@ -121,6 +116,12 @@ class StubView(QTreeWidget):
         self.uri = 'stub?case'
         self.pluginCatalog = None
         self.imas_viz_api = 'the-api-of-this-view'
+
+        import types as _types
+        class _Occ:
+            def occurrencesOf(self, ids): return [0]
+        self.occurrences = _Occ()
+        self.dataSource = _types.SimpleNamespace(uri='stub?case')
 
 
 @pytest.fixture
@@ -274,21 +275,18 @@ def test_a_user_plugin_named_like_a_shipped_one_is_refused_by_name(view,
     in the log of the case with the rule it broke."""
     shipped = types.ModuleType('imasviz.VizPlugins.viz_shipped.MyAnalysisPlugin')
 
-    class MyAnalysisPlugin:
-        def setSelectedTreeNode(self, node):
-            pass
+    from imasviz.VizPlugins.VizPlugin import (IDS, QVizPluginAction,
+                                              QVizPluginScope,
+                                              VizPlugin as _Viz)
 
-        def isEnabled(self):
-            return True
+    class MyAnalysisPlugin(_Viz):
+        def _run(self, context): pass
 
-        def getEntries(self):
-            return [1]
-
-        def getAllEntries(self):
-            return [(1, 'the shipped one')]
-
-        def execute(self, vizAPI, pluginEntry, answers=None):
-            pass
+        def __init__(self):
+            super().__init__()
+            self.SCOPE = QVizPluginScope(IDS)
+            self.ACTIONS = (QVizPluginAction(1, 'the shipped one',
+                                             run=self._run),)
 
     shipped.MyAnalysisPlugin = MyAnalysisPlugin
     monkeypatch.setitem(sys.modules, shipped.__name__, shipped)
@@ -452,21 +450,12 @@ def test_the_default_plugin_brings_its_figure_to_screen(
     # --- Drive the generated plugin, with the real embed and a stub command ---
     attachUserPackage()
     plugin = getattr(importlib.import_module(source.importName), source.name)()
-    plugin.setSelectedTreeNode(types.SimpleNamespace(
-        isIDSRoot=lambda: True,
-        getIDSName=lambda: 'equilibrium',
-        getParametrizedDataPath=lambda: 'equilibrium.time'))
-    plugin.setDataTreeView(types.SimpleNamespace(uri='stub?case'))
 
-    # Registered only on the area, not on the frame: `addPlotWidgetToMDI`
-    # re-parents the frame into the subwindow it makes, and the one pytest then
-    # tries to close into a C++ object that is already gone.
     frame = QWidget()
 
     class PlotOneNode:
         def __init__(self, dataTreeView, treeNode, **kwargs):
             self.builtFigure = True
-
         def execute(self):
             return frame
 
@@ -480,7 +469,14 @@ def test_the_default_plugin_brings_its_figure_to_screen(
     vizAPI.IDSDataAlreadyFetched = lambda *args, **kwargs: True
     vizAPI.getAll_0D_1D_Nodes = lambda node, *args, **kwargs: (set(), [node])
 
-    plugin.execute(vizAPI, 0)
+    from imasviz.VizPlugins.VizPlugin import IDS as _IDS, QVizPluginContext
+    node = types.SimpleNamespace(
+        isIDSRoot=lambda: True,
+        getIDSName=lambda: 'equilibrium',
+        getParametrizedDataPath=lambda: 'equilibrium.time')
+    view = types.SimpleNamespace(uri='stub?case')
+    context = QVizPluginContext(api=vizAPI, view=view, node=node, scope=_IDS)
+    plugin._run(context)
 
     subs = mdi.subWindowList()
     # The figure is in the area, not a parentless window floating behind the

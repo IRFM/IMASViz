@@ -51,19 +51,21 @@ LICENSE = '''# Copyright holders : Commissariat à l’Energie Atomique et aux E
 PLUGIN_TEMPLATE = LICENSE + '''
 """{description}
 
-Written by IMASViz. This plugin answers the Plugins menu of every node of the
-**{idsName}** IDS of the case under the cursor, and draws a real figure through
-the same command the tree's own *Plot* gesture uses.
+Written by IMASViz. This plugin answers the Plugins menu of the **{idsName}**
+IDS root of the case under the cursor, and draws a real figure through the same
+command the tree's own *Plot* gesture uses.
 
-Everything below is yours to change. The methods IMASViz asks are `isEnabled`,
-`getEntries`, `getAllEntries`, `getPluginsConfiguration` and `execute`; the node
-the menu was built on is `self.selectedTreeNode` and the shot view it belongs to
-is `self.dataTreeView`, both set before anything is asked.
+The contract it honours is declarative:
+- ``SCOPE`` declares where it is offered: here, the {idsName} IDS root.
+- ``ACTIONS`` declares what it offers and how each is run.
+- The ``QVizPluginContext`` it reads carries the api, the case, and the node
+  the menu was built on -- it has no other attributes to set or bind.
 """
 
 import logging
 
-from imasviz.VizPlugins.VizPlugin import VizPlugin
+from imasviz.VizPlugins.VizPlugin import (IDS as _IDS, QVizPluginAction,
+                                          QVizPluginScope, VizPlugin)
 
 
 class {className}(VizPlugin):
@@ -72,94 +74,54 @@ class {className}(VizPlugin):
     IDS = "{idsName}"
     OCCURRENCE = 0
 
-    def isEnabled(self):
-        return True
-
-    def getEntries(self):
-        """Which nodes earn an entry: every node of the IDS this plugin is for.
-
-        Answer no number and no line appears for that node. That is how a plugin
-        that knows one IDS says nothing about the others.
-        """
-        node = self.selectedTreeNode
-        if node is not None and node.getIDSName() == self.IDS:
-            return [0]
-        return []
-
-    def getAllEntries(self):
-        """What this plugin can do, as `(number, what the menu says)`.
-
-        The number is what `execute` is handed back, so it is looked up here and
-        never read off a position in this list.
-        """
-        return [(0, "{menuTitle}")]
-
-    def getDescription(self):
-        return "{description}"
-
-    def getPluginsConfiguration(self):
-        return None
-
-    def execute(self, vizAPI, pluginEntry, answers=None):
+    def _run(self, context):
         """Draw one quantity of this IDS, in a figure of IMASViz's own.
 
-        `answers` is what a saved session hands back in the user's place. Taking
-        the keyword is what lets what this plugin opens come back with the
-        session; leave it out and the session names the plugin in its log and
-        passes it over.
+        ``context`` carries the api, the case, and the node the menu was built
+        on. ``context.answers`` is what a saved session hands back in the user's
+        place -- ``None`` from the menu -- and is used to honour a figure key.
         """
         from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotOneNode \\
             import QVizPlotOneNode
 
-        log = logging.getLogger(self.dataTreeView.uri)
-        node = self.selectedTreeNode
+        log = logging.getLogger(context.view.uri)
+        node = context.node
         if node is None:
             raise ValueError('nothing was under the cursor to draw')
 
+        vizAPI = context.api
+
         if node.isIDSRoot() or node.isStructure() or node.isArrayOfStructure():
-            # The node stands on no number of its own, so the entry answers the
-            # same question wherever it was clicked: load the occurrence -- which
-            # is what fills the tree under it -- and draw the first signal the
-            # case holds. Refusing here is a ValueError, which the framework puts
-            # in the log of this case under the plugin's name.
-            if not vizAPI.IDSDataAlreadyFetched(self.dataTreeView, self.IDS,
+            if not vizAPI.IDSDataAlreadyFetched(context.view, self.IDS,
                                                 self.OCCURRENCE):
-                vizAPI.LoadIDSData(self.dataTreeView, self.IDS,
-                                   self.OCCURRENCE)
+                vizAPI.LoadIDSData(context.view, self.IDS, self.OCCURRENCE)
             _loaded, signals = vizAPI.getAll_0D_1D_Nodes(node)
             if not signals:
-                raise ValueError('the %s IDS of this case holds no 1D signal to '
-                                 'draw' % self.IDS)
+                raise ValueError('the %s IDS of this case holds no 1D signal '
+                                 'to draw' % self.IDS)
             node = signals[0]
             log.info('%s draws %s, the first 1D signal of the %s IDS.',
                      self.__class__.__name__,
                      node.getParametrizedDataPath(), self.IDS)
 
-        # `QVizPlotOneNode` reads the leaf and answers the figure it filled --
-        # without putting it on screen, which is what the application's own *Plot*
-        # gesture then does. A plugin that opened a figure and left it where that
-        # call leaves it would sit behind the shot view, and read as "did nothing".
         subWindow = None
-        command = QVizPlotOneNode(dataTreeView=self.dataTreeView, treeNode=node)
+        command = QVizPlotOneNode(dataTreeView=context.view, treeNode=node)
         frame = command.execute()
         if frame is None:
-            # The reason the leaf could not be read is already in the log of this
-            # case, under the plugin's name; nothing was opened, so there is no
-            # window to bring to the front.
             raise ValueError('the figure for this node could not be opened: '
                              'see the log of this case for the reason')
         if command.builtFigure:
-            # The figure is the command's own: embed it in the area like every
-            # other figure on screen, instead of leaving it floating behind the
-            # view that opened it.
             subWindow = vizAPI.addPlotWidgetToMDI(frame)
         frame.show()
-        # The shot view is still the active window at this point, so a figure
-        # that is not raised and not given the input focus sits just behind the
-        # place the user clicked. This is the half that says "the plugin ran".
         if subWindow is not None:
             subWindow.raise_()
             subWindow.activateWindow()
+
+    def __init__(self):
+        super().__init__()
+        self.SCOPE = QVizPluginScope(_IDS, ids=(self.IDS,))
+        self.ACTIONS = (QVizPluginAction(0, "{menuTitle}",
+                                         run=self._run),)
 '''
 
 INIT_TEMPLATE = LICENSE + '''

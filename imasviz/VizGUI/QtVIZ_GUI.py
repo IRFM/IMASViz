@@ -25,6 +25,7 @@ sys.path.append((os.environ['VIZ_HOME']))
 
 from imasviz.VizGUI.VizGuiCustomization import QVizDefault, QVizStyle
 from imasviz.VizGUI.VizGUICommands import (QVizMainMenuController, QVizFileMenu,
+                                           QVizPluginMenu,
                                            QVizWindowMenu)
 from imasviz.VizGUI.VizGUICommands.VizSession.QVizSaveSession import QVizSaveSession
 from imasviz.VizGUI.VizGUICommands.VizSession.QVizRestoreSession import QVizRestoreSession
@@ -484,6 +485,11 @@ class QVizMainWindow(QMainWindow):
         # when the window they are after is the case view whose menu bar they
         # just hid.
         self.addWindowMenu()
+        # ... and the *Plugins* menu next to it, for the plugins the application
+        # offers (those with a ``SCOPE`` of ``app``): the whole run is the scope,
+        # and the bar that is on screen whatever a case view says is the one it
+        # belongs on.
+        self.addAppPluginMenu()
         # One watcher for the folder of the user's own plugins, for the whole
         # run: what they save answers the next right click, without a restart.
         # It sits here and not on a shot view because it watches a folder, not a
@@ -513,6 +519,22 @@ class QVizMainWindow(QMainWindow):
         self.windowMenu = QVizWindowMenu(
             self.menuBar().addMenu(QVizWindowMenu.TITLE),
             self.sessionApi(), applicationBar=True).show()
+
+    def addAppPluginMenu(self):
+        """Hang the *Plugins* menu on this window: the ``app``-scoped ones.
+
+        A plugin whose ``SCOPE`` names the application sits on this bar, in the
+        same menu as *File* and *Windows*, and is refilled on ``aboutToShow``
+        the way this window's other menus do: a plugin the user just wrote, or
+        just edited, must not wait for a restart to show up. The catalog is
+        owned by the api, not by this window, so the watcher's reload reaches
+        it even when no case view is on screen.
+        """
+        self.appPluginMenu = self.menuBar().addMenu('Plugins')
+        self.appPluginMenuFiller = QVizPluginMenu()
+        self.appPluginMenu.aboutToShow.connect(
+            lambda: self.appPluginMenuFiller.refillAppPluginMenu(
+                self.sessionApi(), self.appPluginMenu, window=self))
 
     def sessionMenuEntries(self):
         """The controller's session entries, or None while it holds none.

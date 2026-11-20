@@ -129,159 +129,151 @@ In your :file:`myPlugin.py` file add:
 
     class myPlugin(VizPlugin):
 
-Mandatory method functions
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+The declarative contract
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-The plugin class must contain 5 mandatory method functions (besides constructor):
+A plugin class declares **two** things -- and nothing else is asked of it:
 
-- **execute(self, vizAPI, pluginEntry, answers=None)**
-- **getEntries(self)**
-- **getPluginsConfiguration(self)**
-- **getAllEntries(self)**
-- **isEnabled(self)**
+* **where it is offered** -- ``SCOPE``, one of four places: ``IDS`` (the root
+  of one or more IDS roots in the tree), ``NODE`` (a quantity under the cursor),
+  ``CASE`` (the case's own menu bar), or ``APP`` (the application's menu bar).
+  For ``IDS`` it may name which IDS roots it applies to; an empty set means any.
+  For ``NODE`` it may provide a predicate ``callable(node)`` to filter which
+  quantities it handles.
+
+* **what it can do** -- ``ACTIONS``, a tuple of ``QVizPluginAction`` objects.
+  Each action has a stable integer ``key``, the ``label`` shown in the menu (and
+  used as a tooltip if ``description`` is not set), and the ``run`` callable
+  -- the method that does the work, handed a ``QVizPluginContext``.
+
+The framework reads ``SCOPE`` and ``ACTIONS``, offers the plugin at that place,
+and calls the action's ``run`` method with the context. The old methods
+(``isEnabled``, ``getEntries``, ``getAllEntries``, ``getPluginsConfiguration``,
+``execute``) are gone.
+
+import statements
+"""""""""""""""""
+
+In your :file:`myPlugin.py` file add:
+
+.. code-block:: python
+
+    import logging
+    from imasviz.VizPlugins.VizPlugin import (IDS, QVizPluginAction,
+                                              QVizPluginScope, VizPlugin)
 
 Constructor
 """""""""""
 
-In this case, leave the constructor empty.
+Set ``SCOPE`` and ``ACTIONS`` in the constructor.
+
+**Where it applies** -- ``SCOPE``:
+
+.. code-block:: python
+
+    # This plugin answers the magnetics IDS root only:
+    self.SCOPE = QVizPluginScope(IDS, ids=('magnetics',))
+
+    # Or, if it answers any IDS root:
+    # self.SCOPE = QVizPluginScope(IDS)
+
+**What it offers** -- ``ACTIONS``:
+
+.. code-block:: python
+
+    self.ACTIONS = (
+        QVizPluginAction(0, 'My plot of magnetics...',
+                         run=self._run,
+                         description='Draws bpol_probe curves on the magnetics IDS'),
+    )
 
 In your :file:`myPlugin.py` file add:
 
 .. code-block:: python
 
     def __init__(self):
-        pass
+        self.SCOPE = QVizPluginScope(IDS, ids=('magnetics',))
+        self.ACTIONS = (
+            QVizPluginAction(0, 'My plot of magnetics...',
+                             run=self._run,
+                             description='Draws bpol_probe curves on the magnetics IDS'),
+        )
 
-execute()
-"""""""""
+The ``run`` callable
+""""""""""""""""""""
 
-The :guilabel:`execute()` function consists of three parts:
-
-1. Obtaining data source from IMASViz
-2. Checking if the IDS data was already fetched
-3. Extracting and plotting the data from the IDS
-
-**1. Obtaining data source (IDS object) from IMASViz:**
-
-This is done through **vizAPI** - **the IMASViz Application Program Interface
-(API)** and its **GetDataSource** function.
-
-In your :file:`myPlugin.py` file add:
-
-.. code-block:: python
-
-    # Get dataSource from the VizAPI (IMASViz Application Program Interface)
-    # Note: dataTreeView attribute (self.dataTreeView) is inherited from VizPlugin
-    dataSource = vizAPI.GetDataSource(self.dataTreeView)
-    # Get URI from the dataSource
-    uri = dataSource.uri
-    occurrence = 0
-
-    # Displaying basic case information -- in the log panel of this case, which
-    # is what shows what is logged under the case's URI
-    logging.getLogger(uri).info('Reading data of %s...', uri)
-
-**2. Checking if the IDS data was already fetched**
-
-With the use of functions provided by **vizAPI** we can check if IDS data have been already fetched (loaded in memory) while running IMASViz.
-In case the data have not been yet fetched, it can be done with the use of the
-**LoadIDSData** function (moreover, using this function, IMASViz data
-tree view browser is updated automatically).
-
-The IDS object is then obtained from the data source, for one
-:guilabel:`(IDS, occurrence)` pair, with its **get()** function.
-
-In your :file:`myPlugin.py` file add:
-
-.. code-block:: python
-
-    # Check if the IDS data is already loaded in IMASviz. If it is not,
-    # load it
-    if not vizAPI.IDSDataAlreadyFetched(self.dataTreeView, 'magnetics', occurrence):
-        logging.getLogger(uri).info('Loading magnetics IDS...')
-        vizAPI.LoadIDSData(self.dataTreeView, 'magnetics', occurrence)
-
-    # Get the loaded IDS object for that occurrence
-    self.ids = dataSource.get('magnetics', occurrence)
+The ``run`` callable is handed a ``QVizPluginContext`` and does the work.
+The context already carries the api, the shot view (``context.view``), the node
+the menu was built on (``context.node``), and -- when a saved session is replaying
+the entry -- ``context.answers`` (a ``QVizPluginAnswers``).
 
 .. note::
-   ``dataSource.get`` is the handle the tree and the plot commands read, so a
-   plugin that asks it shares the one copy of the case the session holds instead
-   of opening it again. Ask it **after** the load: a lazy handle only answers once
-   the occurrence is in memory. And say what the plugin did through
-   ``logging.getLogger(uri)``, not ``print``: the log panel of a case shows what
-   is logged under that case's URI, and nothing else.
+   Say what the plugin did through ``logging.getLogger(context.uri)``, not
+   ``print``: the log panel of a case shows what is logged under that case's URI,
+   and nothing else. Raise a ``ValueError`` to refuse an entry; the framework
+   catches it and puts the reason in the log of the case.
 
-**3. Extracting and plotting the data from the IDS**
-
-With the IDS object available its contents can be easily accessed (following the
-structure defined by the :guilabel:`Data Dictionary`). The data can be then
-plotted with the use of the :guilabel:`Matplotlib` Python library
-(`link <https://matplotlib.org/>`_).
-
-This plugin example will read some simple data from the **Magnetics IDS**
-and plot it using **Matplotlib** plitting utilities:
-
-- **time values** (stored in ``magnetics.time`` node) -> **X axis**
-- **poloidal field probe values** (stored in ``magnetics.bpol_probe`` array of
-  structures (AOS). The values are stored in
-  ``magnetics.bpol_probe[i].field.data`` where :math:`i` is the array index)
-  -> **Y axis**
-
-In your :file:`myPlugin.py` file add:
+**Example -- plotting magnetics.bpol_probe curves:**
 
 .. code-block:: python
 
-    # Get some data from the IDS and pass it to plot (using matplotlib)
-    # - Set subplot
-    fig, ax = plt.subplots()
-    # - Extract X-axis values (time)
-    time_values = self.ids.magnetics.time
-    x = time_values
-    # - Get the size of AoS (number of arrays)
-    num_bpol_probe_AoS = len(self.ids.magnetics.bpol_probe)
-    # - For each array extract array values and create a plot
-    for i in range(num_bpol_probe_AoS):
-        # - Extract array values
-        y = self.ids.magnetics.bpol_probe[i].field.data
-        # - Set plot (line) defined by X and Y values +
-        # - set line as full line (-) and add legend label.
-        ax.plot(x, y, '-', label='bpol_probe[' + str(i) + ']')
-    # - Enable grid
-    ax.grid()
-    # - Set axis labels and plot title
-    ax.set(xlabel='time [s]', ylabel='Poloidal field probe values',
-           title='Poloidal field probe')
-    # - Enable legend
-    ax.legend()
-    # - Draw/Show plots
-    plt.show()
+    def _run(self, context):
+        """Draw one quantity of this IDS, in a figure of IMASViz's own."""
+        import matplotlib.pyplot as plt
+
+        uri = context.view.uri
+        api = context.api
+        view = context.view
+        node = context.node
+
+        logging.getLogger(uri).info('Running my plugin on %s...', uri)
+
+        # Load the magnetics occurrence if not yet in memory
+        occurrence = 0
+        if not api.IDSDataAlreadyFetched(view, 'magnetics', occurrence):
+            logging.getLogger(uri).info('Loading magnetics IDS...')
+            api.LoadIDSData(view, 'magnetics', occurrence)
+        ids = view.dataSource.get('magnetics', occurrence)
+
+        # Read and plot the data
+        time_values = ids.magnetics.time
+        num_bpol = len(ids.magnetics.bpol_probe)
+        fig, ax = plt.subplots()
+        for i in range(num_bpol):
+            ax.plot(time_values, ids.magnetics.bpol_probe[i].field.data,
+                    '-', label='bpol_probe[%d]' % i)
+        ax.set(xlabel='time [s]', ylabel='Field', title='Poloidal field probes')
+        ax.legend()
+        ax.grid()
+        plt.show()
+
+.. note::
+   ``context.answers`` is ``None`` when the entry was chosen from the menu --
+   the user is there to answer anything. When a **saved session** is replaying
+   the entry (see :ref:`save_load_session`), it is a ``QVizPluginAnswers``
+   named with the occurrence the file recorded; read it to honour that choice
+   instead of asking the user a second time.
 
 .. _plugin_answers_and_sessions:
 
-What the framework hands :guilabel:`execute()`, and what it needs back
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+What your action receives, and what a session replay hands back
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-The third argument, :guilabel:`answers`, is ``None`` when the entry was chosen
-from the menu -- the user is there to answer anything the entry wants to ask. It
-is a ``QVizPluginAnswers(occurrence, figureKey)`` when a **saved session** is
-replaying that entry (section :ref:`save_load_session`), and then the entry must
-take its answers from it instead of asking them: a restore has no one in front of
-a dialog. The :guilabel:`Profiles` plugin used to ask which occurrence to plot
-through a modal ``QInputDialog``, and a probe left to answer one such dialog sat
-there for **240 s**; the panel carries that choice as a combo on its own window
-now, so nothing stands between the entry and the window, and a restore hands it
-the number the file names.
+Your ``run`` callback receives exactly one argument: a ``QVizPluginContext``.
+It tells the plugin where it was offered and who is calling: ``context.view``
+is the shot view (or ``None`` for ``APP``-scope plugins), ``context.node`` is
+the node the gesture was made on (or ``None`` for ``CASE`` or ``APP`` scope),
+and ``context.scope`` is one of ``IDS``, ``NODE``, ``CASE``, or ``APP``.
+``context.api`` is always the running session's own.
 
 .. note::
-   An entry whose ``execute()`` cannot take the keyword is **refused by name** at
-   the restore and never run -- writing the older two-argument signature is
-   therefore not an error, it only means the window of that plugin is not put
-   back, and the log panel says so under the plugin's name. Taking the keyword is
-   what costs nothing else: ``def execute(self, vizAPI, pluginEntry,
-   answers=None)`` is enough, and so is ``**keywords``.
+   ``run(self, context)`` is the only signature the framework calls -- there is
+   no second or third argument to worry about. If your action refuses the
+   window it is being asked to open, raise a ``ValueError`` with the reason in
+   words; the log panel of that case says so, and the session names the plugin
+   and the action that could not be restored.
 
-A window a plugin draws is put back by asking that plugin's menu line again, not
+A window a plugin draws is put back by asking that plugin's action again, not
 by rebuilding a widget. For the session to be able to ask it, the plugin says
 where the window came from, by stamping the frame it registers:
 
@@ -290,15 +282,17 @@ where the window came from, by stamping the frame it registers:
     from imasviz.VizPlugins.VizPlugin import QVizPluginWindow
 
     frame.pluginWindow = QVizPluginWindow(uri=uri, plugin='myPlugin',
-                                          entry=pluginEntry, ids='magnetics',
+                                          entry=0, ids='magnetics',
                                           occurrence=occurrence)
 
-The **key** is not part of that record: it is the key the window is registered
-under in ``Viz_API.figureframes``, which is what the :guilabel:`Windows` menu and
-its :guilabel:`Delete` lines address it by -- measured, neither registered plugin
-window knows its own key, so the session takes it from the bookkeeping. A window
-that is never registered in ``figureframes`` (a plain ``matplotlib`` window, like
-the one this tutorial draws) is not in the session at all, and the
+The ``entry`` is the key of the ``QVizPluginAction`` that drew the window --
+here ``0``, the only action this tutorial's plugin declares. The **figure key**
+(e.g. ``SlicesPlot:1``) is not part of ``QVizPluginWindow``: it is the key the
+window is registered under in ``Viz_API.figureframes``, which is what the
+:guilabel:`Windows` menu and its :guilabel:`Delete` lines address it by. A
+session replay hands it back to your action through ``context.answers.figureKey``.
+A window that is never registered in ``figureframes`` (a plain ``matplotlib``
+window, like the one this tutorial draws) is not in the session at all, and the
 :guilabel:`Windows` menu does not reach it either.
 
 A registered window of your own should follow the same close rule as the rest of
@@ -320,203 +314,95 @@ on screen can bring back. With it, the box hides the window by default, and clos
 it for good when the user sets ``Close_button_deletes=1`` -- see
 :ref:`user_preferences`.
 
-getEntries()
-""""""""""""
+Several features in one plugin
+""""""""""""""""""""""""""""""
 
-The :guilabel:`getEntries()` method function is returning available features provided by
-the plugin for the current context. Each entry corresponds to a plugin functionality, and
-is named by the **number** the plugin gives it. An entry is displayed as a menu item in
-the 'Plugins' menu. Zero or several entries can be returned by this function depending on
-the current user selection. Association between an entry and a menu item is performed by
-the function getAllEntries() described below: the number returned here is looked up
-**there**, not at its position in the list, so a number that
-:guilabel:`getAllEntries()` does not describe is refused -- the plugin is reported in the
-log panel of the opened case with the numbers it really describes, and the other plugins
-keep their menu entries.
 
-In the example below, the getEntries() function returns 0 (this is the first entry since our plugin
-example has only 1 functionality) only if the user has selected the magnetics IDS (since the plugin
-is handling only data stored in **Magnetics IDS**). Otherwise, the function returns an empty list to indicate
-that no functionality is available for the current selection.
-
-In your :file:`myPlugin.py` file add:
+A plugin can offer several features. Each is a ``QVizPluginAction`` in the
+``ACTIONS`` tuple. The framework offers every action as a separate line in the
+:guilabel:`Plugins` menu; clicking a line calls only that action's ``run``.
 
 .. code-block:: python
 
-    def getEntries(self):
-        if self.selectedTreeNode.getIDSName() == "magnetics":
-            return [0]
-        return []
+    def __init__(self):
+        self.SCOPE = QVizPluginScope(IDS, ids=('magnetics',))
+        self.ACTIONS = (
+            QVizPluginAction(0, 'Print node info...',
+                             run=self._printInfo,
+                             description='Writes the magnetics node path to the log'),
+            QVizPluginAction(1, 'Show 2D bpol plots...',
+                             run=self._show2D),
+        )
 
-getPluginsConfiguration()
-"""""""""""""""""""""""""
+    def _printInfo(self, context):
+        logging.getLogger(context.uri).info('magnetics node: %s',
+                                            context.node.getParametrizedDataPath())
 
-
-The :guilabel:`getPluginsConfiguration()` method function provides additional
-configurations to IMASViz. In this case no additional configurations are
-required -> the function returns value **None**.
-
-In your :file:`myPlugin.py` file add:
-
-.. code-block:: python
-
-    def getPluginsConfiguration(self):
-        return None
-
-getAllEntries()
-"""""""""""""""
-
-The :guilabel:`getAllEntries()` method function returns all possible entries (functionalities) provided by the plugin.
-All or a subset of these entries may be available for the current user selection. This the goal of the
-getEntries() function describes above to select the entries which can be diplayed to the user according to the
-current data selection.
-Each entry is associated to a menu item which will be shown in the plugins menu which is displayed to the user.
-
-In your :file:`myPlugin.py` file add:
-
-.. code-block:: python
-
-    def getAllEntries(self):
-        # Set a text which will be displayed in the pop-up menu as a menu item
-        return [(0, 'My plugin...')]
-
-
-getDescription()
-""""""""""""""""
-
-The :guilabel:`getDescription()` method function returns the custom plugin
-description.
-
-In your :file:`myPlugin.py` file add, for example:
-
-.. code-block:: python
-
-    def getDescription(self):
-        """ Return plugin description.
-        """
-
-        return "This is my custom IMASViz plugin. \n" \
-               "Authors: My Name (my.email@...)."
-
-isEnabled()
-"""""""""""
-
-Through the :guilabel:`isEnabled()` method function the custom plugin can be
-either **enabled** (returns ``True``) or **disabled** (returns ``False``).
+    def _show2D(self, context):
+        # ... draw the plots here ...
+        pass
 
 .. note::
-   The base class answers ``False`` to this and refuses the other two by name
-   (``getEntries()`` and ``getAllEntries()`` raise ``should be implemented``).
-   That is deliberate: an entry invented for a plugin that declared nothing -- a
-   number it never asked for, a label read out of its docstring -- would sit on
-   the :guilabel:`Plugins` menu exactly like one that works, and the only way to
-   tell them apart would be that nothing happens when it is clicked. So the five
-   method functions above are what a plugin has to write; what it does not write
-   is refused in the log panel of the opened case, under the plugin's name.
-
-In your :file:`myPlugin.py` file add:
-
-.. code-block:: python
-
-    def isEnabled(self):
-        return True
+   Override :meth:`offered` to offer a subset of the actions for one place and
+   not another. If an action cannot do its work in this context, raise a
+   ``ValueError`` inside its ``run`` method -- the framework catches it, puts
+   the reason in the log of the case, and the other actions keep working.
 
 Full Python code
 ^^^^^^^^^^^^^^^^
 
-Below is a full code in :file:`myPlugin.py` which is done by following the
-steps in the previous subsections.
+Below is the full :file:`myPlugin.py` for this tutorial:
 
 .. code-block:: python
     :caption: myPlugin.py
     :linenos:
 
-    # modules for event logging system and for operating system dependent
-    # functionality
-    import logging, os
-    # IMASViz plugin sources
-    from imasviz.VizPlugins.VizPlugin import VizPlugin
-    # Matplotlib library
+    import logging
     import matplotlib.pyplot as plt
+    from imasviz.VizPlugins.VizPlugin import (IDS, QVizPluginAction,
+                                              QVizPluginScope, VizPlugin)
 
     class myPlugin(VizPlugin):
+        """A simple plugin that plots bpol_probe curves from the magnetics IDS."""
 
-        def __init__(self):
-            pass
+        IDS = 'magnetics'
+        OCCURRENCE = 0
 
-        def execute(self, vizAPI, pluginEntry, answers=None):
-            """Main plugin function.
+        def _run(self, context):
+            """Draw one quantity of this IDS, in a figure of IMASViz's own."""
+            uri = context.view.uri
+            api = context.api
+            view = context.view
 
-            ``answers`` is what a saved session hands back in the user's place;
-            taking the keyword is what lets a session replay this entry instead of
-            naming it as un-replayable.
-            """
-
-            # Get dataSource from the VizAPI (IMASViz Application Program Interface)
-            # Note: instance of "self.datatreeView" is provided by the VizPlugins
-            # through inheritance
-            dataSource = vizAPI.GetDataSource(self.dataTreeView)
-            # Get URI from the dataSource
-            uri = dataSource.uri
-            occurrence = 0
-
-            # Check if the IDS data is already loaded in IMASviz. If it is not,
-            # load it
-            if not vizAPI.IDSDataAlreadyFetched(self.dataTreeView, 'magnetics', occurrence):
-                logging.getLogger(uri).info('Loading magnetics IDS...')
-                vizAPI.LoadIDSData(self.dataTreeView, 'magnetics', occurrence)
-
-            # Get the loaded IDS object for that occurrence
-            self.ids = dataSource.get('magnetics', occurrence)
-
-            # Displaying basic information -- in the log panel of this case
             logging.getLogger(uri).info('Reading data of %s...', uri)
 
-            # Get some data from the IDS and pass it to plot (using matplotlib)
-            # - Set subplot
-            fig, ax = plt.subplots()
-            # - Extract X-axis values (time)
-            time_values = self.ids.magnetics.time
+            if not api.IDSDataAlreadyFetched(view, self.IDS, self.OCCURRENCE):
+                logging.getLogger(uri).info('Loading magnetics IDS...')
+                api.LoadIDSData(view, self.IDS, self.OCCURRENCE)
+
+            ids = view.dataSource.get(self.IDS, self.OCCURRENCE)
+
+            time_values = ids.magnetics.time
             x = time_values
-            # - Get the size of AoS (number of arrays)
-            num_bpol_probe_AoS = len(self.ids.magnetics.bpol_probe)
-            # - For each array extract array values and create a plot
+            num_bpol_probe_AoS = len(ids.magnetics.bpol_probe)
+
+            fig, ax = plt.subplots()
             for i in range(num_bpol_probe_AoS):
-                # - Extract array values
-                y = self.ids.magnetics.bpol_probe[i].field.data
-                # - Set plot (line) defined by X and Y values +
-                # - set line as full line (-) and add legend label.
-                ax.plot(x, y, '-', label='bpol_probe[' + str(i) + ']')
-            # - Enable grid
-            ax.grid()
-            # - Set axis labels and plot title
-            ax.set(xlabel='time [s]', ylabel='Poloidal field probe values',
-                   title='Poloidal field probe')
-            # - Enable legend
+                y = ids.magnetics.bpol_probe[i].field.data
+                ax.plot(x, y, '-', label='bpol_probe[%d]' % i)
+            ax.set(xlabel='time [s]', ylabel='Field [T]',
+                   title='Poloidal field probe values')
             ax.legend()
-            # - Draw/Show plots
+            ax.grid()
             plt.show()
 
-        def getEntries(self):
-            if self.selectedTreeNode.getIDSName() == "magnetics":
-                return [0]
-
-        def getPluginsConfiguration(self):
-            return None
-
-        def getAllEntries(self):
-            # Set a text which will be displayed in the pop-up menu
-            return [(0, 'Magnetics overview (simple plot plugin example)...')]
-
-        def getDescription(self):
-            """ Return plugin description.
-            """
-
-            return "This is my custom IMASViz plugin. \n" \
-                   "Authors: My Name (my.email@...)."
-
-        def isEnabled(self):
-            return True
+        def __init__(self):
+            self.SCOPE = QVizPluginScope(IDS, ids=(self.IDS,))
+            self.ACTIONS = (
+                QVizPluginAction(0, 'Magnetics overview (simple plot plugin example)...',
+                                 run=self._run,
+                                 description='Draws bpol_probe curves from the magnetics IDS'),
+            )
 
 Registering plugin in IMASViz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -580,12 +466,10 @@ Executing the custom plugin in IMASViz
 To run the plugin in IMASViz while in IMASViz session with opened IDS database,
 in :guilabel:`tree view browser`:
 
-- on the IDS previously specified in :guilabel:`getEntries()`
-  method function (**Magnetics IDS**) either:
+- on the IDS named in the plugin's ``SCOPE`` (**Magnetics IDS**) either:
 
   - hold shift key + right-click on the tree node. A popup menu including the
-    menu action (with label previously specified in
-    :guilabel:`getAllEntries()`) will be shown, or
+    menu action (with the label specified in the plugin's ``ACTIONS``) will be shown, or
 
    .. figure:: images/IMASViz_simple_plot_example_plugin_menu_1.png
      :align: center
@@ -595,11 +479,11 @@ in :guilabel:`tree view browser`:
      available action for executing the plugin.
 
   - just right-click on the tree node. A popup menu including the
-    :guilabel:`Plugins` selection will be shown. Hovering on this selection will
-    shown the menu action (with label previously specified in
-    :guilabel:`getAllEntries()`). The same sub-menu is offered on right-click on
-    a quantity of that IDS, and the plugin is asked what it offers **for the
-    node under the cursor**, not for the node the view has selected.
+    :guilabel:`Plugins` selection will be shown. Hovering on this selection shows
+    the menu action (with the label specified in the plugin's ``ACTIONS``).
+    The same sub-menu is offered on right-click on a quantity of that IDS, and
+    the plugin is asked what it offers **for the node under the cursor**, not
+    for the node the view has selected.
 
    .. figure:: images/IMASViz_simple_plot_example_plugin_menu_2.png
      :align: center

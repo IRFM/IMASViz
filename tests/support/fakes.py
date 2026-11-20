@@ -61,6 +61,10 @@ class FakeTreeNode:
     def getOccurrence(self):
         return self._occurrence
 
+    def isIDSRoot(self):
+        """The node stands for an IDS root by default (for the plugin scope test)."""
+        return True
+
     def getDataSource(self):
         return None
 
@@ -221,6 +225,9 @@ class FakeAxesNode:
         return self._name
 
     getDataName = getName
+
+    def isIDSRoot(self):
+        return False
 
     def getParametrizedPath(self):
         return self._parametrizedPath

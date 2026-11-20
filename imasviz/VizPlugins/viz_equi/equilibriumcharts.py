@@ -41,7 +41,9 @@ from PySide6.QtWidgets import QDockWidget, QMenuBar, QApplication, QMainWindow, 
     QLabel, QMessageBox, QStatusBar, QCheckBox
 from PySide6 import QtCore
 
-from imasviz.VizPlugins.VizPlugin import VizPlugin, QVizPluginWindow
+from imasviz.VizPlugins.VizPlugin import (IDS, QVizPluginAction,
+                                          QVizPluginScope, QVizPluginWindow,
+                                          VizPlugin)
 from imasviz.VizUtils import FigureTypes
 from imasviz.Viz_API import (QVizClosableWindow, caseTooltip,
                              titleWithCases)
@@ -1228,34 +1230,62 @@ class PlotFrame(QVizClosableWindow, QMainWindow):
 class equilibriumcharts(VizPlugin):
 
     def __init__(self):
-        pass
+        self.frame = None
+        # Offered on the `equilibrium` IDS, and nowhere else: the question it
+        # answers is about the equilibrium, so it is declared once and not tested
+        # under every node the gesture reaches.
+        self.SCOPE = QVizPluginScope(IDS, ids=('equilibrium',))
+        self.ACTIONS = (
+            QVizPluginAction(
+                0,
+                'Equilibrium overview...',
+                run=self.draw,
+                description=('Equilibrium plugin allows to plot magnetic '
+                             'surfaces, separatrix and other equilibrium '
+                             'quantities as a function of time and space, read '
+                             'from occurrence 0 of the equilibrium and wall '
+                             'IDSs.\n'
+                             'The window answers: the matplotlib navigation '
+                             'toolbar; a time slider and a time value box, '
+                             'updating all the plots; a Run / Stop pair '
+                             'animating through the time slices; an '
+                             '"Enable Grid" checkbox laying a grid on every '
+                             'plot.\n'
+                             'Jorge Morales (jorge.morales2@cea.fr); '
+                             'Eli Bendersky; Ludovic Fleury; Dejan Penko. '
+                             'License: this code is in the public domain')),
+        )
 
-    def isEnabled(self):
-        return True
+    def draw(self, context):
+        """Draw the equilibrium chart, from the IDS it was offered on.
 
-    def execute(self, vizAPI, pluginEntry, answers=None):
-
+        `context` carries the api, the case it was offered from, and the node it
+        was offered on. `answers` is in `context.answers`, and from the menu it is
+        None -- nothing has been asked, and an entry that asks nothing re-asks
+        nothing, whatever the user was about to do.
+        """
         # The key is taken before the window is built and handed to the registry
-        # only once it exists: `GetNextKeyForFigure` reads the registry, so a
-        # refused run (a case missing what this plugin needs) costs nothing and
-        # the next run is handed the same number. Registered, the window is
-        # reachable from the *Windows* menu and its *Delete* sub-menu like
-        # measured before, `figureframes` stayed empty and the only way out of a
-        # window was its own Exit entry, while each new click on the menu built
-        # another one on top of the previous.
-        figureKey = vizAPI.FigureKeyFor(FigureTypes.EQUILIBRIUMPLOTTYPE,
-                                        None if answers is None
-                                        else answers.figureKey)
+        # only once it exists: `FigureKeyFor` reads the registry, so a refused
+        # run (a case missing what this plugin needs) costs nothing and the next
+        # run is handed the same number. Registered, the window is reachable from
+        # the *Windows* menu and its *Delete* sub-menu like measured before, when
+        # `figureframes` stayed empty and the only way out of a window was its
+        # own Exit entry, while each new click on the menu built another one on
+        # top of the previous.
+        figureKey = context.api.FigureKeyFor(FigureTypes.EQUILIBRIUMPLOTTYPE,
+                                             None if context.answers is None
+                                             else context.answers.figureKey)
         # This entry asks nothing, so the only answer a session can bring is the
         # occurrence -- and this plugin reads occurrence 0 of `equilibrium` and of
         # `wall` whatever it is offered, because `DataGen` settles it. A file
         # naming another one is refused by name rather than answered with a window
         # whose curves come from somewhere else.
-        if answers is not None and answers.occurrence != 0:
+        if context.answers is not None and context.answers.occurrence != 0:
             raise ValueError('the Equilibrium overview reads occurrence 0 of the '
                              'equilibrium and wall IDSs, so it cannot be opened '
                              'on occurrence %d as "%s" asks.'
-                             % (answers.occurrence, answers.figureKey))
+                             % (context.answers.occurrence,
+                                context.answers.figureKey))
         # The case this window serves is registered before the frame is, the
         # way the Profiles panel does it: `AddNodeToFigure` rewrites the title
         # of a registered frame, so the order keeps the heading this window sets
@@ -1264,59 +1294,21 @@ class equilibriumcharts(VizPlugin):
         # menu lists the window in the case's group, and the case's gestures
         # -- *Close this case*, *Show only this case* -- reach it instead of
         # leaving it at the top level of the menu, alive after the case is
-        # closed and uncloseable by any line of it. The key as the heading,
-        # the case and the IDS it ran on after it -- the same answer as the
-        # *Windows* menu line, which reads that IDS from the stamp put on the
-        # frame a few lines below.
-        idsName = self.selectedTreeNode.getIDSName()
-        self.frame = PlotFrame(self.selectedTreeNode, vizAPI,
-                               parent=self.dataTreeView,
+        # closed and uncloseable by any line of it.
+        idsName = context.node.getIDSName()
+        self.frame = PlotFrame(context.node, context.api,
+                               parent=context.view,
                                title=figureKey, fromIds=idsName)
-        uri = self.dataTreeView.dataSource.uri
-        vizAPI.AddNodeToFigure(figureKey,
-                               self.dataTreeView.dataSource.dataKey2(figureKey),
-                               (uri, None))
-        vizAPI.figureframes[figureKey] = self.frame
-        # What a session needs to put this window back. Measured, the frame answers
-        # neither its key nor its entry, and `mdiWindowOf` answers None: it is a
-        # top-level window parented to the shot view, so its place in the file is
-        # the case of that view, not an MDI geometry.
+        uri = context.view.dataSource.uri
+        context.api.AddNodeToFigure(figureKey,
+                                    context.view.dataSource.dataKey2(figureKey),
+                                    (uri, None))
+        context.api.figureframes[figureKey] = self.frame
+        # What a session needs to put this window back: measured, the frame
+        # answers neither its key nor its entry, and `mdiWindowOf` answers None --
+        # it is a top-level window parented to the shot view, so its place in the
+        # file is the case of that view, not an MDI geometry.
         self.frame.pluginWindow = QVizPluginWindow(
             uri=self.frame.uri, plugin='equilibriumcharts',
-            entry=pluginEntry, ids=idsName, occurrence=0)
+            entry=0, ids=idsName, occurrence=0)
         self.frame.show()
-
-    def getEntries(self):
-        if self.selectedTreeNode.getIDSName() == "equilibrium":
-            return [0]
-        else:
-            return []
-
-    def getAllEntries(self):
-        return [(0, 'Equilibrium overview...')]
-
-    def getDescription(self):
-        """ Return plugin description.
-
-        The catalogue shows this as the menu tip of the entry, so what it lists
-        is what the window answers. The text used to advertise "Saving the plot
-        to a file from a menu": no menu held that action, and the method it
-        named was connected to nothing, so it is not offered here.
-        """
-
-        return "Equilibrium plugin allows to plot magnetic surfaces, separatrix \n" \
-               "and other equilibrium quantities as a function of time and space, \n" \
-               "read from occurrence 0 of the equilibrium and wall IDSs. \n" \
-               "The window answers: \n" \
-               "* The matplotlib navigation toolbar \n" \
-               "* A time slider and a time value box, updating all the plots \n" \
-               "* A Run / Stop pair animating through the time slices \n" \
-               "* An 'Enable Grid' checkbox laying a grid on every plot \n" \
-               "Jorge Morales (jorge.morales2@cea.fr) \n" \
-               "Based on a work by: \n" \
-               "Eli Bendersky (eliben@gmail.com) \n" \
-               "Initially integrated in IMASViz using wxPython by: \n" \
-               "Ludovic Fleury (ludovic.fleury@cea.fr) \n" \
-               "Converted to Qt by: \n" \
-               "Dejan Penko (dejan.penko@lecad.fs.uni-lj.si) \n" \
-               "License: this code is in the public domain"

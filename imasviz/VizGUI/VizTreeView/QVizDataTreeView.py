@@ -38,6 +38,8 @@ from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling \
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement\
     .QVizHandleShiftAndRightClick \
     import QVizHandleShiftAndRightClick
+from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizPluginMenu \
+    import QVizPluginMenu
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizWindowMenu \
     import QVizWindowMenu
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlot \
@@ -886,6 +888,18 @@ class QVizDataTreeViewFrame(QMainWindow):
         self.windowMenu = QVizWindowMenu(
             menuBar.addMenu(QVizWindowMenu.TITLE),
             self.dataTreeView.imas_viz_api).show()
+
+        # The case's own *Plugins* menu: the lines the plugins declare for this
+        # case. Refilled on ``aboutToShow`` the way the *Windows* menu does
+        # itself, so a plugin the user just wrote shows on the bar with no
+        # restart. The catalog is the same one the node gesture builds (kept on
+        # this view): asking the plugins twice would import them twice, and a
+        # stale *Plugins* line is a plugin that refuses.
+        self.casePluginMenu = menuBar.addMenu('Plugins')
+        self.casePluginMenuFiller = QVizPluginMenu()
+        self.casePluginMenu.aboutToShow.connect(
+            lambda: self.casePluginMenuFiller.refillCasePluginMenu(
+                self.dataTreeView, self.casePluginMenu))
 
         # Set menu bar
         self.setMenuBar(menuBar)
