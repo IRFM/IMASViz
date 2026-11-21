@@ -162,3 +162,115 @@ def test_disabling_both_removes_both_sub_menus(qapp):
             qapp.processEvents()
     finally:
         QVizPreferences.Disabled_bricks = saved
+
+
+# ---------------------------------------------------------------- CASE scope --
+
+def test_derived_quantities_declare_case_scope():
+    """CASE-scope: offered on the case's own menu bar via `catalog.caseEntries()`."""
+    from imasviz.VizPlugins.viz_derived_quantities.VizDerivedQuantities \
+        import VizDerivedQuantities
+
+    assert VizDerivedQuantities.SCOPE.kind == 'case'
+    assert VizDerivedQuantities.SCOPE.appliesToCase()
+    assert VizDerivedQuantities.LABEL == 'Quantités dérivées'
+    assert len(VizDerivedQuantities.ACTIONS) == 3
+    labels = {a.label for a in VizDerivedQuantities.ACTIONS}
+    assert 'Fraction de Greenwald' in labels
+    assert 'Beta_N' in labels
+    assert 'Pression totale' in labels
+
+
+def test_case_plugin_in_case_entries(qtbot):
+    """`catalog.caseEntries()` includes `VizDerivedQuantities` when it is enabled."""
+    from PySide6.QtWidgets import QTreeWidget
+    from imasviz.VizPlugins.QVizPluginCatalog import QVizPluginCatalog
+
+    saved = QVizPreferences.Disabled_bricks
+    try:
+        QVizPreferences.Disabled_bricks = frozenset()
+        view = QTreeWidget()
+        view.uri = 'stub?case'
+        view.imas_viz_api = 'the-api'
+        qtbot.addWidget(view)
+        catalog = QVizPluginCatalog(view)
+        entries = catalog.caseEntries()
+        names = {e.pluginName for e in entries}
+        assert 'VizDerivedQuantities' in names
+    finally:
+        QVizPreferences.Disabled_bricks = saved
+
+
+def test_case_plugin_absent_when_disabled(qtbot):
+    """A disabled CASE plugin is not in `catalog.caseEntries()`."""
+    from PySide6.QtWidgets import QTreeWidget
+    from imasviz.VizPlugins.QVizPluginCatalog import QVizPluginCatalog
+
+    saved = QVizPreferences.Disabled_bricks
+    try:
+        QVizPreferences.Disabled_bricks = frozenset({'VizDerivedQuantities'})
+        view = QTreeWidget()
+        view.uri = 'stub?case'
+        view.imas_viz_api = 'the-api'
+        qtbot.addWidget(view)
+        catalog = QVizPluginCatalog(view)
+        entries = catalog.caseEntries()
+        names = {e.pluginName for e in entries}
+        assert 'VizDerivedQuantities' not in names
+    finally:
+        QVizPreferences.Disabled_bricks = saved
+
+
+# ----------------------------------------------------------------- APP scope --
+
+def test_campaign_trend_declares_app_scope():
+    """APP-scope: offered on the application's own menu bar via `catalog.appEntries()`."""
+    from imasviz.VizPlugins.viz_campaign_trend.VizCampaignTrend \
+        import VizCampaignTrend
+
+    assert VizCampaignTrend.SCOPE.kind == 'app'
+    assert VizCampaignTrend.SCOPE.appliesToApp()
+    assert VizCampaignTrend.LABEL == 'Campagne'
+    assert len(VizCampaignTrend.ACTIONS) == 2
+    labels = {a.label for a in VizCampaignTrend.ACTIONS}
+    assert 'Exporter le rapport' in labels
+
+
+def test_app_plugin_in_app_entries(qtbot):
+    """`catalog.appEntries()` includes `VizCampaignTrend` when it is enabled."""
+    from PySide6.QtWidgets import QTreeWidget
+    from imasviz.VizPlugins.QVizPluginCatalog import QVizPluginCatalog
+
+    saved = QVizPreferences.Disabled_bricks
+    try:
+        QVizPreferences.Disabled_bricks = frozenset()
+        view = QTreeWidget()
+        view.uri = 'stub?case'
+        view.imas_viz_api = 'the-api'
+        qtbot.addWidget(view)
+        catalog = QVizPluginCatalog(view)
+        entries = catalog.appEntries()
+        names = {e.pluginName for e in entries}
+        assert 'VizCampaignTrend' in names
+    finally:
+        QVizPreferences.Disabled_bricks = saved
+
+
+def test_app_plugin_absent_when_disabled(qtbot):
+    """A disabled APP plugin is not in `catalog.appEntries()`."""
+    from PySide6.QtWidgets import QTreeWidget
+    from imasviz.VizPlugins.QVizPluginCatalog import QVizPluginCatalog
+
+    saved = QVizPreferences.Disabled_bricks
+    try:
+        QVizPreferences.Disabled_bricks = frozenset({'VizCampaignTrend'})
+        view = QTreeWidget()
+        view.uri = 'stub?case'
+        view.imas_viz_api = 'the-api'
+        qtbot.addWidget(view)
+        catalog = QVizPluginCatalog(view)
+        entries = catalog.appEntries()
+        names = {e.pluginName for e in entries}
+        assert 'VizCampaignTrend' not in names
+    finally:
+        QVizPreferences.Disabled_bricks = saved

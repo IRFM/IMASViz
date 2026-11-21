@@ -952,8 +952,9 @@ def test_a_view_asks_its_plugins_once_across_its_menus(qtbot):
     second = QVizPluginMenu().catalogOf(view)
     assert first is second is view.pluginCatalog
     assert sorted(name for name, _ in first.plugins()) == \
-        ['VizEventDetection', 'VizProfiles_plugin', 'VizSlicePlugin',
-         'VizSpectral', 'equilibriumcharts', 'equilibriumsurfaces']
+        ['VizCampaignTrend', 'VizDerivedQuantities', 'VizEventDetection',
+         'VizProfiles_plugin', 'VizSlicePlugin', 'VizSpectral',
+         'equilibriumcharts', 'equilibriumsurfaces']
     equilibrium = view.IDSRoots['equilibrium']
     for _ in range(3):
         menu = QMenu()
