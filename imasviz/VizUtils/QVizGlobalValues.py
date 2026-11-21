@@ -135,6 +135,11 @@ class QVizPreferences:
     # used on a desktop in a lit room, and it is what the manual's screenshots
     # were taken on.
     Theme = 'light'
+    # Plugins the user has switched off (comma-separated names).
+    # Empty (the default) = nothing disabled = every plugin stays active.
+    # A name the application does not ship is refused by name; the rest of
+    # the list keeps its meaning.
+    Disabled_bricks = ''
     # What the box in the corner of a window title bar is worth. Off (the
     # default): it takes the window off the screen and keeps it -- the *Windows*
     # menu still names it, unchecked, and clicking the line puts it back. On: it
@@ -326,6 +331,33 @@ class QVizPreferences:
                              'one of the six from 1 to 6' % asked)
         return QBrush(colour)
 
+    @staticmethod
+    def disabledBricks(text):
+        """Which plugins the user has switched off -- a comma-separated list
+        of names. Empty (the default) is an empty frozenset, so no plugin is
+        disabled; adding a new brick later does not require editing the
+        preference. A name the application does not ship is refused by name,
+        and the rest of the list is still read.
+        """
+        from imasviz.VizPlugins.VizPlugin import getRegisteredPlugins
+
+        raw = text.strip()
+        if raw == '':
+            return frozenset()
+        shipped = set(getRegisteredPlugins().keys())
+        kept = set()
+        for token in raw.split(','):
+            name = token.strip()
+            if not name:
+                continue
+            if name not in shipped:
+                raise ValueError(
+                    '%r is named in the disabled list, but IMASViz does not '
+                    'ship a plugin of that name; the names it does ship are: '
+                    '%s' % (name, ', '.join(sorted(shipped))))
+            kept.add(name)
+        return frozenset(kept)
+
     def build(self):
         if not QVizPreferences.userPreferencesInitialized:
             QVizPreferences.ColorOfNodesContainingData = GlobalColors.BLUE
@@ -353,6 +385,7 @@ class QVizPreferences:
             option21 = "SharedJournalDir="
             option22 = "AgentDocsDir="
             userPreferencesFile = os.environ['HOME'] + '/.imasviz/preferences'
+            option23 = "Disabled_bricks="
             if os.path.exists(userPreferencesFile):
                 with open(userPreferencesFile) as f:
                     for line in f:
@@ -437,6 +470,10 @@ class QVizPreferences:
                                 QVizPreferences.AgentDocsDir = \
                                     QVizPreferences.stripComment(
                                         line[len(option22):])
+                            elif line.startswith(option23):
+                                QVizPreferences.Disabled_bricks = \
+                                    QVizPreferences.disabledBricks(
+                                        line[len(option23):])
                         except ValueError as bad:
                             logging.warning('Ignoring %s in %s: %s',
                                             line.split('=', 1)[0],

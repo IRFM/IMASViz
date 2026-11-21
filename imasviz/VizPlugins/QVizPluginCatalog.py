@@ -287,6 +287,14 @@ class QVizPluginCatalog:
                                          'APP), so it is not offered anywhere')
                 del self._sourceOf[pluginName]
                 continue
+            # A user can switch a plugin off in the preferences: it is refused
+            # with the same voice as the others -- named in the log, not silent.
+            from imasviz.VizUtils import QVizPreferences
+            if pluginName in QVizPreferences.Disabled_bricks:
+                self._refuse(pluginName, 'disabled by the user in the '
+                                         'preferences')
+                del self._sourceOf[pluginName]
+                continue
             self._plugins.append((pluginName, plugin))
         return self._plugins
 

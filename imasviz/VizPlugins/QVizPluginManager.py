@@ -44,7 +44,9 @@ from imasviz.VizPlugins.QVizPluginSource import (USER, builtinSources,
                                                  userPluginsFolder,
                                                  userSources)
 
-COLUMNS = ('Plugin', 'Whose', 'State', 'Where it lives')
+from imasviz.VizUtils import QVizPreferences
+
+COLUMNS = ('Plugin', 'Whose', 'Active?', 'State', 'Where it lives')
 SHIPPED = 'IMASViz'
 MINE = 'yours'
 NOT_ASKED = 'not asked yet'
@@ -69,6 +71,7 @@ class QVizPluginManager(QDialog):
         self._apiOf = apiOf
         self._watcher = weakref.ref(watcher) if watcher is not None else None
         self._sources = {}
+        self._refreshing = False
         self.setWindowTitle('Plugins')
         self.resize(980, 460)
         self._buildUI()
@@ -92,7 +95,7 @@ class QVizPluginManager(QDialog):
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.verticalHeader().setVisible(False)
         self.table.horizontalHeader().setSectionResizeMode(
-            3, QHeaderView.Stretch)
+            4, QHeaderView.Stretch)
         self.table.itemDoubleClicked.connect(lambda item: self._open())
         layout.addWidget(self.table, 1)
 
@@ -121,6 +124,7 @@ class QVizPluginManager(QDialog):
         layout.addLayout(buttons)
 
         self.table.currentItemChanged.connect(lambda *args: self._enableForRow())
+        self.table.itemChanged.connect(self._onActiveChanged)
 
     def sources(self):
         """The shipped plugins first, then this user's own, each by name."""
@@ -134,6 +138,7 @@ class QVizPluginManager(QDialog):
                     for view in self._views())
         refusals = refusalsOf(self._api())
         self.table.setRowCount(0)
+        self._refreshing = True
         for source in sources:
             row = self.table.rowCount()
             self.table.insertRow(row)
@@ -147,7 +152,12 @@ class QVizPluginManager(QDialog):
                                            source.fileName or 'no file of its '
                                                               'own')):
                 self.table.setItem(row, column, QTableWidgetItem(str(text)))
+            check = QTableWidgetItem()
+            check.setCheckState(Qt.Checked if source.name not in QVizPreferences.Disabled_bricks else Qt.Unchecked)
+            check.setFlags(check.flags() | Qt.ItemIsUserCheckable)
+            self.table.setItem(row, 2, check)
         self._sources = {row: source for row, source in enumerate(sources)}
+        self._refreshing = False
         self._enableForRow()
         return len(sources)
 
@@ -162,6 +172,23 @@ class QVizPluginManager(QDialog):
         self.copyButton.setEnabled(source is not None and not mine
                                    and not source.isUi)
         self.deleteButton.setEnabled(mine)
+
+    def _onActiveChanged(self, item):
+        """One checkbox moved: persist and put the session back."""
+        if getattr(self, '_refreshing', False):
+            return
+        row = self.table.row(item)
+        source = getattr(self, '_sources', {}).get(row)
+        if source is None:
+            return
+        current = set(QVizPreferences.Disabled_bricks)
+        if item.checkState() == Qt.Checked:
+            current.discard(source.name)
+        else:
+            current.add(source.name)
+        QVizPreferences.persist(Disabled_bricks=','.join(sorted(current)))
+        QVizPreferences.Disabled_bricks = frozenset(current)
+        self._reload()
 
     def _open(self):
         source = self.selected()
