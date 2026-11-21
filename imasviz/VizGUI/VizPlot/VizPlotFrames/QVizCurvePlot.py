@@ -65,6 +65,7 @@ from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
 from imasviz.VizGUI.VizPlot.QVizCurveColors import penFor
 from imasviz.VizGUI.VizPlot.QVizCurveErrors import QVizCurveErrors
 from imasviz.VizGUI.VizPlot.QVizEventMarks import QVizEventMarks
+from imasviz.VizGUI.VizPlot.QVizSpectrumMenu import QVizSpectrumMenu
 from imasviz.VizGUI.VizPlot.QVizPlotStyling import QVizPlotStyling
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizSliceControls import QVizSliceControls
 
@@ -179,6 +180,8 @@ class QVizCurvePlot(QWidget):
         # the menu is an instance's own, so nothing written reaches another figure.
         self.eventMarks = QVizEventMarks(self)
         self.eventMarks.addMenuEntry(self.pgPlotWidget.getViewBox().menu)
+        self.spectrumMenu = QVizSpectrumMenu(self)
+        self.spectrumMenu.addMenuEntry(self.pgPlotWidget.getViewBox().menu)
 
         self.sliceControls = QVizSliceControls(self, foldable=True)
         # The read asks this widget for the indices of the axes a trace lets
