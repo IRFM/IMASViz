@@ -174,14 +174,17 @@ class QVizCurvePlot(QWidget):
         # describes is on the menu of the window the manual describes it on.
         self.styling = QVizPlotStyling(self)
         self.styling.addMenuEntry(self.pgPlotWidget.getViewBox().menu)
-        # The events a hand wants marked on this figure -- ELM, sawtooth, L-H --
-        # detected on what the figure has already drawn. The entry is on the view
-        # box's menu for the same reason the styling and error-bar ones are here:
-        # the menu is an instance's own, so nothing written reaches another figure.
+        # The events a hand wants marked on this figure (ELM, sawtooth, L-H)
+        # and the spectral readout of its live curve. Both are FIGURE-scope
+        # plugins, offered through `figureMenuFor` -- the same mechanism that
+        # keeps a disabled plugin out of the menu. The domain objects
+        # (`eventMarks`, `spectrumMenu`) stay on the frame: the plugin actions
+        # delegate to them through `context.figure`, and the tests that pin
+        # the domain logic (`test_154`, `test_160`) still call them directly.
+        from imasviz.VizPlugins.QVizPluginCatalog import figureMenuFor
         self.eventMarks = QVizEventMarks(self)
-        self.eventMarks.addMenuEntry(self.pgPlotWidget.getViewBox().menu)
         self.spectrumMenu = QVizSpectrumMenu(self)
-        self.spectrumMenu.addMenuEntry(self.pgPlotWidget.getViewBox().menu)
+        figureMenuFor(self, self.pgPlotWidget.getViewBox().menu)
 
         self.sliceControls = QVizSliceControls(self, foldable=True)
         # The read asks this widget for the indices of the axes a trace lets

@@ -46,8 +46,8 @@ from collections import namedtuple
 # The four places a plugin may be offered. A plugin class names exactly one of
 # them in its ``SCOPE``: where it applies is declared, and the framework reads
 # that instead of asking a method which node to gate on.
-IDS, NODE, CASE, APP = 'ids', 'node', 'case', 'app'
-SCOPES = (IDS, NODE, CASE, APP)
+IDS, NODE, CASE, APP, FIGURE = 'ids', 'node', 'case', 'app', 'figure'
+SCOPES = (IDS, NODE, CASE, APP, FIGURE)
 
 
 class QVizPluginScope:
@@ -65,7 +65,7 @@ class QVizPluginScope:
         if kind not in SCOPES:
             raise ValueError('%r is not a scope -- one of %s'
                              % (kind, ', '.join(SCOPES)))
-        if kind in (CASE, APP):
+        if kind in (CASE, APP, FIGURE):
             if ids or where is not None:
                 raise ValueError(
                     'a %s scope has nothing to match: drop the names/predicate'
@@ -109,6 +109,16 @@ class QVizPluginScope:
     def appliesToApp(self):
         """Whether this scope takes part on the application's own menu bar."""
         return self.kind == APP
+
+    def appliesToFigure(self, frame):
+        """Whether this scope takes part on a figure's own menu box.
+
+        A frame is not asked which IDS or which node to gate on -- every
+        figure of curves is a candidate, the plugin says so by declaring it.
+        The `frame` argument is there so callers can pass it and be read
+        correctly; no filtering over the frame is done here.
+        """
+        return self.kind == FIGURE
 
 
 class QVizPluginAction:
@@ -158,13 +168,18 @@ class QVizPluginContext:
     """
 
     def __init__(self, api=None, view=None, node=None, scope=CASE,
-                 occurrence=0, answers=None):
+                 occurrence=0, answers=None, figure=None):
         self.api = api
         self.view = view
         self.node = node
         self.scope = scope
         self.occurrence = occurrence
         self.answers = answers
+        # When the plugin ran from a figure's own menu box, the frame it was
+        # offered on. A FIGURE-scoped action reaches the frame's domain objects
+        # (eventMarks, spectrumMenu) through this attribute rather than through
+        # `self` -- the frame is the argument the menu handed over.
+        self.figure = figure
 
     @property
     def uri(self):
@@ -219,6 +234,8 @@ RegisteredPlugins = {'equilibriumcharts': 'viz_equi.equilibriumcharts',
                      # 'viz_spectrometer_plugin': 'viz_spectrometer.viz_spectrometer_plugin',
                      'VizProfiles_plugin': 'viz_Profiles.VizProfiles_plugin',
                      'VizSlicePlugin': 'viz_slice.VizSlicePlugin',
+                     'VizEventDetection': 'viz_event_detection.VizEventDetection',
+                     'VizSpectral': 'viz_spectral.VizSpectral',
                      # 'simplePlotPluginExample': 'viz_simple_plot_example.simplePlotPluginExample',
                      # 'ETSpluginIMASViz': 'viz_ETS.ETSpluginIMASViz',
                      # A plugin drawn in Qt Designer registers the window it is
@@ -274,6 +291,10 @@ class VizPlugin:
 
     SCOPE = None
     ACTIONS = ()
+    # The sub-menu title a FIGURE-scoped plugin earns on a frame's view-box menu.
+    # When None the registered name is used; a plugin with a French-facing menu
+    # sets this to the words the user reads (e.g. 'Événements').
+    LABEL = None
 
     def offered(self, context):
         """Which of your ACTIONS apply in this context. Default: all of them.

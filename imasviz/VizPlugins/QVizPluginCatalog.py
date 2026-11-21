@@ -39,7 +39,7 @@ import re
 
 import shiboken6
 
-from imasviz.VizPlugins.VizPlugin import (APP, CASE, IDS, NODE,
+from imasviz.VizPlugins.VizPlugin import (APP, CASE, FIGURE, IDS, NODE,
                                           QVizPluginAction, QVizPluginContext,
                                           getRegisteredPlugins)
 from imasviz.VizPlugins.QVizPluginSource import (BUILTIN, USER,
@@ -568,3 +568,106 @@ def _word(word, context):
     if callable(word):
         return word(context)
     return word
+
+
+def figureMenuFor(frame, menu):
+    """Build the sub-menus of FIGURE-scoped plugins on ``menu``, answer how many.
+
+    One sub-menu per FIGURE-scoped plugin (titled by its ``LABEL`` or its
+    registered name), one line per offered action. A plugin named in
+    ``QVizPreferences.Disabled_bricks`` is not built. A plugin that refuses the
+    figure through ``offered`` is not built either. A ``run`` that is not
+    callable is dropped from the sub-menu -- the other lines stay.
+
+    Each action's ``run`` receives a ``QVizPluginContext`` with
+    ``figure=frame``, so it reaches the frame's domain objects
+    (``eventMarks``, ``spectrumMenu``) through the context rather than
+    through ``self``.
+
+    This function does not need a ``QVizPluginCatalog`` instance: the frame
+    is the place, and there is no per-view cache to maintain. A new frame
+    built later in the session re-imports the plugins from ``sys.modules``
+    at essentially zero cost.
+
+    T25 holds here: the lambda connects on the frame's view-box menu, so it
+    is as long-lived as the frame. Closing over a ``QVizPluginContext`` with
+    ``figure=frame`` would make a strong cycle (frame → menu → qaction →
+    lambda → context → frame), which is how ``test_58`` measured a frame
+    surviving its last ``del``. The lambda instead holds a ``weakref.ref``
+    to the frame; the context is built at click time, fresh, on a frame
+    that is still alive (the user just clicked its menu).
+    """
+    import importlib
+    import weakref
+    from PySide6.QtWidgets import QMenu
+    from PySide6.QtGui import QAction
+    from imasviz.VizUtils import QVizPreferences
+
+    frame_ref = weakref.ref(frame)
+    added = 0
+    for name, path in getRegisteredPlugins().items():
+        # Only the string path shape is a Python plugin; .ui plugins and
+        # dictionary shapes are not FIGURE-scope candidates.
+        if not isinstance(path, str):
+            continue
+        if name in QVizPreferences.Disabled_bricks:
+            continue
+        try:
+            module = importlib.import_module('imasviz.VizPlugins.' + path)
+            plugin = getattr(module, name)()
+        except Exception:
+            # A plugin that cannot be imported or built is not offered on
+            # this menu; the frame's log does not exist in this context, so
+            # the silence is the answer (a place with a log would name it).
+            continue
+        scope = getattr(plugin, 'SCOPE', None)
+        if scope is None or scope.kind != FIGURE:
+            continue
+        # Ask what the plugin offers -- a short-lived context for the
+        # `offered` call only (not stored in the lambda).
+        dummy_ctx = QVizPluginContext(api=getattr(frame, 'imas_viz_api', None),
+                                     view=None, node=None, scope=FIGURE,
+                                     figure=frame)
+        try:
+            actions = plugin.offered(dummy_ctx)
+        except Exception:
+            continue
+        if not actions:
+            continue
+        label = getattr(plugin, 'LABEL', None) or name
+        submenu = QMenu(label, menu)
+        for action in actions:
+            if not callable(getattr(action, 'run', None)):
+                continue
+            qaction = QAction(action.label, submenu)
+            # The lambda closes over `frame_ref` (a weakref) and `a` (the
+            # action), NOT over a context holding a strong reference to the
+            # frame. At click time `_runFigureAction` builds a fresh context
+            # on a frame that is still alive.
+            qaction.triggered.connect(
+                lambda checked=False, a=action, fr=frame_ref:
+                _runFigureAction(a, fr))
+            submenu.addAction(qaction)
+        menu.addMenu(submenu)
+        added += 1
+    return added
+
+
+def _runFigureAction(action, frame_ref):
+    """Build a fresh context from the live frame (if still alive) and run the action.
+
+    The ``frame_ref`` is a ``weakref.ref`` held by the lambda; dereferencing
+    it gives the frame when it is still alive (the user just clicked its menu),
+    or ``None`` when the frame was already freed (a click that arrives too
+    late -- safe to ignore). The context handed to ``action.run`` holds a
+    strong reference to the frame for the duration of the call, which is
+    correct: the frame is alive at that instant, and the reference is dropped
+    when the action returns.
+    """
+    frame = frame_ref()
+    if frame is None:
+        return
+    context = QVizPluginContext(api=getattr(frame, 'imas_viz_api', None),
+                                view=None, node=None, scope=FIGURE,
+                                figure=frame)
+    action.run(context)
