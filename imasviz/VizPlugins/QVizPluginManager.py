@@ -27,6 +27,12 @@ The *State* column is read off the catalogs that already exist, so it costs
 nothing either. It says one of three things, and the third is said out loud: a
 view nobody has right-clicked has not asked its plugins anything yet, and a blank
 must not be read as "fine".
+
+*Active?* is a column of its own beside it, because it answers a different
+question: whether the plugin is on at all. The two cannot share a cell, and they
+did once -- the check box was added to the header without `refresh` being told,
+landed on the column the state word had just been written into, and a plugin the
+catalog refused answered a blank cell.
 """
 
 import shutil
@@ -47,6 +53,12 @@ from imasviz.VizPlugins.QVizPluginSource import (USER, builtinSources,
 from imasviz.VizUtils import QVizPreferences
 
 COLUMNS = ('Plugin', 'Whose', 'Active?', 'State', 'Where it lives')
+# The column of each answer, named rather than counted. A cell written by number is
+# how this came apart: the active/inactive check box was added to the header without
+# `refresh` being told, so it went to column 2 -- the column the state word had just
+# been written into -- and a plugin the catalog refused answered an empty cell, which
+# reads as "fine". The header order is the authority, and these are its spelling.
+WHOSE, ACTIVE, STATE, WHERE = 1, 2, 3, 4
 SHIPPED = 'IMASViz'
 MINE = 'yours'
 NOT_ASKED = 'not asked yet'
@@ -95,7 +107,7 @@ class QVizPluginManager(QDialog):
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.verticalHeader().setVisible(False)
         self.table.horizontalHeader().setSectionResizeMode(
-            4, QHeaderView.Stretch)
+            WHERE, QHeaderView.Stretch)
         self.table.itemDoubleClicked.connect(lambda item: self._open())
         layout.addWidget(self.table, 1)
 
@@ -145,17 +157,15 @@ class QVizPluginManager(QDialog):
             state = refusals.get(source.name)
             state = ('refused: %s' % state if state is not None
                      else ('ok' if asked else NOT_ASKED))
-            for column, text in enumerate((source.name,
-                                           MINE if source.origin == USER
-                                           else SHIPPED,
-                                           state,
-                                           source.fileName or 'no file of its '
-                                                              'own')):
+            for column, text in ((0, source.name),
+                                 (WHOSE, MINE if source.origin == USER else SHIPPED),
+                                 (STATE, state),
+                                 (WHERE, source.fileName or 'no file of its own')):
                 self.table.setItem(row, column, QTableWidgetItem(str(text)))
             check = QTableWidgetItem()
             check.setCheckState(Qt.Checked if source.name not in QVizPreferences.Disabled_bricks else Qt.Unchecked)
             check.setFlags(check.flags() | Qt.ItemIsUserCheckable)
-            self.table.setItem(row, 2, check)
+            self.table.setItem(row, ACTIVE, check)
         self._sources = {row: source for row, source in enumerate(sources)}
         self._refreshing = False
         self._enableForRow()

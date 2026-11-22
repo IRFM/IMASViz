@@ -600,6 +600,15 @@ user folder, and its template draws through `QVizPlotOneNode` — the same comma
 *Plot* gesture uses — so the first click on a freshly created plugin puts a real figure in
 the MDI area instead of printing.
 
+The manager's table answers **five questions in five cells** — name, whose, active, state,
+where the file lives — and its indexes are named (`WHOSE`, `ACTIVE`, `STATE`, `WHERE`),
+because for a while they were not: the active/inactive check box was appended to the
+header but written at column 2, the column the state word had just been written into, so
+`refused: SyntaxError …` and `not asked yet` disappeared from the screen and a plugin the
+catalogue refused looked fine (`manual/plugins.rst` had been describing five columns
+throughout). `ok` / `not asked yet` / `refused: <why>` is a different answer from *is it
+switched on*, and `test_82` now pins that a row can carry both at once.
+
 **What a reload does and does not do**: `QVizPluginCatalog.reload()` puts one view back to
 the disk, `reloadEverywhere(api)` every open view (and answers how many, because a reload
 nobody can count is a reload nobody believes); the sub-menu is rebuilt on every right click,
@@ -711,27 +720,32 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 2244 passed, 3 failed, 12 warnings, 1101,94 s (0:18:21),
-                                # offscreen — measured 2026-11-22 on feature/tensor-plot-core
+python3 -m pytest tests/ -q     # 2248 passed, 12 warnings, 1075,56 s (0:17:55), offscreen
+                                # — measured 2026-11-22 on feature/tensor-plot-core
 ```
 
-Those **3 red ids are not new damage**: they answer the same way at `9591f85`, two commits
-back, and they are two different things. `test_71::test_the_menu_carries_the_line_the_
-manual_documents` freezes the whole right-click menu of a curve figure, and the
-`FIGURE`-scoped plugins of `27ceeaf` legitimately added `Événements` and
-`Spectre` to it since — the expectation is stale, the menu is right. The two
-`test_82` ids are a **real regression** from `e5bd281`: `QVizPluginManager.refresh` writes
-the *State* cell (`ok` / `not asked yet` / `refused: SyntaxError …`) into column 2 and then
-**replaces that item with the active/inactive checkbox**, also column 2 (`setItem(row, 2,
-check)`), so a refused plugin answers an empty cell — it looks fine, which is exactly what
-those two tests exist to refuse.
+The 12 warnings are pyqtgraph's own (`parametertree`: *Parameter has no default
+value*), raised by `test_57` building the export dialogue — see the `pytest.ini` note
+below. There is no xfail in the tree any more (`KNOWN_UNIMPORTABLE` is empty, see the
+import sweep). Two ids were red on this branch until 2026-11-22, and what they were is
+worth keeping, because both were **expectation against mechanism** misses rather than
+flakes: `test_71` freezes the whole right-click menu of a curve figure and had taken no
+notice of the two `FIGURE`-scoped sub-menus (`Événements`, `Spectre`) `27ceeaf` added —
+the menu was right, the frozen list was old; and two `test_82` ids caught a real
+regression from `e5bd281`, where `QVizPluginManager.refresh` wrote the *State* cell and
+then put the active/inactive check box on top of it — same column — so a plugin the
+catalogue refused answered an empty cell. The manager now names its column indexes
+(`WHOSE, ACTIVE, STATE, WHERE`) and the check box has a column of its own, `Active?`. The
+manual (`manual/plugins.rst`) had been describing **five** columns all along: the code
+had drifted from the doc, not the other way round.
 
 Two uncontended runs of the same tree (T50) agree at **874,27 s** and **875,65 s** for
-**1429–1461** ids. The 2026-11-22 run above answers **1101,94 s** for **2247** ids: 54 %
-more ids for 38 % more wall time, so the growth of the suite is not what pushed the wall
-clock past the ~13 min this section used to quote. ~13 to ~18 min is what this suite costs
-on this node right now. Wall time belongs to the node (AFS, other tenants), not to the
-tree: quote it with its date, and never explain it without measuring.
+**1429–1461** ids. Two runs on 2026-11-22 answer **1101,94 s** for **2247** ids and
+**1075,56 s** for **2248**: 54 % more ids for ~35 % more wall time, so the growth of the
+suite is not what pushed the wall clock past the ~13 min this section used to quote. ~13
+to ~18 min is what this suite costs on this node right now. Wall time belongs to the node
+(AFS, other tenants), not to the tree: quote it with its date, and never explain it
+without measuring.
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
 `IMAS_VERSION`, `QT_QPA_PLATFORM=offscreen`, …) at conftest

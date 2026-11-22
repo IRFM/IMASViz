@@ -85,6 +85,13 @@ Released 11/12/2026
   preferences: a plugin the user switched off is refused **by name** in the
   log of every case, not left as a silent gap, and what it owns besides the
   menu -- a window's curves, the tools that read them -- is untouched.
+  That column came in over an answer, though: the check box was written on top of
+  the *State* cell a line above had just filled, so a plugin the catalogue refused
+  -- a half-typed file, a name that is not an identifier -- answered an **empty**
+  cell, and an empty cell reads as "nothing is wrong" while the log named the
+  syntax error. ``Active?`` and ``State`` are two columns now, so one row can say
+  it is switched off *and* say why it was refused; ``not asked yet`` stays an
+  answer, never a blank.
 - **The tool set grew where the screen had grown.** A loop now works on the
   curves a figure already drew (scale, offset, normalise, reset, remove,
   their statistics and their export), on the axes and the slider bands of a

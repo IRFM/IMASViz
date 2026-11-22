@@ -44,19 +44,23 @@ import types
 
 import pytest
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMenu, QTreeWidget
 
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizPluginMenu \
     import QVizPluginMenu
 from imasviz.VizPlugins.QVizPluginCatalog import QVizPluginCatalog, openEditor
 from imasviz.VizPlugins.QVizPluginEditor import QVizPluginEditor
-from imasviz.VizPlugins.QVizPluginManager import MINE, SHIPPED, QVizPluginManager
+from imasviz.VizPlugins.QVizPluginManager import (ACTIVE, COLUMNS, MINE, SHIPPED,
+                                                  STATE, WHOSE, WHERE,
+                                                  QVizPluginManager)
 from imasviz.VizPlugins.QVizPluginSource import (BUILTIN, builtinSource,
                                                  builtinSources,
                                                  copyIntoUserFolder,
                                                  forgetUserModules,
                                                  userPluginsFolder,
                                                  userSources, writeSource)
+from imasviz.VizUtils import QVizPreferences
 
 from support.fakes import FakeTreeNode
 
@@ -360,13 +364,13 @@ def test_the_manager_shows_what_imasviz_ships_and_what_this_user_wrote(qtbot,
     assert rowOf(manager, SHIPPED_NAME) is not None
     assert rowOf(manager, 'MyAnalysisPlugin') is not None
     assert manager.table.item(rowOf(manager, SHIPPED_NAME),
-                              1).text() == SHIPPED
+                              WHOSE).text() == SHIPPED
     assert manager.table.item(rowOf(manager, 'MyAnalysisPlugin'),
-                              1).text() == MINE
+                              WHOSE).text() == MINE
     # Every row says where the file lives -- which is how a plugin of the user's
     # own is told apart from a name on a list.
     assert manager.table.item(rowOf(manager, 'MyAnalysisPlugin'),
-                              3).text().endswith('MyAnalysisPlugin.py')
+                              WHERE).text().endswith('MyAnalysisPlugin.py')
 
 
 def test_a_view_that_never_asked_says_so_instead_of_looking_fine(qtbot, view):
@@ -376,7 +380,7 @@ def test_a_view_that_never_asked_says_so_instead_of_looking_fine(qtbot, view):
     qtbot.addWidget(manager)
 
     assert manager.table.item(rowOf(manager, SHIPPED_NAME),
-                              2).text() == 'not asked yet'
+                              STATE).text() == 'not asked yet'
 
 
 def test_a_plugin_a_view_refused_is_named_in_the_table_it_is_in(qtbot, view,
@@ -394,8 +398,36 @@ def test_a_plugin_a_view_refused_is_named_in_the_table_it_is_in(qtbot, view,
     manager = aManager(view)
     qtbot.addWidget(manager)
 
-    state = manager.table.item(rowOf(manager, 'MyAnalysisPlugin'), 2).text()
+    state = manager.table.item(rowOf(manager, 'MyAnalysisPlugin'), STATE).text()
     assert state.startswith('refused: SyntaxError')
+
+
+def test_the_check_box_and_the_state_word_each_keep_their_own_column(qtbot, view,
+                                                                    monkeypatch):
+    """Two answers, two cells. `e5bd281` gave every row a check box for
+    active/inactive and put it at column 2, where the state word had just been
+    written: the header asked five columns, `refresh` wrote four texts and one check
+    on top of one of them, so the refused plugin above answered a blank cell and
+    looked fine. Whether a plugin is on is not what the catalog said about it, and a
+    row has to be able to say both at once."""
+    aUserPlugin('MyAnalysisPlugin')
+    monkeypatch.setattr(QVizPreferences, 'Disabled_bricks',
+                        frozenset({'MyAnalysisPlugin'}))
+    manager = aManager(view)
+    qtbot.addWidget(manager)
+
+    assert manager.table.columnCount() == len(COLUMNS)
+    assert manager.table.horizontalHeaderItem(ACTIVE).text() == 'Active?'
+    assert manager.table.horizontalHeaderItem(STATE).text() == 'State'
+
+    mine = rowOf(manager, 'MyAnalysisPlugin')
+    shipped = rowOf(manager, SHIPPED_NAME)
+    assert manager.table.item(mine, ACTIVE).checkState() == Qt.Unchecked
+    assert manager.table.item(shipped, ACTIVE).checkState() == Qt.Checked
+    # The state is still readable next to the check, for a row that is off as well
+    # as for a row that is on: neither answer hides the other.
+    assert manager.table.item(mine, STATE).text()
+    assert manager.table.item(shipped, STATE).text() == 'not asked yet'
 
 
 def test_the_manager_offers_edit_only_for_a_plugin_of_the_user_s_own(qtbot,
