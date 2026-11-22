@@ -16,11 +16,17 @@ remotely through **UDA**.
 - License: **CeCILL-C**, holders CEA (France) and LECAD / University of Ljubljana (Slovenia).
   Authors banner: `L. Fleury, X. Li, D. Penko`.
 - Depends on the IMAS **Python HLI** — the `imas` module. **Corrected by
-  measurement**: the stack this checkout runs on loads `IMAS-Python/2.3.0-foss-2023b`,
-  i.e. the ITER **IMAS-Python** bindings (they export `DBEntry`, `IDSFactory`,
+  measurement**: the stack this checkout runs on loads `IMAS-Python/2.3.0-intel-2023b`
+  (the profile's auto-loaded `IMAS-Core/5.7.1-intel-2023b` and `PySide6/6.6.2-GCCcore-13.2.0`
+  with it, `UDA/2.9.3-intel-compilers-2023.2.1` among the auto-loaded), i.e. the ITER
+  **IMAS-Python** bindings (they export `DBEntry`, `IDSFactory`,
   `convert_ids`, `OLDEST_SUPPORTED_VERSION`), not the old generated-module HLI at
-  `ssh://git@git.iter.org/imas/al-python.git`. What the sources were written
-  against is the older surface, so the mismatch is real but points the other way:
+  `ssh://git@git.iter.org/imas/al-python.git`. **The `*-foss-2023b` variants the older
+  notes here and in `TESTING.md` name will not load on this node**: after
+  `module unload SciPy-bundle`, `module load IMAS-Python/2.3.0-foss-2023b` answers
+  `Load of requirement SciPy-bundle/2023.11-gfbf-2023b failed`, the default holding
+  `SciPy-bundle/2023.12-iimkl-2023b`. Ask the `*intel-2023b` names. What the sources were
+  written against is the older surface, so the mismatch is real but points the other way:
   `hasattr(imas, 'equilibrium')` is **False** here, so the idiom the sources were
   written against — `eval("imas." + idsName + "().getMaxOccurrences()")` — raises
   `AttributeError` wherever it appears. Since T13 it appears in **no executable
@@ -65,8 +71,9 @@ remotely through **UDA**.
 ### Qt binding — corrected in this pass
 
 `README` used to list **PyQt5** while no source imports it; the README now states **PySide6** and
-documents the ACH module stack (`PySide6/6.6.2-GCCcore-13.2.0`,
-`IMAS-Python/2.3.0-foss-2023b`, `PyQtGraph/0.13.7-foss-2023b`). All Qt references in the sources
+documents the ACH module stack this node runs (`PySide6/6.6.2-GCCcore-13.2.0`,
+`IMAS-Core/5.7.1-intel-2023b`, `IMAS-Python/2.3.0-intel-2023b`,
+`PyQtGraph/0.13.7-intel-2023b`). All Qt references in the sources
 are `PySide6`; legacy `PyQt5` mentions survive only inside comments. **PySide6 is the single
 binding — there is no PyQt5 fallback shim.**
 
@@ -112,13 +119,14 @@ export UDA_DISABLED=1          # optional: no remote UDA servers
 | `make -C doc html` / `-M latexpdf` | Direct Sphinx route; `doc/Makefile` adds a custom `latexpdf` rule copying `source/_static/*.mp4` next to the LaTeX output. |
 
 Running the GUI requires the IMAS HLI, which is **not vendored here** — on this ACH/Gateway
-stack it comes from environment modules (all four verified to load; PySide6 reports 6.6.3):
+stack it comes from environment modules (the profile auto-loads most of it; PySide6 reports
+6.6.3 through the Qt6 it pulls in):
 
 ```bash
 module load ach-modules
 module load PySide6/6.6.2-GCCcore-13.2.0
-module load IMAS-Python/2.3.0-foss-2023b      # provides imas, numpy, matplotlib, AL_VERSION
-module load PyQtGraph/0.13.7-foss-2023b       # provides pyqtgraph
+module load IMAS-Python/2.3.0-intel-2023b     # provides imas, numpy, matplotlib, AL_VERSION
+module load PyQtGraph/0.13.7-intel-2023b      # provides pyqtgraph — the profile does NOT load this one
 
 python $VIZ_HOME/imasviz/VizGUI/QtVIZ_GUI.py  # from sources, needs an X display
 viz                                           # installed module (ITER HPC: module load Viz/2.3.7-...)
@@ -126,7 +134,9 @@ viz -u <user> -d <database> -s <shot> -r <run> -b <backend>   # backend 13 = HDF
 ```
 
 `module` is a shell function: piping a `module load` into another command runs it in a subshell
-and loses `MODULEPATH` — load it in the same shell as the consuming command.
+and loses `MODULEPATH` — load it in the same shell as the consuming command. A `pytest tests/`
+without `PyQtGraph` loaded answers **24 fixture ERRORs** (`ModuleNotFoundError: No module
+named 'pyqtgraph'`, raised while an autouse fixture imports `imasviz`), not test failures.
 
 Sphinx 7.2.6 is on this node and needs no module, and since T47 nothing else is needed either:
 the manual's look is `doc/source/_static/imasviz.css` (+ `imasviz.js` for the light/dark choice)
@@ -144,27 +154,55 @@ packaging manifest** in this repo.
 ```
 imasviz/
 ├── Viz_API.py                 # Viz_API: scripting API + central session state
-├── VizUtils/                  # global constants, prefs, logging, window geometry
+├── VizUtils/                  # global constants (QVizGlobalValues: FigureTypes,
+│                              # UserInputs, indices), prefs, logging, window geometry
 ├── VizDataSource/             # opens a case: URI building, DBEntry, Tore-Supra, factory,
 │                              # QVizCaseOccurrences (which occurrences the case holds),
 │                              # QVizDBEntryRegistry (one record per case: the entry, its
 │                              # reference count, its IDS handles, and which of them are lazy)
-├── VizDataAccess/             # QVizIDSViewParser: walks the dictionary through imas reflection
-│   └── VizTimeSlices/         #   how many elements of a dynamic AOS a view keeps
+├── VizDataAccess/             # QVizIDSViewParser: walks the dictionary through imas
+│   ├── VizTimeSlices/         #   reflection; how many elements of a dynamic AOS a view keeps
+│   └── QVizEquilibriumRead.py #   one read shared by the two equilibrium plugins and by
+│                              #   the agent: grid(), surfaceAt(i), profilesAt(i), resolve(t), wall()
 ├── VizEntities/               # data-array handles
+├── VizAnalysis/               # the physics, with no Qt and no case in it: detect.py
+│                              #   (events), spectra.py (spectrum, cross-correlation),
+│                              #   trend.py (a leaf across the shots of a campaign) — asked
+│                              #   both by the four brick plugins and by the tool set
 ├── VizGUI/
 │   ├── QtVIZ_GUI.py           # entry point: QVizMainWindow, MDI area, start window
-│   ├── VizGUICommands/        # command objects (loading/selection/menus/opening/plotting)
+│   ├── VizGUICommands/        # command objects (loading/selection/menus/opening/plotting,
+│   │                          # VizSession/: QVizSaveSession, QVizRestoreSession)
 │   ├── VizTreeView/           # the IDS tree view (shot view, "DTV")
-│   ├── VizPlot/ + VizPlotFrames/  # plot widgets and frames
+│   ├── VizPlot/ + VizPlotFrames/  # plot widgets and frames (QVizEquilibriumFigure,
+│   │                          #   QVizPlotStyling, QVizColourScales, QVizCurveErrors…)
 │   ├── VizWidgets/            # db browser, nodes-selection window, VizNodeDocumentation/
-│   │                          # (QVizNodeFacts: what a node holds; the panel draws it)
-│   ├── VizGuiCustomization/   # QVizDefault defaults
+│   │                          #   (QVizNodeFacts: what a node holds; the panel draws it)
+│   ├── VizGuiCustomization/   # QVizDefault defaults, QVizStyle (the two themes)
 │   └── VizConfigurations/
-├── VizPlugins/                # plugin framework + plugins (see below)
-├── VizAgent/                  # in-app agent: gestures, LLM client, loop, panel
+├── VizPlugins/                # plugin framework + the eight shipped plugins (see below)
+├── VizAgent/                  # one core, five faces (see *One core, five faces*)
+│   ├── core.py                # McpGuiCore: the gestures, offscreen-safe, no LLM in it
+│   ├── tools.py               # the tool schema that face is offered through
+│   ├── dispatcher.py          # the GUI-thread queue a worker hands a gesture to
+│   ├── llm_client.py, agent.py, panel.py  # the endpoint, the loop, the in-app window
+│   ├── journals.py, journals_index.py, QVizPromptHistory.py   # the transcript
+│   └── rag_docs.py, rag_store.py          # the user's own document corpus + its index
 └── VizExamples/               # example_*.py and test_*.py standalone scripts
+
+mcp_server/                    # the session's tools as an MCP endpoint (:8765/mcp)
+viz_cli/                       # the same loop on a line, offscreen by default
+viz_web/                       # the same loop on a page (WebSession, GuiDispatcher)
+viz_gateway/                   # one web session per user behind a token (spawner.py)
 ```
+
+**One core, five faces.** `McpGuiCore` (`VizAgent/core.py`) is the only place a gesture is
+implemented; the in-app agent, the MCP service, `viz_cli`, `viz_web` and `viz_gateway` are
+all of them front-ends over it and over the same `Viz_API` session. A web turn goes
+`WebSession.callGesture` → `GuiDispatcher` → the GUI thread, and the dispatcher answers
+`The GUI thread did not answer in 300 s` when the thread never comes back — which is why
+nothing on that path may open a dialog (see the plugin guard under *Pitfalls*). A turn's
+transcript and its captures live under `~/.imasviz/gateway/homes/<user>/.imasviz/web/shots/NNN_<date>/`.
 
 Core concepts, in the vocabulary used by the code and docs:
 
@@ -172,8 +210,11 @@ Core concepts, in the vocabulary used by the code and docs:
   `Viz_API.DTVframeList` / `DTVlist`.
 - **figure frames** — `Viz_API.figureframes`, keyed by `FigureTypes` prefix + number
   (`SlicesPlot1`, `SlicesImage1`, `TablePlotView0`, `StackedPlotView0`, `ProfilesPlot…`).
-  Five kinds since T22(c): the `Figure:` namespace the legacy curve window handed out is
-  gone with the window, as the `Image:` one went before it — a prefix with no frame behind
+  **Eight** kinds in `FigureTypes.MENU_ORDER` now — `TablePlotView`, `StackedPlotView`,
+  `Profiles`, `Plot`, `Image`, `Equilibrium` (the matplotlib chart), `EquiSurfaces`
+  (the flux-surface window) and `Agent`. The `Figure:` namespace the legacy curve window
+  handed out is gone with the window, as the `Image:` one went before it — a prefix with
+  no frame behind
   it is a *Windows* menu group that can never be filled. Because of that, `GetFiguresCount`,
   `GetNextKeyForFigure`, `GetFiguresKeys` and `GetFigureKey` take no default `figureType`:
   a call naming no kind used to mean the dead one silently.
@@ -301,17 +342,22 @@ Core concepts, in the vocabulary used by the code and docs:
   still being built is an empty window), a case that cannot be opened costs
   **its own** windows and names the file and the URI in the log, and the
   selection is applied **last** because a Stacked Plot View is filled from the
-  selection of its view. A plugin window (`PlotView:`, `EquiPlotView:`) is **not**
+  selection of its view. A plugin window (`PlotView:`, `EquiPlotView:`,
+  `EquiSurfaces:`) is **not**
   a `<Figure>` — it is not in the MDI area and answers no key of its own — so it
   is a `<PluginWindow>` under the case whose view offered its entry, and the
   restore asks that entry again through `view.pluginCatalog` (built there if the
-  menu was never opened) with `QVizPluginAnswers(occurrence, figureKey)`: nothing
-  is asked of the user, where the Profiles occurrence question is a **modal
-  `QInputDialog`** that held a probe **240 s**. That needs two things of a plugin,
-  both in the howto: `execute(self, vizAPI, pluginEntry, answers=None)`, and a
-  `QVizPluginWindow(uri, plugin, entry, ids, occurrence)` stamp left on the window
-  it drew — `QVizPluginCatalog.run(entry, answers=)` refuses by name an `execute`
-  that cannot take the answers. A window comes back **as its entry draws it**: the
+  menu was never opened) with `QVizPluginAnswers(occurrence, figureKey, time)`: nothing
+  is asked of the user, where the Profiles occurrence question used to be a **modal
+  `QInputDialog`** that held a probe **240 s**, and the `equilibrium` surfaces entry
+  its instant the same way. That needs two things of a plugin,
+  both in the howto: a `run(context)` that **reads** `context.answers` instead of
+  asking, and a
+  `QVizPluginWindow(uri, plugin, entry, ids, occurrence, time)` stamp left on the window
+  it drew — `time` is what keeps a restore of `equilibriumsurfaces` entry 1 from opening
+  that question a second time, and `QVizPluginCatalog.run(entry, answers=)` hands the
+  refusal back when the entry asked anyway (its `_NoDialogGuard` takes the dialog down
+  first). A window comes back **as its entry draws it**: the
   time index it starts on, not the one a slider was dragged to, and no tab the
   user added. Two things a `<Figure>`
   cannot say are said at the restore instead of pretended: the band of a table
@@ -394,32 +440,55 @@ callers import as `from imasviz.VizUtils import QVizLogger`.
 
 `imasviz/VizPlugins/` is an extension mechanism, not dead code. To add a plugin:
 
-1. Create `imasviz/VizPlugins/viz_<name>/PluginName.py` subclassing `VizPlugin` and implement:
-   `isEnabled()` (return `True` to activate), `getEntries()` (the entry *numbers* this
-   node earns), `getAllEntries()` (`[(number, menu_text), …]` — the text is looked up
-   **by that number**, and a number it does not describe is refused by name),
-   `execute(vizAPI, pluginEntry, answers=None)` (receiving that same number, and the
-   `QVizPluginAnswers` of a session restore when the entry is replayed), optional
-   `getPluginsConfiguration()`, `getDescription()`. A plugin may gate on
-   `self.selectedTreeNode.getIDSName()` against a `supported_idss` list — that is how the
-   Equilibrium chart claims its one IDS — or claim every IDS root and ask the case what it
-   holds, which is what `VizProfiles_plugin` does now: `isEnabled` is true for any IDS, and
-   `execute` refuses by name when the occurrence it was handed is not in the case. Inheriting `VizPlugin` is not what puts a plugin in the menu: the
-   catalog binds `setSelectedTreeNode(node)` **and** `setDataTreeView(view)` and asks the
-   methods, so a plugin outside the hierarchy that honours them is offered like any other.
-   The view binding is load-bearing and was missing for three slices: a plugin that reads
-   `self.dataTreeView` — which is how `VizProfiles_plugin` asks the case which occurrences
-   it holds — answered `AttributeError` on the first line of `execute()`, and the guard in
-   `QVizPluginCatalog.run` reported it as `Plugin ... failed`, so the entry looked broken
-   rather than unbound. A test that only checks "a failing plugin is named in the log"
-   passes right over that; `test_43` now pins the binding itself. A window the plugin
-   draws is in a session only if the plugin says so: it leaves a
-   `QVizPluginWindow(uri, plugin, entry, ids, occurrence)` stamp on the frame it opened
-   (`VizPlugins/VizPlugin.py`), and its `execute` must accept `answers` —
-   `QVizPluginCatalog.run(entry, answers=)` reads the signature with `inspect` and refuses
-   by name an entry that cannot be handed the answers, which is what a restore needs to
-   skip the question the entry would otherwise ask (the Profiles occurrence question is a
-   **modal `QInputDialog`**: measured, a probe sat in it **240 s**). A window the plugin
+1. Create `imasviz/VizPlugins/viz_<name>/PluginName.py` subclassing `VizPlugin` and
+   declare **two attributes**. The contract is declarative: no method is asked of a
+   plugin any more.
+
+   * `SCOPE = QVizPluginScope(kind, ids=(), where=None)` — one of **five** places:
+     `IDS` (an IDS root; `ids=` names which, empty meaning any root), `NODE` (a
+     quantity; `where=` a predicate over the node), `CASE` (the case's own menu bar),
+     `APP` (the application's), `FIGURE` (the right-click box of a window of curves).
+     A plugin naming no `SCOPE` is offered nowhere and named in the log for it; a
+     `CASE` / `APP` / `FIGURE` scope given an `ids=` or a `where=` is refused at
+     construction, because those places have nothing to match.
+   * `ACTIONS = (QVizPluginAction(key, label, run=), …)` — `key` is the stable number
+     the menu, the session and the agent all address the line by, `label` what the
+     line says (a plain string; its tooltip defaults to it), `run(context)` the work.
+     `ACTIONS` is read while the class body runs, so any name a `run` refers to must be
+     defined **before** the class. To offer a subset of the actions for one place and
+     not another, or to refuse a place out loud, override `offered(context)` — raising a
+     `ValueError` there drops the line and names the reason in the log of the case. No
+     shipped plugin overrides it today; it is the extension point the framework asks.
+
+   The one argument of `run` is a `QVizPluginContext`: `api` (always the session's
+   own), `view` (the shot view — `None` for `APP` and `FIGURE`), `node` (the node the
+   gesture was made on), `figure` (the frame whose menu box was clicked, `None`
+   elsewhere), `scope`, `occurrence` (the one to draw: the session file's under a
+   replay, otherwise the first the case holds) and `answers` — a
+   `QVizPluginAnswers(occurrence, figureKey, time)`, `None` when the line came from a
+   menu. A refusal is a `ValueError` with the reason in words.
+
+   What the old contract made a plugin write — `isEnabled`, `getEntries`,
+   `getAllEntries`, `getPluginsConfiguration`, `getDescription`,
+   `execute(vizAPI, pluginEntry, number)` — is gone, and with it the
+   `setSelectedTreeNode` / `setDataTreeView` binding: the context carries the case and
+   the node, and `test_43` pins that `context.view` **is** the view whose catalog built
+   the entry (the binding bug this replaced answered `AttributeError` inside the action
+   and looked like a broken plugin rather than an unbound one).
+
+   A window the plugin draws is in a session only if the plugin says so: it leaves a
+   `QVizPluginWindow(uri, plugin, entry, ids, occurrence, time)` stamp on the frame it
+   registered (`VizPlugins/VizPlugin.py`) — `time` is the instant that entry answered,
+   `None` for one that asks none. A restore replays the action with
+   `QVizPluginAnswers(occurrence, figureKey, time)` so the entry draws that window
+   without asking again. Two things the framework now owes that caller:
+   `QVizPluginCatalog.run(entry, answers=)` **returns the refusal** (`None` when the
+   action ran) — the log panel is where a user at a menu reads a refusal, and a tool
+   call has no log panel in front of it — and while answers are handed,
+   `_NoDialogGuard` closes any modal window as it appears and refuses the entry by that
+   dialog's title, because a `QDialog` runs a nested loop on the GUI thread and an
+   offscreen session has nobody to press a button (measured: **300 s** and
+   `The GUI thread did not answer in 300 s`). A window the plugin
    shows itself is a third thing the plugin owes: it is not an MDI subwindow, so nothing
    routes its close box — the frame mixes in `QVizClosableWindow` and answers `windowApi()`
    with the api it is registered in, which is what makes that box hide the window and keep
@@ -427,7 +496,11 @@ callers import as `from imasviz.VizUtils import QVizLogger`.
    no *Windows* menu line can bring back.
 2. Register the class in the `RegisteredPlugins` dict in `VizPlugins/VizPlugin.py`
    (`'PluginName': 'viz_<name>.PluginName'` — the class must bear the key's name, since
-   that is what the catalog takes out of the module). Several entries are commented out —
+   that is what the catalog takes out of the module). **Eight** are active:
+   `equilibriumcharts`, `equilibriumsurfaces` (both in `viz_equi/`),
+   `VizProfiles_plugin`, `VizSlicePlugin`, `VizEventDetection`, `VizSpectral`,
+   `VizDerivedQuantities` (`CASE` scope) and `VizCampaignTrend` (`APP` scope).
+   Several entries are commented out —
    an unregistered plugin never loads, and a registered path that no longer resolves is
    refused in the log of the case without costing the other plugins. No submodule-provided
    plugin remains: the ETSViz submodule and `imasviz/VizPlugins/viz_ETS/` were removed on
@@ -447,8 +520,12 @@ callers import as `from imasviz.VizUtils import QVizLogger`.
    widget of the class 'exampleWidget'; defaulting to base class 'QWidget'"* and drops the
    connections the file makes to it (10 in `examplePlugin.ui`), and overriding
    `createWidget` changes nothing because it is never called; such a plugin is refused by
-   name, naming the class, so the repository's only `.ui` plugin stays unregistered.
-   `viz_example/` ships a `run_plugin_ui_standalone.py` for off-GUI development of it.
+   name, naming the class. **The repository's own sample of that shape is gone** —
+   `9b438cf` took `imasviz/VizPlugins/viz_example/` away (its `exampleplugin.py`, its
+   `.ui` and its `run_plugin_ui_standalone.py`), so there is nothing left here to try the
+   loader on; the commented-out `example_UiPlugin` entry of `RegisteredPlugins` still
+   names that deleted folder, as the shape and not as an offer. `_loadUiPlugin` itself is
+   live and unchanged.
    The SOLPS plugin (`viz_solps/`, 11 files and 1 451 lines, with its own `SOLPSwidget`
    class and a `.ui` that lost 3 connections the same way) was removed on request: it was
    never registered, and the manual's section that documented it is gone with it.
@@ -461,8 +538,18 @@ three gestures share: right click on an IDS root, right click on a quantity, Shi
 click anywhere; it answers how many lines it added, so an empty sub-menu is not left on
 screen, and builds that sub-menu with its parent at construction — `addMenu(title)` hands
 out a QMenu the Python wrapper owns, which then dies before it can be clicked).
+The other three places ask the same catalog other ways: `caseEntries()` for a shot view's
+own menu bar, `appEntries()` for the application's (`QVizPluginCatalog(api=...)`, no case),
+and the module-level `figureMenuFor(frame, menu)` for a curve window's right-click box —
+that one needs no catalog instance (the frame is the place, no per-view cache) and holds a
+`weakref` to the frame in the lambda, never a context. `run(offer, answers=)` returns the
+refusal, `None` when the action ran.
 `QVizPluginsHandler` and `QVizPluginsPopUpMenu` are gone, and so are the per-name lookup
-tables `VizPlugin` used to carry: a plugin is asked itself, once per view.
+tables `VizPlugin` used to carry: a plugin is asked itself, once per view. **One asymmetry
+to know before offering to fix it:** `figureMenuFor` walks `RegisteredPlugins` and imports
+under `imasviz.VizPlugins.` only, so a plugin of the user's own that declares `FIGURE` is
+offered nowhere — the other four places go through a catalog, which also looks at
+`$HOME/.imasviz/plugins`.
 
 ### Two origins: what IMASViz ships, and what this user wrote
 
@@ -537,19 +624,31 @@ painted`) and killed the process in a **later** paint event, in another window, 
 nothing in the traceback naming the file at fault — so `paintLineNumbers` ends its painter
 in a `finally`.
 
-`test_imas_viz_plugin.py` instantiates a plugin with a hardcoded `dictDataSource`
-(shot 50642, `west_equinox`) and calls `execute()` directly — the pattern for exercising a
-plugin without the full GUI. `tests/test_43_plugins_in_the_menu.py` drives the menu
-instead, with stub plugins registered through a fake module in `sys.modules`.
+`imasviz/VizPlugins/test_imas_viz_plugin.py` and `imasviz/VizExamples/test_plugin.py` are
+**not** a pattern to copy: both speak the abrogated contract —
+`pluginEquiPlot.execute(app, dictDataSource)` and `plugin_instance.execute(api,
+pluginEntry=2)` — and the first imports `imas_viz_plugins.equilibriumcharts`, a package
+name this repository has not had for a long while, so neither runs any more. To exercise a
+plugin without the full GUI, drive the framework instead: `tests/test_43_plugins_in_the_menu.py`
+registers stub plugins through a fake module in `sys.modules` and asks the catalog, and
+`tests/test_54_equilibrium_surfaces_on_a_real_case.py` runs a shipped entry against the
+reference case through `catalog.run(entry, answers=...)`.
 
-**Two** plugins are registered (`VizPlugin.py:32-36`), and both are run end to end on
-the reference case by `tests/test_51_*` and `tests/test_85_*` (Profiles),
-`tests/test_69_*` (what a session does with a Profiles window) and `tests/test_53_*`
-(Equilibrium).
-The Equilibrium one (`viz_equi/equilibriumcharts.py`, **1 253 l.**, author J. Morales) is
+**Eight** plugins are registered (`VizPlugin.py:230-240`), and the case-running ones are
+run end to end on the reference case by `tests/test_51_*` and `tests/test_85_*` (Profiles),
+`tests/test_69_*` (what a session does with a Profiles window), `tests/test_53_*`
+(the Equilibrium chart) and `tests/test_54_equilibrium_surfaces_*` (the flux-surface
+window — read, figure, menu and session). The two bricks of the figure's right click
+(`VizEventDetection`, `VizSpectral`) and the two of the campaign (`VizDerivedQuantities`,
+`VizCampaignTrend`) are pinned layer by layer by `tests/test_152_*`–`test_160_*` (pure,
+surface, GUI), their scope and registration by `tests/test_162_bricks_as_plugins.py`, and
+the user's switch over them by `tests/test_161_plugin_active_state.py` — not against a
+pulse.
+The Equilibrium chart (`viz_equi/equilibriumcharts.py`, **1 253 l.**, author J. Morales) is
 the only matplotlib window in the application: it does not draw through the axes model, so
-it is registered under its own `FigureTypes.EQUILIBRIUMPLOTTYPE` (`EquiPlotView:`) — a
-**6th** `MENU_ORDER` kind, so a line of the *Windows* menu and one of its *Delete*
+it is registered under its own `FigureTypes.EQUILIBRIUMPLOTTYPE` (`EquiPlotView:`) — one of
+the **eight** `MENU_ORDER` kinds, so a line of the *Windows* menu and one of its *Delete*
+sub-menu reach it.
 sub-menu reach it. Like the Profiles panel it serves the case of the shot view that
 opened it — a `None` node in `figToNodes`, registered **before** the frame is, so the
 *Windows* menu lists it in the case's group and the case's gestures (*Close this case*,
@@ -612,22 +711,37 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 1461 passed, 1 xfailed, 12 warnings, ~13 min, offscreen
+python3 -m pytest tests/ -q     # 2244 passed, 3 failed, 12 warnings, 1101,94 s (0:18:21),
+                                # offscreen — measured 2026-11-22 on feature/tensor-plot-core
 ```
 
-Two uncontended runs of the same tree (T50) agree at **874,27 s** and **875,65 s**;
-the run that closed T52 answers **797,34 s** for **1461** ids, against the **794,17 s**
-for **1429** ids the T51 row recorded — 32 ids more for the same wall time, so the
-menus and their stand-in frames cost nothing measurable. ~13 to ~15 min is what this
-suite costs on this node right now. Wall time belongs to the node (AFS, other tenants),
-not to the tree: quote it with its date, and never explain it without measuring.
+Those **3 red ids are not new damage**: they answer the same way at `9591f85`, two commits
+back, and they are two different things. `test_71::test_the_menu_carries_the_line_the_
+manual_documents` freezes the whole right-click menu of a curve figure, and the
+`FIGURE`-scoped plugins of `27ceeaf` legitimately added `Événements` and
+`Spectre` to it since — the expectation is stale, the menu is right. The two
+`test_82` ids are a **real regression** from `e5bd281`: `QVizPluginManager.refresh` writes
+the *State* cell (`ok` / `not asked yet` / `refused: SyntaxError …`) into column 2 and then
+**replaces that item with the active/inactive checkbox**, also column 2 (`setItem(row, 2,
+check)`), so a refused plugin answers an empty cell — it looks fine, which is exactly what
+those two tests exist to refuse.
+
+Two uncontended runs of the same tree (T50) agree at **874,27 s** and **875,65 s** for
+**1429–1461** ids. The 2026-11-22 run above answers **1101,94 s** for **2247** ids: 54 %
+more ids for 38 % more wall time, so the growth of the suite is not what pushed the wall
+clock past the ~13 min this section used to quote. ~13 to ~18 min is what this suite costs
+on this node right now. Wall time belongs to the node (AFS, other tenants), not to the
+tree: quote it with its date, and never explain it without measuring.
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
 `IMAS_VERSION`, `QT_QPA_PLATFORM=offscreen`, …) at conftest
 import time, **before** any test imports `imasviz` — which is mandatory, because
 `QVizGlobalValues` and `QVizGlobalOperations.checkEnvSettings()` can `sys.exit()`.
-Markers: `ui`, `dd`, `case`; `timeout = 180` caps every test. The 1
-`xfail(strict=True)` entry is an environment limit, listed in `TESTING.md` §4.
+Markers: `ui`, `dd`, `case`; `timeout = 180` caps every test. There is **no xfail left
+in the suite**: the only imperative xfail list is `KNOWN_UNIMPORTABLE` of
+`tests/test_99_import_sweep.py`, and it has been empty since `9b438cf` removed
+`viz_example/exampleplugin.py`, the one module of the package that could not import.
+(`TESTING.md` §4 still describes the old entry — not re-checked here.)
 
 `pytest.ini` carries one `filterwarnings` line, narrowed to
 `matplotlib.backends.backend_qt`, and its comment says why: that module asks Qt
@@ -637,11 +751,16 @@ live widget — so a test that dresses the application while another file's
 matplotlib toolbar is still alive collects one warning per icon per dressing
 (**1940 warnings** on such a run before the filter, **0** from the same file run
 alone; a real session dresses the application once, before any plugin window
-exists). Anything raised from IMASViz's own code still shows.
+exists). Anything raised from IMASViz's own code still shows. The 2026-11-22 run answers
+**12 warnings**, and none of them are that module's: all 12 come from
+`pyqtgraph/parametertree` (`Parameter has no default value. Pass a default, or use
+setDefault()`), raised by `test_57` building the export dialogue. So the filter line is
+not what keeps a run near-silent, and a warning count is not a signal to chase here.
 
 The suite runs on **one numpy generation and the tool has to survive the other**.
 Measured here: the module stack brings numpy **1.26.2**
-(`SciPy-bundle/2023.11-gfbf-2023b`) and `~/.local` holds **2.4.6**, with the module
+(`SciPy-bundle/2023.12-iimkl-2023b` on the intel stack this checkout runs on) and
+`~/.local` holds **2.4.6**, with the module
 paths winning `sys.path` — so every case test, every plugin and every plot of this
 suite runs on NumPy 1, and a name only NumPy 2 refuses is invisible to all of them.
 That is how the Equilibrium overview plugin died in the field: `np.dtype((np.unicode_,
@@ -909,19 +1028,54 @@ artifacts of this codebase, and several are load-bearing:
   `test_90` pins the width, `test_51` the 50/37/13 page, `test_85` the whole-page
   refusal and the paging, and `test_88` the window-per-IDS, the width combo and the
   selection of the profiles list.
+- **A widget a layout does not hold keeps the geometry Qt gave it at birth.** The
+  equilibrium flux-surface window (`QVizEquilibriumFigure`, key `EquiSurfaces:N`) drew
+  thirteen curves and answered a picture **91% empty body**: `addWidget(pgPlotWidget)`
+  puts a widget at stretch **0**, so the `addStretch(1)` below it took the window's
+  height and left the aspect-locked frames at their **68 px** minimum of a **772** px
+  window; and `drawProfiles` built the profiles stack with the window as its **parent**
+  without ever calling `layout().addWidget`, so eight panels whose own layout asked
+  **592** px answered `QRect(0, 0, 100, 30)`, with `layout.indexOf(stack)` at `-1`.
+  Neither a curve count nor a null-pixmap check says a word about that — `grab()`
+  answers a perfectly good non-null pixmap, which is why `nonEmptyGrab` in
+  `tests/test_54_equilibrium_surfaces_*` now asks what part of the window's height the
+  widgets the layout manages really hold (a spacer answers no widget and contributes
+  nothing), and `tests/test_163_*` refuses both shapes without opening a case. The house
+  pattern is `QVizCurvePlot.py:204` / `QVizImagePlot.py:108`: the graphics widget is
+  added with no trailing spacer.
+- **A modal dialog asked where a call answers in the user's place stops the whole
+  session**, and the symptom is a hang, not an error. `QDialog.exec()` runs a **nested
+  event loop on the GUI thread**, so on `viz_web` / `viz_cli` / `viz_gateway` — where the
+  gestures go through `GuiDispatcher` — nothing else is served and the caller answers
+  `The GUI thread did not answer in 300 s`; the model retries, and the user sees an
+  endless loop. `QVizPluginCatalog.run(offer, answers=)` installs `_NoDialogGuard` for
+  the duration of the action and returns a refusal naming the dialog's title; from a menu
+  (`answers is None`) the dialog is legitimate and is left alone. Two Qt facts, measured
+  on this PySide6 6.6.3: a modal announces itself as a `QEvent.Show` that reaches the
+  **application** event filter before its loop is entered, `isModal()` already true — so
+  it is recognised by Qt's own word, not by a list of classes; and `done()` called inside
+  that event leaves the loop running, because `exec()` starts pumping after the event is
+  delivered, so the refusal goes through a zero `QTimer`. `test_43` pins all three
+  (the `exec()` case, the `show()` case, and the menu case that must stay untouched).
+  The `QPainter::end: Painter ended with 2 saved states` that came with the same report
+  has **not** been reproduced alone — do not write a fix aimed at it.
 
 ## Verified in situ (ACH/Gateway module stack)
 
 Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-13.2.0` +
-`IMAS-Python/2.3.0-foss-2023b` + `PyQtGraph/0.13.7-foss-2023b`:
+`IMAS-Python/2.3.0-intel-2023b` + `PyQtGraph/0.13.7-intel-2023b` (re-checked 2026-11-22; the
+numbers below were first taken on the `*-foss-2023b` build of an earlier state of this node,
+and the foss variants no longer load here — see *Project overview*):
 
 - `imas`, `PySide6` (reports **6.6.3**), `pyqtgraph` (0.13.7), `numpy`, `matplotlib` all import.
 - Import sweep of the `imasviz` package (skipping `VizExamples/` and standalone scripts):
-  it walks **114** modules and **113** of them import. The one failure is Qt-Designer
-  scaffolding only, not in the
-  launch chain and not registered: `viz_example/exampleplugin.py`
-  (`QPyDesignerCustomWidgetPlugin` absent in PySide6 6.6 — only
-  `QPyDesignerCustomWidgetCollection`). Before the SOLPS plugin was removed the sweep
+  measured **2026-11-22**, it walks **153** modules and **all 153 import** —
+  `KNOWN_UNIMPORTABLE` is empty. The module that used to be the one failure,
+  `viz_example/exampleplugin.py` (`QPyDesignerCustomWidgetPlugin` absent in PySide6 6.6 —
+  only `QPyDesignerCustomWidgetCollection`), is gone: `9b438cf` removed the whole
+  `viz_example/` folder. The counts below are **history**, taken state by state; they do
+  not add up to today's number, and quoting one of them for the current tree is wrong.
+  Before the SOLPS plugin was removed the sweep
   walked 126 modules with 5 failures; `viz_solps/` and its `src/` subtree accounted for 9
   of those modules, 4 of the failures. T22(c) took **7** more out of the walk — five
   production modules of the legacy figure island, the `viz_tests` package and its module.
@@ -999,10 +1153,20 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   `viz_equi/test_equilibriumcharts_plugin.py` (59 l.) was never in that count and its
   removal costs no test. It collects the modules and parametrizes on them, so a new
   module costs four more ids and no counter anywhere.
-  The in-app agent of this pass adds **7** — `VizAgent/` (`__init__`,
+  The in-app agent of that pass added **7** — `VizAgent/` (`__init__`,
   `core.py`, `dispatcher.py`, `llm_client.py`, `agent.py`, `tools.py`,
-  `panel.py`) — so the sweep answers ~**132** passed, **1** xfail
+  `panel.py`) — so the sweep answered ~**132** passed, **1** xfail at the time
   (measured with `python3 -m pytest tests/test_99_import_sweep.py -q`).
+  `VizAgent/` has **five modules more** since — `journals.py`, `journals_index.py`,
+  `QVizPromptHistory.py`, `rag_docs.py`, `rag_store.py` — and the package holds
+  `VizAnalysis/` (`detect.py`, `spectra.py`, `trend.py`) as well. Re-measured
+  **2026-11-22**: `python3 -m pytest tests/test_99_import_sweep.py -q` answers **155
+  passed in 4,98 s** — that is **153 modules, 153 imports, none refused** (the id count
+  is the module count plus the two guards `test_the_walk_finds_the_package` and
+  `test_known_unimportable_list_is_not_stale`). There is no "113 of 114" any more: since
+  `9b438cf` took `viz_example/` out, `KNOWN_UNIMPORTABLE` is empty and the whole package
+  imports. Nothing else in the repository carries that counter, so re-measure before
+  quoting a different number.
 - **The application wears a theme, and it is the manual's palette** (T48).
   `VizGUI/VizGuiCustomization/QVizStyle.py` holds both of them (`light`, `dark`),
   **19** colour names each, byte for byte the `tokens:begin` block of
