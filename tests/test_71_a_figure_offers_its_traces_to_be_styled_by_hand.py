@@ -77,10 +77,18 @@ FIRST = 'magnetics/flux_loop(0)/flux/data'
 SECOND = 'magnetics/bpol_probe(0)/field/data'
 
 # What the figure's right click answers, in order: pyqtgraph's own four lines, the
-# three of `QVizCurveErrors`, then this row's line. Measured on the reference case.
+# three of `QVizCurveErrors`, then this row's line, then the bricks of BRICK_LINES
+# below. Measured on the reference case.
 PYQTGRAPH_LINES = ['View All', 'X axis', 'Y axis', 'Mouse Mode']
 ERROR_LINES = ['Show/Hide error bars', 'Show error bars (with slicing)',
                'Show/Hide confidence bands']
+# And the two sub-menus the shipped `FIGURE`-scoped plugins earn on that same box —
+# the event detection of `VizEventDetection`, the spectrum of `VizSpectral`. What
+# each holds inside is pinned where it belongs (test_154, test_160, test_162); they
+# are spelled here because the assertion below freezes the whole box, so a line a
+# plugin adds has to be answered here too — which is how this row went red when the
+# scope `FIGURE` came in: the menu was right, the frozen list was a commit behind.
+BRICK_LINES = ['Événements', 'Spectre']
 
 # What pyqtgraph leaves a curve drawn without a pen at, measured.
 LIBRARY_DEFAULT = (200, 200, 200)
@@ -163,7 +171,8 @@ def test_the_menu_carries_the_line_the_manual_documents(session):
     frame = figureOf(session, [FIRST])
 
     assert ENTRY not in PYQTGRAPH_LINES + ERROR_LINES
-    assert menuLines(frame) == PYQTGRAPH_LINES + ERROR_LINES + [ENTRY]
+    assert menuLines(frame) == PYQTGRAPH_LINES + ERROR_LINES + [ENTRY] \
+        + BRICK_LINES
 
 
 def test_the_window_lists_every_trace_under_the_name_the_figure_gives_it(session):
