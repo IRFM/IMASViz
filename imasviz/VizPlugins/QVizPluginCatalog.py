@@ -402,6 +402,26 @@ class QVizPluginCatalog:
         """
         return self._offers(IDS, node) + self._offers(NODE, node)
 
+    def entriesNamed(self, pluginName, nodes):
+        """Every line of one plugin among these IDS roots, as ``[(root, entry)]``.
+
+        Asked of the catalog rather than of one node, because a caller that names
+        no IDS root does not know which one the plugin claims:
+        ``equilibriumsurfaces`` is offered on the ``equilibrium`` branch and on no
+        other, so picking a root by hand is how a call ends up asking a plugin
+        where it was never offered -- and being refused for it. What this answers
+        is where the line *is*: one answer for a plugin that claims one branch,
+        several for one that claims any IDS. Several is a question for the caller,
+        not a guess for the tool -- the occurrence and the window drawn differ per
+        root.
+        """
+        found = []
+        for node in nodes:
+            for entry in self.entriesFor(node):
+                if entry.pluginName == pluginName:
+                    found.append((node.getIDSName(), entry))
+        return found
+
     def caseEntries(self):
         """The lines the case's own menu bar earns -- its ``CASE`` plugins."""
         return self._offers(CASE)
@@ -413,21 +433,29 @@ class QVizPluginCatalog:
     def run(self, offer, answers=None):
         """Hand one line to the action it names, with the context it ran in.
 
-        A plugin that refuses says so in the log with its name. `answers` is what
-        a session already gave in the user's place (a `QVizPluginAnswers`); from
-        a menu it is None, and the action asks its own question as it always did.
-        The context the action reads is the one this line was offered in, with the
-        occurrence a session named taking the place of the one the case first holds.
+        A plugin that refuses says so in the log with its name, and the reason
+        comes **back** as the return value -- ``None`` when the action ran. The
+        log is where a user at a menu reads it; a tool call has no log panel in
+        front of it, and an agent told nothing but ``ran`` would answer that a
+        window was drawn when the plugin refused and drew nothing.
+
+        `answers` is what a session already gave in the user's place (a
+        `QVizPluginAnswers`); from a menu it is None, and the action asks its own
+        question as it always did. The context the action reads is the one this
+        line was offered in, with the occurrence a session named taking the place
+        of the one the case first holds.
         """
         from PySide6.QtWidgets import QMainWindow
 
         if isinstance(offer.plugin, QMainWindow):
             self._showUiWindow(offer)
-            return
+            return None
         action = offer.action
         if action is None or not callable(action.run):
             self._refuse(offer.pluginName, 'the line named here has no run to call')
-            return
+            return ('the %s entry of plugin %s has no run to call'
+                    % (action.key if action is not None else '?',
+                       offer.pluginName))
 
         context = QVizPluginContext(
             api=self._apiObject(),
@@ -448,11 +476,18 @@ class QVizPluginCatalog:
         try:
             action.run(context)
         except ValueError as error:
+            # The plugin's own words, named: this is the refusal the caller has to
+            # hear, and re-wording it here is how a session ends up reporting a
+            # window it never drew.
             self._log().error('Plugin %s could not run: %s'
                               % (offer.pluginName, error))
+            return str(error)
         except Exception as error:
             self._log().error('Plugin %s failed: %s: %s'
                               % (offer.pluginName, type(error).__name__, error))
+            return ('plugin %s failed: %s: %s'
+                    % (offer.pluginName, type(error).__name__, error))
+        return None
 
     def _showUiWindow(self, offer):
         """Open the window of a .ui plugin, with the IDS it was drawn around.

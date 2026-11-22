@@ -801,16 +801,24 @@ def buildServer(core, dispatcher, name='imasviz'):
 
     @server.tool(name='run_plugin')
     def run_plugin(uri: str, plugin: str, entry: int, occurrence: int = 0,
-                   ids_name: Optional[str] = None):
+                   ids_name: Optional[str] = None,
+                   time: Optional[float] = None):
         """Run one entry of a plugin, with the answers the entry would
         have asked the user.
 
-        `occurrence` is the one the entry plots, handed instead of being
-        asked -- which is what keeps a modal question off the path of an
-        agent. Refused by name when the case does not offer that entry.
+        `occurrence` and `time` are handed instead of being asked -- which
+        is what keeps a modal question off the path of an agent: an entry
+        that asks an instant (`equilibriumsurfaces` entry 1) and is handed
+        none is refused by name, not left to open a dialog.
+
+        `ids_name` says which IDS branch the line is asked on. Left out,
+        the branch is resolved by searching the case for the branches that
+        earn that entry: one is used, several or none is refused with them
+        named. Refused by name when the case does not offer that entry.
         """
         return _run(partial(core.run_plugin, uri, plugin, entry,
-                            occurrence=occurrence, ids_name=ids_name))
+                            occurrence=occurrence, ids_name=ids_name,
+                            time=time))
 
     # --------------------------------------------------------------- session
 

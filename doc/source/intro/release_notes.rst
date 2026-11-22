@@ -55,7 +55,12 @@ Released 11/12/2026
   same array.
 - The refusals of the runs are named, and cost nothing: a refusal opens no
   empty figure, takes no figure number, and says its reason where the face
-  that asked for it reads it.
+  that asked for it reads it. A **plugin entry** refused is now heard by the
+  caller too: the tool that asked it answers the plugin's own words instead of
+  reporting a window that was never drawn, a call that names no IDS branch is
+  answered from the case (and refused with the branches named when several earn
+  that line), and an entry that asks an instant is handed one or refuses — never
+  left to open a dialog nobody is there to answer.
 - **A plugin says where it sits.** The contract is declarative: a plugin
   declares ``SCOPE`` -- one of five places, an IDS root, a quantity, a case,
   the application, or a window of curves -- and ``ACTIONS``, one entry per

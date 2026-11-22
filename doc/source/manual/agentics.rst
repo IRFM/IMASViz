@@ -230,8 +230,15 @@ the same descriptions. The tools, in the order the faces group them:
      - ``list_plugins``, ``run_plugin``
      - the entries an IDS root earns, in registration order, with the refusals
        of the plugins the case cannot offer **named alongside**; and one entry
-       run with the answers the entry would have asked the user -- which is
-       what keeps a modal question off the path of a loop.
+       run with the answers the entry would have asked the user -- the
+       ``occurrence``, and the ``time`` of an entry that asks an instant. Which
+       branch the line is asked on is a parameter too: left out, it is
+       **resolved** by searching the case for the branches that earn that entry,
+       and several branches earning it (a plugin offered on any IDS) is refused
+       with them named rather than settled on the first branch of the tree. An
+       entry that refuses is a refusal for the loop, not an answer saying it ran:
+       the plugin's own words come back, and a window that was not drawn is not
+       reported.
    * - sessions and configurations
      - ``save_session``, ``restore_session``, ``new_session``,
        ``list_sessions``, ``list_configurations``,

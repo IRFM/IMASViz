@@ -258,10 +258,13 @@ the entry -- ``context.answers`` (a ``QVizPluginAnswers``).
 
 .. note::
    ``context.answers`` is ``None`` when the entry was chosen from the menu --
-   the user is there to answer anything. When a **saved session** is replaying
-   the entry (see :ref:`save_load_session`), it is a ``QVizPluginAnswers``
-   named with the occurrence the file recorded; read it to honour that choice
-   instead of asking the user a second time.
+   the user is there to answer anything. It is a ``QVizPluginAnswers`` when
+   someone answers **in the user's place**: a saved session being replayed (see
+   :ref:`save_load_session`), or a tool call of :ref:`agentics`. It carries the
+   ``occurrence``, the ``figureKey`` and the ``time`` the caller named. Read it
+   to honour that choice instead of asking a second time -- and refuse by name
+   when an answer you need is missing, because a dialog opened where nobody is
+   there to answer it stops the session.
 
 .. _plugin_answers_and_sessions:
 
@@ -281,8 +284,10 @@ line was clicked on (``None`` everywhere else), and ``context.scope`` is one of
    ``run(self, context)`` is the only signature the framework calls -- there is
    no second or third argument to worry about. If your action refuses the
    window it is being asked to open, raise a ``ValueError`` with the reason in
-   words; the log panel of that case says so, and the session names the plugin
-   and the action that could not be restored.
+   words. The framework keeps the menu standing and writes that reason in the
+   log panel of that case, **and hands it back** to whoever asked: a session
+   names the plugin and the action that could not be restored, and a tool call
+   answers the refusal instead of reporting a window that was never drawn.
 
 A window a plugin draws is put back by asking that plugin's action again, not
 by rebuilding a widget. For the session to be able to ask it, the plugin says
@@ -302,6 +307,11 @@ here ``0``, the only action this tutorial's plugin declares. The **figure key**
 window is registered under in ``Viz_API.figureframes``, which is what the
 :guilabel:`Windows` menu and its :guilabel:`Delete` lines address it by. A
 session replay hands it back to your action through ``context.answers.figureKey``.
+An entry that **asks an instant** stamps it too --
+``QVizPluginWindow(..., time=time_answer)`` -- and the replay hands it back as
+``context.answers.time``, which is what keeps a restore from opening that question
+a second time; the field is ``None``, and left out of the file, for an entry that
+asks none.
 A window that is never registered in ``figureframes`` (a plain ``matplotlib``
 window, like the one this tutorial draws) is not in the session at all, and the
 :guilabel:`Windows` menu does not reach it either.

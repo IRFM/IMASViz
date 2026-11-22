@@ -166,15 +166,24 @@ class equilibriumsurfaces(VizPlugin):
 
         The instant a session replay is answering in the user's place
         (`answers.time`) must not be re-asked: a restore has no one to answer
-        the dialog. From the menu, the question is bounded to the case's clock.
+        the dialog. The same holds for a tool call, which hands its answers the
+        same way: an answer handed without an instant is refused by name rather
+        than left to open a dialog nobody is there for. Only a click on the menu
+        line (`answers` is None) earns the question, bounded to the case's clock.
         """
         uri, occurrence, reader, figureKey = self._case(context)
         from imasviz.VizAgent.core import McpGuiCore
-        times = reader.timeValues()
-        if context.answers is not None and context.answers.time is not None:
+        if context.answers is not None:
+            if context.answers.time is None:
+                raise ValueError(
+                    'equilibriumsurfaces entry 1 draws one instant and none was '
+                    'answered: hand it as the "time" of run_plugin, or ask '
+                    'equilibrium_at_time directly. Nothing is drawn on an instant '
+                    'nobody asked for, and no dialog is opened where nobody is '
+                    'there to answer it.')
             time_answer = float(context.answers.time)
         else:
-            time_answer = self._askTime(times)
+            time_answer = self._askTime(reader.timeValues())
         result = McpGuiCore(api=context.api).equilibrium_at_time(
             uri, time_answer, occurrence=occurrence, figure_key=figureKey)
         return self._register(context, result['figure'], uri, occurrence,

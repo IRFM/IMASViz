@@ -469,6 +469,95 @@ def test_an_entry_the_case_does_not_offer_is_refused_by_name(core):
                            occurrence=0, ids_name=IDS_NAME)
 
 
+def _noQuestionAsked(monkeypatch):
+    """No modal question may be reached from a tool call.
+
+    Patched to raise rather than to record: a dialog left standing offscreen
+    never returns, and the 240 s the Profiles question cost a probe is the state
+    this guards. The instant question of `equilibriumsurfaces` entry 1 is the one
+    that reached it, because `run_plugin` handed an answers record without a
+    `time` and the plugin fell back to asking.
+    """
+    from PySide6.QtWidgets import QInputDialog
+
+    def asked(*args, **kwargs):
+        raise AssertionError('a tool call opened a modal question')
+
+    monkeypatch.setattr(QInputDialog, 'getDouble', staticmethod(asked))
+    monkeypatch.setattr(QInputDialog, 'getItem', staticmethod(asked))
+
+
+def test_a_call_naming_no_ids_root_is_answered_from_the_case(core):
+    """The root is resolved from the case, not taken as its first branch.
+
+    Measured on the reference case: the first of its 69 IDS roots is
+    `amns_data`, while `equilibriumsurfaces` is offered on the `equilibrium`
+    branch and on no other. So the call that picked `next(iter(IDSRoots))` was
+    refused for a plugin the case does offer -- with a refusal naming neither the
+    root it had looked at nor the one the plugin claims.
+    """
+    session, _home = core
+    before = set(session.api.figureframes)
+    answer = session.run_plugin(CASE_URI, 'equilibriumsurfaces', 0)
+    assert answer['ran']['ids'] == IDS_NAME, answer['ran']
+    new = set(session.api.figureframes) - before
+    assert len(new) == 1, 'the resolved entry drew %s' % sorted(new)
+
+
+def test_an_entry_several_branches_earn_names_the_choice(core):
+    """A plugin offered on any IDS is a question, not a guess.
+
+    `VizSlicePlugin` earns a line on every branch of the case, and the slice it
+    draws and the occurrence it reads differ per branch -- so the answer is the
+    list of branches, not the first one.
+    """
+    session, _home = core
+    before = set(session.api.figureframes)
+    with pytest.raises(ValueError) as caught:
+        session.run_plugin(CASE_URI, 'VizSlicePlugin', 0, occurrence=0)
+    refusal = str(caught.value)
+    assert 'is offered on' in refusal and 'ids_name' in refusal, refusal
+    assert IDS_NAME in refusal, 'the refusal names the branches it found'
+    assert not (set(session.api.figureframes) - before), \
+        'a refusal left a window on the screen'
+
+
+def test_entry_1_draws_the_instant_it_was_handed_and_asks_nothing(core,
+                                                                  monkeypatch):
+    session, _home = core
+    _noQuestionAsked(monkeypatch)
+    before = set(session.api.figureframes)
+    answer = session.run_plugin(CASE_URI, 'equilibriumsurfaces', 1,
+                                occurrence=0, time=40.0)
+    assert answer['ran']['time'] == 40.0, answer['ran']
+    new = set(session.api.figureframes) - before
+    assert new, 'the entry drew no window'
+    frame = session.api.figureframes[next(iter(new))]
+    assert frame.pluginWindow.time == 40.0, \
+        'the window does not carry the instant it was drawn on'
+
+
+def test_entry_1_without_the_instant_is_refused_and_opens_no_dialog(core,
+                                                                    monkeypatch):
+    """The instant is refused for, not invented and not asked.
+
+    A default would open a plausible window on an instant nobody named; the
+    question would sit on the agent's path with nobody to answer it. Both are
+    answered by a refusal naming the entry, the parameter that carries the
+    instant, and the tool that draws it directly.
+    """
+    session, _home = core
+    _noQuestionAsked(monkeypatch)
+    before = set(session.api.figureframes)
+    with pytest.raises(ValueError) as caught:
+        session.run_plugin(CASE_URI, 'equilibriumsurfaces', 1, occurrence=0,
+                           ids_name=IDS_NAME)
+    refusal = str(caught.value)
+    assert 'instant' in refusal and 'equilibriumsurfaces' in refusal, refusal
+    assert not (set(session.api.figureframes) - before), \
+        'a refusal left a window on the screen'
+
+
 def test_slice_plugin_offered_and_draws_the_filled_profiles(core):
     """The Slice entry is offered for an IDS root, and running it adds a
     window that holds the IDS's filled 1D-profiles as curves -- the reader

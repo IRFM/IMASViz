@@ -1125,7 +1125,11 @@ TOOLS = [
     _tool(
         'run_plugin',
         'Run one entry of a plugin, with the answers the entry would have '
-        'asked the user. `occurrence` is handed instead of being asked. '
+        'asked the user. `occurrence` and `time` are handed instead of being '
+        'asked: an entry that asks an instant and is handed none is refused by '
+        'name, not left to open a dialog. `ids_name` says which IDS branch the '
+        'line is asked on; left out, the branch is resolved from the case, and '
+        'several branches earning that entry is refused with them named. '
         'Refused by name when the case does not offer that entry.',
         {'type': 'object', 'properties': {
             'uri': {'type': 'string'},
@@ -1133,6 +1137,7 @@ TOOLS = [
             'entry': {'type': 'integer'},
             'occurrence': {'type': 'integer', 'default': 0},
             'ids_name': {'type': ['string', 'null']},
+            'time': {'type': ['number', 'null']},
         }, 'required': ['uri', 'plugin', 'entry'],
          'additionalProperties': False},
     ),

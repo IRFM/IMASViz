@@ -3351,42 +3351,97 @@ class McpGuiCore:
                             for entry in entries],
                 'refusals': list(catalog.refusals)}
 
-    def run_plugin(self, uri, plugin, entry, occurrence=0, ids_name=None):
-        """Run one entry of a plugin, with the occurrence the caller named.
+    def _resolveRoot(self, catalog, view, plugin, entry):
+        """Which IDS root a call that named none is asking for.
 
-        `QVizPluginAnswers` carries the occurrence so that `catalog.run`
-        passes it into `QVizPluginContext.answers`, where the plugin's
-        action reads it. This is what keeps a modal occurrence question
-        off the path of an agent.
+        The case is searched for the roots that earn that line, and the answer is
+        used when it is one. It is not silently used when it is several: a plugin
+        offered on any IDS (`VizSlicePlugin`, `VizProfiles_plugin`) earns a line
+        on every branch, and the occurrence and the window drawn differ per
+        branch -- which is a question for the caller, not a guess for the tool. A
+        refusal names what the plugin *does* offer, because a wrong entry number
+        is the other half of the state.
+        """
+        offered = catalog.entriesNamed(plugin, view.IDSRoots.values())
+        exact = [(root, one) for root, one in offered if one.number == entry]
+        if len(exact) == 1:
+            return exact[0]
+        uri = view.dataSource.uri
+        if len(exact) > 1:
+            raise ValueError(
+                'Entry %s of plugin "%s" is offered on %d IDS roots of the case '
+                '%s (%s): name the ids_name, since the occurrence and the window '
+                'it draws differ per root.'
+                % (entry, plugin, len(exact), uri,
+                   ', '.join(sorted(root for root, _ in exact))))
+        if offered:
+            self._refuseUnknownEntry(uri, plugin, entry, offered)
+        raise ValueError(
+            'The case %s offers no entry of plugin "%s" on any of its %d IDS '
+            'roots: list_plugins names what a branch earns, and the log of the '
+            'case names the plugins it cannot offer at all.'
+            % (uri, plugin, len(view.IDSRoots)))
+
+    def _refuseUnknownEntry(self, uri, plugin, entry, offered):
+        """Refuse an entry number the plugin does not carry, naming the ones it does."""
+        byRoot = {}
+        for root, one in offered:
+            byRoot.setdefault(root, []).append(one)
+        raise ValueError(
+            'The case %s does not offer entry %s of plugin "%s": that plugin is '
+            'offered on %s, whose entries are %s. list_plugins names the label of '
+            'each.'
+            % (uri, entry, plugin, ', '.join(sorted(byRoot)),
+               '; '.join('%s: %s' % (root, ', '.join('%s (%s)'
+                                                     % (one.number, one.label)
+                                                     for one in byRoot[root]))
+                         for root in sorted(byRoot))))
+
+    def run_plugin(self, uri, plugin, entry, occurrence=0, ids_name=None,
+                   time=None):
+        """Run one entry of a plugin, with the answers the entry would have asked.
+
+        `QVizPluginAnswers` carries the occurrence and the instant so that
+        `catalog.run` passes them into `QVizPluginContext.answers`, where the
+        plugin's action reads them. This is what keeps a modal occurrence or time
+        question off the path of an agent: an entry that would ask and is handed
+        no answer refuses by name rather than open a dialog nobody is there for.
+
+        `ids_name` says which IDS root the line is asked on. Left out, the root is
+        resolved by searching the case for the roots that earn that entry: one
+        match is used, several or none is refused with them named. The first root
+        of the case is not the one a plugin scoped to `equilibrium` lives on.
         """
         from imasviz.VizPlugins.VizPlugin import QVizPluginAnswers
 
         view = self._viewForUri(uri)
         catalog = self._catalog(view)
         if ids_name is None:
-            if view.IDSRoots:
-                ids_name = next(iter(view.IDSRoots))
-            else:
-                raise ValueError('The case %s builds no IDS root.' % uri)
-        node = view.IDSRoots.get(ids_name)
-        if node is None:
-            raise ValueError(
-                '"%s" is not an IDS root of the case %s: %s'
-                % (ids_name, uri, ', '.join(sorted(view.IDSRoots))))
-        chosen = None
-        for candidate in catalog.entriesFor(node):
-            if candidate.pluginName == plugin and candidate.number == entry:
-                chosen = candidate
-                break
-        if chosen is None:
-            raise ValueError(
-                'The case %s does not offer entry %s of plugin "%s": '
-                'list_plugins names what it does.'
-                % (uri, entry, plugin))
-        answers = QVizPluginAnswers(occurrence=occurrence, figureKey=None)
-        catalog.run(chosen, answers=answers)
-        return {'ran': {'plugin': plugin, 'entry': entry,
-                        'occurrence': occurrence},
+            ids_name, chosen = self._resolveRoot(catalog, view, plugin, entry)
+        else:
+            node = view.IDSRoots.get(ids_name)
+            if node is None:
+                raise ValueError(
+                    '"%s" is not an IDS root of the case %s: %s'
+                    % (ids_name, uri, ', '.join(sorted(view.IDSRoots))))
+            chosen = next((candidate for candidate in catalog.entriesFor(node)
+                           if candidate.pluginName == plugin
+                           and candidate.number == entry), None)
+            if chosen is None:
+                raise ValueError(
+                    'The case %s does not offer entry %s of plugin "%s" on its '
+                    '%s branch: list_plugins names what it does.'
+                    % (uri, entry, plugin, ids_name))
+        answers = QVizPluginAnswers(occurrence=occurrence, figureKey=None,
+                                    time=time)
+        refusal = catalog.run(chosen, answers=answers)
+        if refusal is not None:
+            # The plugin wrote its reason in the log of the case, where nobody
+            # driving a tool is looking. An answer of `ran` there is a wrong
+            # answer: it reports a window that was never drawn.
+            raise ValueError(refusal)
+        return {'ran': {'plugin': plugin, 'entry': entry, 'ids': ids_name,
+                        'occurrence': occurrence, 'time': time},
                 'windows': self.list_windows()}
 
     # --------------------------------------------------------------- session
