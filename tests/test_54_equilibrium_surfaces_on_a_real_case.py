@@ -166,10 +166,25 @@ def shot(session):
 
 
 def nonEmptyGrab(widget):
-    """Whether the widget renders to a non-empty pixmap, off-screen."""
+    """Whether the widget renders to a pixmap that holds what it drew.
+
+    Not only "the pixmap is not null" — that was the check this window passed
+    while answering a picture 91% empty body: its graphics widget had been left
+    a 68 px strip of a 772 px window by an invisible spacer, and its stack of
+    eight profile panels had never been put in the window's layout at all. So
+    the check asks what part of the window's height the widgets the layout
+    manages really hold (a spacer answers no widget and contributes nothing).
+    """
     pixmap = widget.grab()
-    return not pixmap.isNull() and pixmap.size().width() > 0 \
-        and pixmap.size().height() > 0
+    if pixmap.isNull() or not pixmap.size().width() or not pixmap.size().height():
+        return False
+    layout = widget.layout()
+    if layout is None:
+        return True
+    held = sum(layout.itemAt(index).widget().height()
+               for index in range(layout.count())
+               if layout.itemAt(index).widget() is not None)
+    return held >= 0.9 * widget.height()
 
 
 # --------------------------------------------------------------------------

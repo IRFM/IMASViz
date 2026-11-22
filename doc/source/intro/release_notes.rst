@@ -89,6 +89,15 @@ Released 11/12/2026
   shots -- and it reads a corpus of the user's own documents, which is a
   folder of their choosing and an index of their choosing
   (:ref:`agentics_documents`).
+- **A window that draws is a window that holds its own height.** The
+  equilibrium window of :ref:`IMASViz_plugins` drew its thirteen curves and
+  answered a picture 91% empty body: an invisible spacer had left its row of
+  flux-surface frames a **68** px strip of a **772** px window, and its stack of
+  eight radial profiles was the window's *child* without being a line of its
+  *layout*, so it kept the geometry Qt gives a child at birth -- ``100 x 30``
+  for eight panels whose own layout asked **592** px. The two halves now carry a
+  share of the window, and the same case at the same instant answers the row
+  ``1192 x 383`` with the stack ``1192 x 383`` under it.
 
 -------------
 Version 2.8.0

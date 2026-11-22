@@ -58,6 +58,19 @@ _SADDLES = {
     10: ([(2, 0), (1, 3)], [(2, 1), (0, 3)]),
 }
 
+# The two halves of the window share its height: the row of frames above, the
+# stack of profiles under it. Both carry a share, because a widget added at
+# stretch 0 under a spacer of stretch 1 is a widget handed its own minimum.
+# Measured on the reference shot with the shape this replaces (graphics widget
+# at stretch 0, `addStretch(1)` below it, and the stack never put in the layout
+# at all): a 1272 x 772 window answered a graphics widget 68 px tall, a stack
+# left at (0, 0) measuring 100 x 30, and a capture of it 18397 samples of empty
+# body against 1726 of the ground the curves are painted on. That is the
+# "image blanche, sans aucune courbe visible" the window was reported with --
+# thirteen curves drawn, and 91% of the picture saying nothing.
+ROW_SHARE = 1
+PROFILES_SHARE = 1
+
 
 class _RasterField:
     """The flux function rasterized over the grid's extents.
@@ -226,8 +239,7 @@ class QVizEquilibriumFigure(QWidget):
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(self.pgPlotWidget)
-        layout.addStretch(1)
+        layout.addWidget(self.pgPlotWidget, ROW_SHARE)
 
         if title:
             self.setWindowTitle(title)
@@ -355,6 +367,12 @@ class QVizEquilibriumFigure(QWidget):
             stack.plotRaw(x, values, name, name_units=units,
                           x_label=xLabel, x_units=xUnits)
         self._profilesStack = stack
+        # The stack goes in the window's layout, because that is where "under
+        # the row" is said. A child widget the layout does not hold keeps the
+        # geometry Qt gave it at birth: measured (0, 0, 100, 30) for a stack of
+        # eight profile panels -- built, drawn, linked, visible, and answering
+        # a strip no reader can see.
+        self.layout().addWidget(stack, PROFILES_SHARE)
         stack.applyLinkPolicy()
         stack.applyXLabelsPolicy()
         return stack.panelCount()
