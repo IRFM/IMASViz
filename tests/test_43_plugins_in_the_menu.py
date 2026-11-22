@@ -49,7 +49,8 @@ import types
 import pytest
 import shiboken6
 
-from PySide6.QtWidgets import QMenu, QTreeWidget
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QInputDialog, QMenu, QTreeWidget
 
 from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadOccurrence \
     import QVizLoadOccurrence
@@ -218,9 +219,58 @@ class TakesAnything(VizPlugin):
         self.ACTIONS = (QVizPluginAction(5, 'the wide one', run=self._run),)
 
 
+class AsksItsQuestionInADialog(VizPlugin):
+    """An entry that asks a question with a modal instead of reading the answers.
+
+    The shape that cost 300 s on the web surface: `QInputDialog.getInt` runs a
+    **nested event loop on the GUI thread**, and an offscreen session has nobody
+    to press a button. Measured on the reference case before the `equilibrium`
+    surfaces entry was changed to answer for itself, its
+    `QInputDialog 'Équilibre à un instant'` sat there until the caller answered
+    `The GUI thread did not answer in 300 s`, and the model asked again -- which
+    is what reached the user as an endless loop, alongside a `QPainter::end:
+    Painter ended with 2 saved states` that has never been reproduced alone.
+    """
+
+    def _run(self, context):
+        value, ok = QInputDialog.getInt(context.view, 'Probe instant',
+                                        'Which instant?', 40)
+        RAN.append(('AsksItsQuestionInADialog', value, ok))
+
+    def __init__(self):
+        super().__init__()
+        BUILT.append('AsksItsQuestionInADialog')
+        self.SCOPE = QVizPluginScope(IDS)
+        self.ACTIONS = (QVizPluginAction(6, 'asks an instant', run=self._run),)
+
+
+class ShowsItsQuestionWithoutBlocking(VizPlugin):
+    """The same question, *shown* rather than run -- so a test can look at it.
+
+    `exec()` would take the test with the dialog, so this one opens the modal
+    with `show()`: the modality is what the guard is asked about, not how the
+    loop was entered. The box is left on the plugin so the test reaches it.
+    """
+
+    def _run(self, context):
+        box = QInputDialog(context.view)
+        box.setWindowTitle('Probe shown question')
+        box.setWindowModality(Qt.WindowModality.ApplicationModal)
+        box.show()
+        self.box = box
+        RAN.append(('ShowsItsQuestionWithoutBlocking',
+                    context.answers is not None))
+
+    def __init__(self):
+        super().__init__()
+        BUILT.append('ShowsItsQuestionWithoutBlocking')
+        self.box = None
+        self.SCOPE = QVizPluginScope(IDS)
+        self.ACTIONS = (QVizPluginAction(8, 'shows a question', run=self._run),)
+
+
 class UndescribedNumber(VizPlugin):
     """An action whose run is None: the line says what it is, but has no work.
-
     The old contract answered this by having a number the description table did
     not explain; the new one has no such split, so the guard it tests is the
     one that actually exists now -- an action without a run is named and left
@@ -615,6 +665,73 @@ def test_an_entry_taking_its_keywords_by_star_is_not_refused(monkeypatch, view):
     catalog.run(entry, answers=answers)
 
     assert RAN == [('TakesAnything', 'the-api-of-this-view', 5, answers)]
+
+
+def test_an_entry_that_asks_a_dialog_is_refused_when_answers_are_handed(
+        monkeypatch, view, qapp):
+    """Nothing blocks, and the refusal names the question that was never asked.
+
+    Measured before this guard, on the reference case and through the web
+    surface: the entry opened `QInputDialog 'Équilibre à un instant'`, the GUI
+    thread stayed inside that loop until the caller answered `The GUI thread did
+    not answer in 300 s`, and the retries looked like an endless loop.
+    """
+    registerStubs(monkeypatch, AsksItsQuestionInADialog)
+    catalog = QVizPluginCatalog(view)
+    entry = catalog.entriesFor(FakeTreeNode(idsName='equilibrium'))[0]
+    reason = catalog.run(entry,
+                         answers=QVizPluginAnswers(occurrence=0,
+                                                   figureKey='EquiSurfaces:1',
+                                                   time=44.))
+    qapp.processEvents()
+
+    assert reason is not None and 'Probe instant' in reason, reason
+    assert 'asked a question nobody is there to answer' in reason
+    # The action went on as if a hand had pressed Cancel -- which is exactly why
+    # the caller has to be told: the entry drew nothing and raised nothing.
+    assert RAN == [('AsksItsQuestionInADialog', 40, False)]
+
+
+def test_the_question_a_user_is_asked_themselves_is_left_alone(monkeypatch,
+                                                               view, qapp):
+    """The A/B for the refusal: it is the answers being handed, not the modal.
+
+    From a menu the dialog *is* the question, asked of someone who is there to
+    answer it. So the same entry, asked the same dialog, is not touched -- which
+    also says the filter is off again once the entry is done: one left on the
+    application would take down every dialog of the session.
+    """
+    registerStubs(monkeypatch, ShowsItsQuestionWithoutBlocking)
+    catalog = QVizPluginCatalog(view)
+    entry = catalog.entriesFor(FakeTreeNode(idsName='equilibrium'))[0]
+    assert catalog.run(entry) is None
+    qapp.processEvents()
+
+    box = entry.plugin.box
+    assert box.isVisible(), 'the menu still asks its own question'
+    box.deleteLater()
+    qapp.processEvents()
+
+
+def test_a_modal_dialog_opened_while_answers_are_handed_is_taken_down(
+        monkeypatch, view, qapp):
+    """The guard is asked of the modality, so a dialog that never blocks goes too.
+
+    A plugin is free to show its question however it likes; what the framework
+    refuses is a question nobody is there to answer, whatever loop it was
+    entered through.
+    """
+    registerStubs(monkeypatch, ShowsItsQuestionWithoutBlocking)
+    catalog = QVizPluginCatalog(view)
+    entry = catalog.entriesFor(FakeTreeNode(idsName='equilibrium'))[0]
+    reason = catalog.run(entry, answers=QVizPluginAnswers(occurrence=0,
+                                                          figureKey='PlotView:1'))
+    qapp.processEvents()
+
+    assert not entry.plugin.box.isVisible(), 'the shown modal was taken down'
+    assert reason is not None and 'Probe shown question' in reason, reason
+    entry.plugin.box.deleteLater()
+    qapp.processEvents()
 
 
 def test_a_plugin_is_bound_to_the_view_whose_catalog_built_it(monkeypatch,

@@ -289,6 +289,17 @@ line was clicked on (``None`` everywhere else), and ``context.scope`` is one of
    names the plugin and the action that could not be restored, and a tool call
    answers the refusal instead of reporting a window that was never drawn.
 
+Under that rule the framework keeps one more guard, in case an action opens a
+dialog anyway: while answers are being handed in the user's place, a modal window
+is **closed as it appears**, and the entry is refused with the title of the
+question nobody was asked. A dialog runs a nested event loop on the GUI thread, so
+on the web surface it holds the whole session until the caller gives up --
+measured, the ``equilibrium`` surfaces entry of an earlier release held one until
+it answered ``The GUI thread did not answer in 300 s``, and what the model did
+next reached the user as an endless loop. Chosen from the menu, the same dialog is
+left exactly as it was: there, the question is asked of someone who is there to
+answer it.
+
 A window a plugin draws is put back by asking that plugin's action again, not
 by rebuilding a widget. For the session to be able to ask it, the plugin says
 where the window came from, by stamping the frame it registers:

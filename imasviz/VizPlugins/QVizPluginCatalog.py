@@ -39,6 +39,11 @@ import re
 
 import shiboken6
 
+# The base class of `_NoDialogGuard` is asked at import time, so only this name
+# comes in here; the rest of Qt this module needs stays inside the methods that
+# ask it, as it has always been.
+from PySide6.QtCore import QObject
+
 from imasviz.VizPlugins.VizPlugin import (APP, CASE, FIGURE, IDS, NODE,
                                           QVizPluginAction, QVizPluginContext,
                                           getRegisteredPlugins)
@@ -61,6 +66,90 @@ from imasviz.VizPlugins.QVizPluginSource import (BUILTIN, USER,
 # nothing: it is never called. The window that comes out is hollow, so it is not
 # shown; the plugin is refused and says which class is missing.
 _CUSTOM_WIDGET = re.compile(r'<customwidget>.*?<class>(\w+)</class>', re.S)
+
+
+class _NoDialogGuard(QObject):
+    """Close a dialog a plugin asks while something else already answered.
+
+    An entry that asks its question through a `QDialog` is right from a menu and
+    fatal from a tool call or a session replay: the dialog runs a **nested event
+    loop on the GUI thread**, so nothing else is served until someone presses a
+    button -- and on the web surface nobody is there. Measured on the reference
+    case, before the entry was changed to answer for itself, the `equilibrium`
+    surfaces entry opened `QInputDialog 'Équilibre à un instant'` and the caller
+    answered `The GUI thread did not answer in 300 s`; the model asked again, and
+    again, which is what reached the user as an endless loop, with
+    `QPainter::end: Painter ended with 2 saved states` printed by that loop
+    painting through itself.
+
+    The guard is the general net under the one entry that was fixed: whatever a
+    plugin asks -- a shipped plugin, a plugin of the user's own -- is refused
+    rather than left to hold the thread. What is asked is the application's event
+    filter, because a plugin builds its own dialog and hands it nowhere the
+    framework could reach.
+
+    The same call printed `QPainter::end: Painter ended with 2 saved states` for
+    the user; that warning has not been reproduced on its own, and nothing here
+    sets out to answer it -- what is answered is the block.
+
+    Two Qt facts decide the shape, both measured on this PySide6 6.6.3:
+
+    * a modal dialog announces itself as a `QEvent.Show` that reaches the
+      application filter before its loop is entered, and `isModal()` is already
+      true there -- so the dialog is recognised by Qt's own word, not by a list
+      of dialog classes a plugin would have to be told to use;
+    * `done()` called **inside** that event leaves the loop running: `exec()`
+      starts pumping after the event is delivered. Refusing therefore goes
+      through a zero `QTimer`, which fires once the loop has started and takes
+      the dialog down from the inside -- measured: `exec()` answers 0,
+      `QInputDialog.getInt` answers `(default, False)` and a
+      `QMessageBox.warning` returns, all without a button.
+
+    `stop()` runs in a `finally` at the call site: a filter left installed by a
+    plugin that raised would refuse every dialog of the session, which is a worse
+    failure than the one this prevents.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.asked = []
+        self._app = None
+
+    def start(self):
+        from PySide6.QtWidgets import QApplication
+        app = QApplication.instance()
+        if app is None:
+            return
+        self._app = app
+        app.installEventFilter(self)
+
+    def stop(self):
+        if self._app is not None:
+            self._app.removeEventFilter(self)
+            self._app = None
+
+    def eventFilter(self, watched, event):
+        from PySide6.QtCore import QEvent, QTimer
+        from PySide6.QtWidgets import QWidget
+        if event.type() == QEvent.Show and isinstance(watched, QWidget) \
+                and watched.isModal():
+            named = (type(watched).__name__,
+                     watched.windowTitle() or type(watched).__name__)
+            if named not in self.asked:
+                self.asked.append(named)
+            QTimer.singleShot(0, lambda dialog=watched: self._takeDown(dialog))
+        return False
+
+    def _takeDown(self, dialog):
+        from PySide6.QtWidgets import QDialog
+        if isinstance(dialog, QDialog):
+            dialog.done(0)
+        else:
+            dialog.close()
+
+    def question(self):
+        """What was asked, spelled the way the refusal has to say it."""
+        return ', '.join(title for _kind, title in self.asked)
 
 
 class QVizPluginEntry:
@@ -444,6 +533,11 @@ class QVizPluginCatalog:
         question as it always did. The context the action reads is the one this
         line was offered in, with the occurrence a session named taking the place
         of the one the case first holds.
+
+        When answers are handed, an entry that opens a dialog instead of reading
+        them is refused: `_NoDialogGuard` takes the dialog down and the reason
+        comes back, because a nested modal loop on the GUI thread is how a tool
+        call loses three hundred seconds and answers nothing.
         """
         from PySide6.QtWidgets import QMainWindow
 
@@ -473,6 +567,12 @@ class QVizPluginCatalog:
 
         self._log().info('Running plugin %s, action %s.'
                          % (offer.pluginName, action.key))
+        # Only a call that answers in the user's place pays for the guard: from a
+        # menu the dialog *is* the question, asked of someone who is there to
+        # answer it.
+        guard = _NoDialogGuard() if answers is not None else None
+        if guard is not None:
+            guard.start()
         try:
             action.run(context)
         except ValueError as error:
@@ -487,6 +587,27 @@ class QVizPluginCatalog:
                               % (offer.pluginName, type(error).__name__, error))
             return ('plugin %s failed: %s: %s'
                     % (offer.pluginName, type(error).__name__, error))
+        finally:
+            # Whatever the action did, the filter goes back off: one left on the
+            # application after a refusal would take down every dialog of the
+            # session, including the ones the user asks for themselves.
+            if guard is not None:
+                guard.stop()
+        if guard is not None and guard.asked:
+            # The action answered nothing and asked something instead. It went on
+            # as if the user had pressed Cancel, so it may well have drawn
+            # nothing; saying only "ran" is how the caller reports a window that
+            # is not on the screen.
+            reason = ('plugin %s asked a question nobody is there to answer: it '
+                      'opened %s as a dialog, while this call already carries '
+                      'what a session answers (the occurrence, the figure key, '
+                      'the instant). The dialog was closed at once instead of '
+                      'left to hold the GUI thread: pass the value the entry '
+                      'names, or ask the entry from the menu.'
+                      % (offer.pluginName, guard.question()))
+            self._log().error('Plugin %s could not run: %s'
+                              % (offer.pluginName, reason))
+            return reason
         return None
 
     def _showUiWindow(self, offer):

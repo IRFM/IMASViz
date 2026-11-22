@@ -60,7 +60,11 @@ Released 11/12/2026
   reporting a window that was never drawn, a call that names no IDS branch is
   answered from the case (and refused with the branches named when several earn
   that line), and an entry that asks an instant is handed one or refuses — never
-  left to open a dialog nobody is there to answer.
+  left to open a dialog nobody is there to answer. That last half is a guard now,
+  not a promise: a modal window opened while a call answers in the user's place is
+  closed as it appears and refused by its title, because the loop a dialog runs
+  belongs to the GUI thread, and on the web surface it holds everything until the
+  caller gives up (measured: 300 s, and the retries looked like a loop).
 - **A plugin says where it sits.** The contract is declarative: a plugin
   declares ``SCOPE`` -- one of five places, an IDS root, a quantity, a case,
   the application, or a window of curves -- and ``ACTIONS``, one entry per
