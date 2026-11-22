@@ -17,11 +17,21 @@ Few user preferences options are available:
 - the color of nodes containing data (default color is blue) can be customized (not available currently for UDA; this is because UDA does not provide the information to know if a remote IMAS field contains data)
 - the session a run is closed with can be kept automatically, and offered back at the next start (not kept by default)
 - the theme the application is dressed with can be set to light (default) or dark
+- the tree can be kept to the tensors of rank 1 and over, hiding the plain scalars (not filtered by default)
 - the box in the corner of a window can take that window off the screen (default)
   or close it for good
 - the MDI area can be laid out windowed (default), tabbed, tiled, or cascaded
+- the list of cases of the start window can be sorted, filtered by backend and
+  shown as URIs or as what they parse to (the five lines the boxes of that list
+  write back)
 - the endpoint, the model name and the key the agent's runs talk to
   (:ref:`agentics_llm`)
+- how much of the agent's tool traffic the transcript shows
+- the embeddings endpoint that ranks a journal search by meaning, and the model
+  it names (:ref:`agentics_journal_llm`)
+- the folder of the **shared** journal, and the folder of the agent's
+  **documents corpus** (:ref:`agentics_journal_shared`, :ref:`agentics_documents`)
+- the plugins the user has switched off (:ref:`plugins_active_state`)
 
 
 To change user preferences, you need to create a text file named 'preferences' in your ~/.imasviz folder with
@@ -39,9 +49,21 @@ the following content:
 
 #Theme=light
 
+#Show_only_tensors_rank_ge_1=0
+
 #Close_button_deletes=0
 
 #Mdi_view_mode=windowed
+
+#Uri_list_sort_key=database
+
+#Uri_list_sort_direction=asc
+
+#Uri_list_filter_HDF5=1
+
+#Uri_list_filter_MDSplus=1
+
+#Uri_list_view=uri
 
 #AgentLLMEndpoint=http://127.0.0.1:11434/v1
 
@@ -49,7 +71,19 @@ the following content:
 
 #AgentLLMApiKey=
 
-These are the default values of the 11 currently available options.
+#AgentToolsMode=hide
+
+#AgentEmbedEndpoint=
+
+#AgentEmbedModel=
+
+#SharedJournalDir=
+
+#AgentDocsDir=
+
+#Disabled_bricks=
+
+These are the default values of the 23 options the file is read for.
 
 To change an option, just remove the # character preceding the option name and change the value.
 
@@ -183,6 +217,49 @@ the next session is opened laid out the way you left it. A name that is none of
 the four is named in the log panel and leaves the mode the application had
 standing.
 
+Show_only_tensors_rank_ge_1 option
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Setting this to 1 builds the tree of a case with the **tensors of rank 1 and
+over** and leaves the plain scalars out: fewer rows, and a walk of the tree that
+asks nothing of a leaf it will not show. The default, 0, keeps every node the
+dictionary describes.
+
+This line is the **starting** state: it is read once, when the case is opened.
+The checkable line :guilabel:`Show only tensors (rank >= 1)` of the shot view's
+:menuselection:`Actions` menu is what answers for a tree already on screen -- it
+rebuilds every view of that tree the way it was asked, and moves the preference
+for the rest of the run without rewriting this file. Measured on the reference
+case, a plain load of :guilabel:`equilibrium` occurrence 0 keeps 3 368 signals;
+the tensor view of the same load keeps 48, all of them leaves, with no folder
+left. What the filter prunes is said rather than silently missing, and the
+:ref:`Profiles plugin <IMASViz_plugins>` tabs hold what survived it.
+
+The shot list of the start window
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Five lines, and all five are what the boxes over that list write back -- the file
+and the boxes are two ways of setting one state, and a run that has never touched
+either sees the list as it has always been laid out.
+
+- **Uri_list_sort_key** -- the field the list is ordered by: ``uri``,
+  ``database`` (the default), ``backend``, ``shot`` or ``run``. Whatever the
+  choice, the cases are already read in the order database, backend, shot, run,
+  so a field that was not chosen is not an absence but that order. Shot and run
+  are read as **numbers**, so 12 comes before 999 -- not as words.
+- **Uri_list_sort_direction** -- ``asc`` (the default) or ``desc``.
+- **Uri_list_filter_HDF5** / **Uri_list_filter_MDSplus** -- 1 shows that kind of
+  case, 0 hides it. Both are on by default, and they cannot both be off: the list
+  is *which kind of case to open*, and an empty one is a place to look at that
+  shows nothing. Note the spelling in the file -- ``MDSplus``, where the box says
+  ``MDS+``.
+- **Uri_list_view** -- ``uri`` (the default) shows each case as the URI it is
+  opened with; ``parsed`` shows the backend, the database, the shot and the run
+  the scanner read out of it.
+
+A word none of the boxes offers is named in the log panel and leaves the shape
+the list was holding.
+
 The agent's model
 ~~~~~~~~~~~~~~~~~
 
@@ -212,6 +289,26 @@ not change.
   sends a header. The word is not logged, not in the log panel and not in a
   transcript: it is the one word of the file that is not repeated where it is
   named.
+
+What the transcript shows
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**AgentToolsMode** -- three shapes, and they are what the loop asks of the model:
+
+- ``hide`` (the default) -- the agent still runs its gestures; the transcript
+  shows the prompt, the final answer and the refusals, and nothing between. It
+  is the verbosity cut, not a cut of the work: the figures still appear, and a
+  refusal is still named.
+- ``off`` -- the agent is offered **no tools at all**: a text answer, no gesture
+  run. This is not ``hide`` with the lines hidden; there is nothing to call, so
+  a request that needs a case, a figure or a read is answered from what the model
+  recalls, which is exactly what the rest of this application refuses to do.
+- ``verbose`` -- the whole tool traffic, one line per call and one per result.
+  The shape the loop wore before the default moved, and the one to reach for
+  when a refusal has to be traced back through the calls that produced it.
+
+A word that is none of the three is named in the log panel and leaves the mode
+that was standing.
 
 The agent's journals
 ~~~~~~~~~~~~~~~~~~~~
@@ -254,3 +351,39 @@ The shared journal
   two degrades to the personal one the node does hold, with the reason in the
   log. The author of a note written to the shared journal is the ``$USER`` of
   the writer: it is a visible line the writers read, and the writer is named.
+
+.. _agentics_documents_folder:
+
+The documents corpus
+--------------------
+
+- **AgentDocsDir** -- the folder of the agent's **documents corpus**: the
+  markdown, text and PDF files it is allowed to read for its own
+  :ref:`agentics_documents`. Empty by default, and an empty line is not a
+  corpus of nothing -- a search over the corpus is refused by name, naming the
+  line that is missing, while the two journals keep answering. The folder is
+  the user's: its layout, its language and what is in it are nobody's business
+  but the reader's, and what is in it is read without being checked over.
+
+.. _plugins_active_state_option:
+
+The plugins the user switched off
+---------------------------------
+
+- **Disabled_bricks** -- a comma-separated list of plugin **names**, and those
+  names are the ones of the table of :ref:`IMASViz_plugins`, not the words the
+  menu says::
+
+      Disabled_bricks=VizEventDetection,VizSpectral
+
+  A plugin named here is refused like any other refusal: it is named in the log
+  panel of every case -- ``Plugin VizSpectral is not offered: disabled by the
+  user in the preferences`` -- and the *State* column of the *Plugins* window
+  repeats it. Empty (the default) is nothing switched off.
+
+  The same list is a tick box in :menuselection:`File --> Plugins...`, which
+  writes this line and puts the menus back without a restart.
+
+  A name IMASViz does not ship is refused **by name**, listing the names it does
+  ship -- and it costs the whole line, so the rest of that line does not take
+  effect either. No plugin is switched off by a line that cannot be read.

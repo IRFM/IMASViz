@@ -163,6 +163,64 @@ the same descriptions. The tools, in the order the faces group them:
        **values** of a leaf, as JSON -- the same read the plots use, so the
        figure a viewer sees and the numbers a read reports are the same
        element of the same array.
+   * - the equilibrium
+     - ``equilibrium_surfaces``, ``equilibrium_at_time``
+     - the two readings of the *Equilibrium* plugin, as gestures: the flux
+       surfaces of several named instants side by side in one window, and one
+       instant with the radial profiles under it and the slice's global
+       quantities in the answer. Each instant answers the **nearest slice the
+       case holds**, and the answer keeps ``time_requested`` and
+       ``time_slice_time`` apart -- see :ref:`IMASViz_plugins`.
+   * - the curves already drawn
+     - ``scale_curve``, ``shift_curve``, ``normalize_curve``, ``reset_curve``,
+       ``remove_curve``, ``curve_stats``, ``export_curve``
+     - what the figure window does to a curve it drew, not what the case holds:
+       multiply, offset, divide by a reference of its own (``max``, ``first``,
+       ``mean``), put it back to the values it was drawn with, take it off. All
+       reversible, all read back by ``curve_stats`` -- the sample count, the
+       finite min/max/mean/std, the nan/inf counts and the peak with its
+       abscissa -- and by ``export_curve``, which writes the values **as they
+       stand** to :file:`~/.imasviz/exports`. The tree, the leaf and the case
+       are unchanged by every one of them.
+   * - the axes and the slices of a window
+     - ``set_axis_range``, ``set_image_window``, ``set_slice_index``,
+       ``set_log_scale``, ``invert_axis``
+     - the range of a figure, pinned by name and number (a picture window takes
+       the same span on each of its pictures); the **window of pictures** --
+       moved with ``start``, resized with ``count``; one row of a slider band
+       posed at a named index, in the words the band spells that row; a log
+       axis, refused where the values cross zero; an axis turned around. A table
+       and a stacked window are refused by name, and so is a row a band does
+       not hold -- naming the rows it does.
+   * - the physics of a signal
+     - ``detect_events``, ``clear_event_marks``, ``events_report``,
+       ``spectrum``, ``cross_correlation``, ``spectrum_report``
+     - the events of a leaf's series (``elm`` an excursion up, ``sawtooth`` a
+       crash down, ``lh`` a threshold crossing), optionally marked on a named
+       curve figure; the marks off; the same detection as an HTML report. And
+       what the series oscillates at -- the dominant frequency and period, the
+       leading peaks with their share of the power, the share inside a named
+       band -- and, for a pair of leaves, how far one **lags or leads** the
+       other and at what the two oscillate together. The signal is the one
+       ``get_signal`` answers, so what is measured and what a figure of the same
+       leaf draws are one read; see :ref:`physical_bricks`.
+   * - what a case says
+     - ``greenwald``, ``beta_normal``, ``total_pressure``
+     - the derived quantities of one case: ``f_G = n_e / n_G`` over the three
+       leaves the caller names, and the normalised beta and the total pressure
+       **read off the leaf the case keeps them in** -- never computed here. The
+       answer names the path it read, the points, and the mean, peak and floor.
+       A case that does not hold the leaf is refused by name, never with a
+       plausible-looking value.
+   * - a campaign of shots
+     - ``campaign``, ``campaign_report``
+     - the trend of one leaf across a series of shots, in the order named: one
+       value per shot (``at`` an index of its curve, or ``which`` of ``mean``,
+       ``max``, ``min``), then the per-shot values, the least-squares slope over
+       the shot index, the first-to-last change, the min and max with the shots
+       they came from, and the direction. A campaign of one shot or of
+       all-equal values refuses in words. The report is the same answer as a
+       page under :file:`~/.imasviz/reports`.
    * - the windows
      - ``list_windows``, ``show_window``, ``hide_window``, ``close_window``
      - the session's windows in the order the menus draw them (kind, label,
@@ -175,14 +233,20 @@ the same descriptions. The tools, in the order the faces group them:
        run with the answers the entry would have asked the user -- which is
        what keeps a modal question off the path of a loop.
    * - sessions and configurations
-     - ``save_session``, ``restore_session``, ``list_sessions``,
-       ``list_configurations``, ``select_from_configuration``,
-       ``save_selection``, ``save_plot_configuration``
+     - ``save_session``, ``restore_session``, ``new_session``,
+       ``list_sessions``, ``list_configurations``,
+       ``select_from_configuration``, ``save_selection``,
+       ``save_plot_configuration``
      - the whole screen as the application writes it, put a session back the
        way the gesture replays it, the sessions the folder holds, the plot
        (``.pcfg``) and selection (``.lsp``) files, apply one of them (the
        IDSs the case would need and does not hold are loaded first, the way
-       the menu does it), and the two saves.
+       the menu does it), and the two saves. ``new_session`` is the *New
+       session* of the *File* menu asked the way the page asks it: every case
+       view and every figure of the run closed and **nothing written** -- the
+       sessions on disk and the reports stay where they are -- and it answers
+       how many windows it closed. Like the *Windows* menu's close, it is a
+       gesture the loop names out loud before it runs it.
    * - the reports
      - ``plot_report``, ``case_report``, ``case_ids_report``
      - a window of curves as a self-contained HTML file on disk (the image of
@@ -213,7 +277,8 @@ the same descriptions. The tools, in the order the faces group them:
        dialog would have told a hand.
    * - the journals
      - ``search_journals``, ``list_notes``, ``read_note``, ``add_note``,
-       ``edit_note``, ``delete_note``, ``journal_stats``
+       ``edit_note``, ``delete_note``, ``journal_stats``,
+       ``reindex_journals``
      - the two journals of the run: the **personal** one (the author's own
        notes, under ``~/.imasviz/journals``) and the **shared** one
        (:ref:`agentics_journal_shared`) -- a note is one file with its own
@@ -221,6 +286,58 @@ the same descriptions. The tools, in the order the faces group them:
        *title*) and its body, and a search narrows by any of the filters and
        ranks by meaning when the embeddings endpoint is named
        (:ref:`agentics_journal_llm`), by words while it is not.
+       ``reindex_journals`` puts a journal back in step with its index: an
+       index that is empty, stale, or **guarded** because it was written under
+       an embeddings endpoint this run is no longer under.
+   * - the documents corpus
+     - ``list_documents``, ``search_documents``, ``read_document``,
+       ``reindex_documents``, ``documents_stats``
+     - the agent's own reading of **the user's writing**: the markdown, text
+       and (when the reader is importable) PDF files under
+       :code:`AgentDocsDir` in the preferences. A search answers ranked
+       **chunks** -- one hit per chunk, with the document, the chunk and a
+       snippet -- and names the method it ranked with; ``read_document`` gives
+       the full text of one document by the relative path a hit named;
+       ``list_documents`` is the corpus as named; ``documents_stats`` is its
+       state, which is where "it is not indexed yet" and "it was indexed under
+       another endpoint" are answered; ``reindex_documents`` sets the corpus
+       and its index back in step. A corpus with no folder named is refused by
+       name, naming the folder it would have read (:ref:`agentics_documents`).
+
+.. _agentics_documents:
+
+The documents corpus
+--------------------
+
+The journals are what the agent writes; the **documents corpus** is what it
+*reads*. It is one preferences line -- :code:`AgentDocsDir`, empty by default --
+naming a folder of the user's own markdown, text and PDF files. Nothing about it
+is IMASViz's: the folder, its layout and its language are the user's, and the
+corpus is the agent's memory of it.
+
+The corpus is indexed, not reread on every question: each document is cut into
+chunks and the chunks are stored in the same index the two journals use, so
+``search_documents`` answers the chunks that carry the answer rather than a file
+name, and ``read_document`` is the one to ask when a hit is worth reading whole.
+Ranking follows the same rule as the journals (:ref:`agentics_journal_llm`): by
+**embeddings** when the embeddings endpoint is named and answers, by **words**
+while it is not, and the answer says which -- ``hybrid``, ``embeddings``,
+``keyword`` or ``empty``.
+
+Two states are worth reading before concluding the corpus does not work:
+
+- **an empty index**: a document added to the folder announces itself to nobody.
+  ``reindex_documents`` walks the folder, keeps what it has, embeds what moved
+  and drops what left; ``documents_stats`` names how many documents and chunks
+  stand, under which endpoint and model, and when that was built.
+- **a guarded index**: an index written under one embeddings endpoint and read
+  under another is kept out of the ranking -- its vectors live in a different
+  space than the query does -- and the search falls back to words, naming the
+  guard. A fresh ``reindex_documents`` under the endpoint of the run is what
+  clears it.
+
+A folder that is not named is a refusal that names the line missing; it is not a
+search that quietly answers nothing, and the journals keep answering beside it.
 
 .. _agentics_journal:
 

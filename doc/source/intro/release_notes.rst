@@ -56,6 +56,34 @@ Released 11/12/2026
 - The refusals of the runs are named, and cost nothing: a refusal opens no
   empty figure, takes no figure number, and says its reason where the face
   that asked for it reads it.
+- **A plugin says where it sits.** The contract is declarative: a plugin
+  declares ``SCOPE`` -- one of five places, an IDS root, a quantity, a case,
+  the application, or a window of curves -- and ``ACTIONS``, one entry per
+  line it earns. The five methods the old contract asked (``isEnabled``,
+  ``getEntries``, ``getAllEntries``, ``getPluginsConfiguration``,
+  ``execute``) are gone, and where a plugin applies is read where it is
+  written (:ref:`IMASViz_plugins`).
+- **Four facts about the plasma, offered where the question lives.** The
+  events a curve carries (ELM, sawtooth, L-H), what it oscillates at, the
+  Greenwald fraction / normalised beta / total pressure of a case, and the
+  trend of a leaf across the shots of a session are four plugins -- on the
+  figure's right click for the first two, on the case's own menu bar for the
+  third, on the application's for the fourth -- and all four read the same
+  numbers a figure draws, through one layer with no Qt and no case in it
+  (:ref:`physical_bricks`).
+- **A plugin can be switched off.** The *Active?* column of
+  :menuselection:`File --> Plugins...`, and ``Disabled_bricks`` in the
+  preferences: a plugin the user switched off is refused **by name** in the
+  log of every case, not left as a silent gap, and what it owns besides the
+  menu -- a window's curves, the tools that read them -- is untouched.
+- **The tool set grew where the screen had grown.** A loop now works on the
+  curves a figure already drew (scale, offset, normalise, reset, remove,
+  their statistics and their export), on the axes and the slider bands of a
+  window, on the physics of a leaf (events, spectrum, cross-correlation, and
+  their reports), on the derived quantities of a case and on a campaign of
+  shots -- and it reads a corpus of the user's own documents, which is a
+  folder of their choosing and an index of their choosing
+  (:ref:`agentics_documents`).
 
 -------------
 Version 2.8.0

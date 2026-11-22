@@ -13,16 +13,50 @@ IMASViz allows the use of custom-made plugins which further extend the IMASViz
 functionality. The plugins currently available are listed here together with a
 manual section on how to use them.
 
+Where a plugin is offered
+-------------------------
+
+A plugin says **where it sits** and that is where it appears -- no plugin is
+offered everywhere. There are five places, and they are the five the framework
+knows:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 15 85
+
+   * - the place
+     - where the line lands
+   * - an IDS root
+     - the :guilabel:`Plugins` sub-menu of the right click on that root
+   * - a quantity
+     - the :guilabel:`Plugins` sub-menu of the right click on that node
+   * - a case
+     - the :guilabel:`Plugins` line of that shot view's own menu bar
+   * - the app
+     - the :guilabel:`Plugins` line of the application window's menu bar
+   * - a figure
+     - a sub-menu of the right click on a **window of curves**
+
+What each place is asked is different, and so is the answer. An IDS root knows
+which IDS it is; a quantity knows which node the mouse is on; a case knows its
+URI and no node; the application knows every case the session holds and no case
+in particular -- which is why a trend over a campaign of shots sits on the
+application's bar and not on one shot's; and a figure knows the window it drew,
+which is the only place a question about *the curve on screen* can be answered.
+
+The lines are read again every time a menu opens, so a plugin just edited is on
+the next menu without restarting anything. The exception is a figure: its
+sub-menus are built when the window is, so a change reaches the next window of
+curves.
+
 .. _your_own_plugins:
 
 The plugins IMASViz ships, and the ones you wrote
 -------------------------------------------------
 
-Every plugin is offered the same way -- a line in the :guilabel:`Plugins`
-sub-menu of a node -- and every plugin answers that menu for the nodes it
-claims. What differs is **whose file it is**, and that decides one thing: a
-plugin IMASViz ships is read here and not changed; a plugin of your own is
-changed in place.
+Every plugin answers its own menu for the places it claims. What differs is
+**whose file it is**, and that decides one thing: a plugin IMASViz ships is read
+here and not changed; a plugin of your own is changed in place.
 
 Two entries on the :menuselection:`File` menu of the application window reach
 both:
@@ -34,13 +68,81 @@ both:
   that folder is looked for each time the menu is built.
 - :menuselection:`File --> Plugins...` opens the table of every plugin this
   session can offer -- the ones IMASViz ships and the ones you wrote -- with
-  four columns: which plugin, whose it is, what the opened cases said about it,
-  and where the file lives.
+  five columns: which plugin, whose it is, whether it is active, what the
+  opened cases said about it, and where the file lives.
 
 .. note::
    The *State* column says ``ok``, ``refused: <why>`` or ``not asked yet``. The
    third is an answer and not a gap: a case view nobody has right-clicked has
    asked its plugins nothing yet.
+
+.. _plugins_active_state:
+
+Switching a plugin off
+~~~~~~~~~~~~~~~~~~~~~~
+
+The *Active?* column is a tick box. Un-ticking a row takes that plugin out of
+every menu of the run, and the choice is written to the preferences file, so the
+next session opens with the plugin still off:
+
+::
+
+    Disabled_bricks=VizEventDetection,VizSpectral
+
+Ticking it back puts the line and its plugin where they were. A plugin refused
+because it is switched off is refused **with the same voice as any other
+refusal**: it is named in the log panel of the case -- ``Plugin VizSpectral is
+not offered: disabled by the user in the preferences`` -- and the *State* column
+repeats it, rather than leaving a silent gap in a menu.
+
+Two things this switch does **not** do:
+
+- it does not touch the physics. The two bricks that live on a window of curves
+  keep their objects on that window: switch *Événements* off and the sub-menu is
+  gone from the right click, while the figure, its curves and the tools of
+  :ref:`agentics` that read them are untouched. The switch is about the menu.
+- it does not make a name up. A name IMASViz does not ship is refused by name in
+  the log, listing the names it does ship, and the line is ignored -- no plugin
+  is switched off by a line that cannot be read.
+
+What IMASViz ships, and what each one is offered on:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 25 17 58
+
+   * - plugin
+     - offered on
+     - what the line does
+   * - ``equilibriumcharts``
+     - an IDS root (``equilibrium``)
+     - the matplotlib overview of :guilabel:`equilibrium`
+   * - ``equilibriumsurfaces``
+     - an IDS root (``equilibrium``)
+     - the same reading, in IMASViz's own figures
+   * - ``VizProfiles_plugin``
+     - any IDS root
+     - what that IDS holds that can be drawn
+   * - ``VizSlicePlugin``
+     - any IDS root
+     - every filled 1D-profile of that IDS at one slice, in one figure
+   * - ``VizEventDetection``
+     - a figure
+     - *Événements*: ELM, sawtooth and L-H events marked on the curve on screen
+   * - ``VizSpectral``
+     - a figure
+     - *Spectre*: the peaks of the live curve's spectrum
+   * - ``VizDerivedQuantities``
+     - a case
+     - *Quantités dérivées*: the Greenwald fraction, beta normalised and the
+       total pressure of that case
+   * - ``VizCampaignTrend``
+     - the application
+     - *Campagne*: the trend of one leaf across the shots this session holds
+
+A plugin of your own is offered on any of the four first places; the figure's
+menu box is built from what IMASViz ships and does not scan your folder. See
+:ref:`plugin_figure_scope`.
 
 Reading a shipped plugin, and changing one
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -378,4 +480,187 @@ IDS with no time base.
    the *Windows* menu, but it is not inside the MDI area: it travels with the
    shot view it was opened from, and a session puts it back by asking the plugin's
    menu line again -- see :ref:`plugin_answers_and_sessions`.
+
+'Slice' plugin
+--------------
+
+One line on **any IDS root** -- :guilabel:`Draw the slice of the <ids> IDS…`, so
+the same line reads *the equilibrium IDS* under one root and *the wall IDS* under
+another -- and one window: every 1D-profile that IDS holds a value for at the
+slice the tree is standing on, one curve each, in a single figure of curves.
+
+What that window answers is **which leaves carry a value**. The application
+already knows the structure of the IDS, so the entry asks the case which of its
+profiles are filled and draws those; the empty ones are counted and said, not
+handed to the screen as flat lines. An IDS occurrence that holds no filled
+1D-profile at all is refused by name and costs no window.
+
+The line draws the first occurrence the case holds. A session replaying the
+window puts back the occurrence the file recorded, and an occurrence the case
+does not hold is refused by name, with the ones it does answer spelled out.
+
+.. note::
+   This is the slice **the tree stands on**, not an instant you name. A value
+   interpolated at an arbitrary time is the ``plot_slice`` gesture of
+   :ref:`agentics`, and a quantity of two axes of its own is no 1D-profile: it
+   belongs to a picture window, and the tree's own entries are the way to it.
+
+.. _physical_bricks:
+
+Four questions about the plasma
+-------------------------------
+
+Four of the shipped plugins answer the questions a physicist asks **about the
+signal itself**, rather than about the tree it came from: what events does this
+curve carry, what does it oscillate at, what does this case say about the
+Greenwald fraction or the beta, and how has this quantity moved across the shots
+of a campaign. Each is offered where its question lives:
+
+- the two questions about **the curve on screen** sit on that curve's window --
+  the right-click menu box of a window of curves;
+- the question about **one case** sits on that shot view's own menu bar;
+- the question about **a campaign** sits on the application window's menu bar,
+  because a campaign is by definition more than one case, and the session is the
+  place where they are all open at once.
+
+All four read the numbers the figures already read. The physics is one layer of
+this package with no Qt and no case in it -- it takes a time axis, a value axis
+and the parameters of the question -- and both a menu line and a tool of
+:ref:`agentics` ask that layer the same question on the same read. So a mark
+drawn from the right-click menu and a count answered to the agent are the same
+events, found in the same samples. And none of the four invents a number a case
+does not hold: a flat signal, a signal too short, a leaf the case does not carry,
+or a session holding one shot is a refusal in words, naming what was tried.
+
+Events on a window of curves
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Right-click a window of curves and the sub-menu :guilabel:`Événements` carries
+four lines: :guilabel:`ELM`, :guilabel:`sawtooth`, :guilabel:`transition L-H`
+and :guilabel:`Retirer les marques`.
+
+An ELM is an excursion **up**, a sawtooth a crash **down**, an L-H transition a
+**threshold crossing**. The first two are peaks, gated by their **prominence** --
+how far a peak rises above the nearest lower contour on either side of it -- so
+the ripple under an ELM is not mistaken for a wall of events; the third is a
+crossing, with a hysteresis band so a signal wobbling on the threshold does not
+re-trigger.
+
+The series it runs on is the figure's **live curve** -- the first curve that
+follows the sliders -- read back off what is on the screen. Nothing is re-read
+from the case: what is marked is the curve you are looking at. Each event earns
+one vertical line across the plot, and the window answers how many were posed. A
+window carries **one set of marks**: asking the next kind replaces them, so a
+window shows the ELMs or the sawteeth, not both at once.
+
+Two refusals are worth knowing, because both answer a real state of a curve:
+
+- the figure holds no curve following the sliders (every trace is a kept one), so
+  there is no series to run on;
+- the signal is flat, or too short to carry an event.
+
+And a cap: when a detection answers **more than forty** events the line is
+refused -- more than forty verticals on one window is a wall and not a marking --
+and the answer says so, pointing at the report, which is one row per event
+instead of one line per event. :guilabel:`Retirer les marques` takes the marks
+back off, and says how many it took.
+
+The same three reads are tools, so the agent can mark a figure it drew, or answer
+the count without opening one: ``detect_events`` (with ``figure_key`` to mark, or
+without it to count), ``clear_event_marks`` and ``events_report``.
+
+The spectrum of the live curve
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The sub-menu :guilabel:`Spectre` has one line, :guilabel:`Sommets du spectre
+(top 5)`, and it answers on the same live curve as the events::
+
+    Dominant : f = 3.333  ·  période 0.3  ·  61.7 % de la puissance
+    Puissance totale : 1.204e+06
+    1024 échantillon(s)
+
+    Pics :
+      1.  f = 3.333  ·  période 0.3  ·  61.7 %
+      2.  f = 6.667  ·  période 0.15  ·  22.1 %
+
+That is the leading peak with its period and its share of the power, the total,
+the sample count, and the leading peaks down to five. The units are the case's:
+the abscissa is in seconds and the frequency is in hertz, and no conversion is
+done -- a signal kept in milliseconds on the axis keeps the frequencies that
+spelling implies.
+
+It refuses, in words, a series that is flat (it answers no power off its mean), a
+series too short to spread a power over (fewer than eight samples left), and an
+abscissa that is not a strictly increasing clock -- two equal or out-of-order
+points would make every frequency ambiguous. Two things the menu does not offer
+are offered by the tools: ``spectrum`` with a **band** named answers how much of
+the power lives between its two bounds, and ``cross_correlation`` answers how far
+one leaf **lags or leads** another, at what the two oscillate together, and what
+their shared dominant frequency is. ``spectrum_report`` writes the same facts to
+a self-contained HTML page under :file:`~/.imasviz/reports`.
+
+The derived quantities of a case
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :guilabel:`Plugins` line of a shot view's own menu bar carries
+:guilabel:`Quantités dérivées`, with three lines. Each reads the case's own
+leaves and answers a window; the leaf it read is named in that window, so the
+number can be checked against the tree.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 24 38 38
+
+   * - the line
+     - what it answers
+     - the leaves it reads by default
+   * - :guilabel:`Fraction de Greenwald`
+     - ``f_G = n_e / n_G``, with the limit the standard gives,
+       ``n_G = (I_p / A) x 1e20`` -- ``I_p`` in mega-Ampère, ``A`` in square
+       metre, so the ratio is a metre-cubed density
+     - ``equilibrium.time_slice[0].global_quantities.n_e``, ``.ip``, ``.area``
+   * - :guilabel:`Beta_N`
+     - the case's **normalised beta**, read off the leaf that holds it
+     - ``equilibrium.time_slice[0].global_quantities.beta_normal``
+   * - :guilabel:`Pression totale`
+     - the case's **total pressure**, ``p = n_e k_B T_e + n_i k_B T_i``
+     - ``equilibrium.time_slice[0].profiles_1d.pressure``
+
+The last two are read, not computed: the case is what summed electrons and ions,
+and the application reports the number the case keeps, under the name of the leaf
+it came from. A case that does not hold that leaf is refused by name -- never
+handed back as a plausible-looking value.
+
+The window answers the **mean, the peak and the floor** of the series over the
+time it is held, with how many points were read and the path they came from. For
+the Greenwald fraction it answers the fraction and the limit at the first instant
+the three leaves read, and names the three paths so a different ``n_e`` or a
+different area can be asked for through the ``greenwald`` tool, which takes the
+three leaves as arguments and answers the whole series.
+
+The trend across the shots of a session
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :guilabel:`Plugins` line of the **application window's** menu bar carries
+:guilabel:`Campagne`, with :guilabel:`Tendance (ip)` and
+:guilabel:`Exporter le rapport`.
+
+The campaign is the session: the shot views that are open, in the order they were
+opened. Nothing is named and nothing is typed; the shots a physicist has opened
+*are* the campaign, and the answer says so, one row per shot URI. It reads the
+same leaf from every one -- ``equilibrium.time_slice[0].global_quantities.ip`` by
+default -- takes one value per shot (the mean of the curve the shot answers), and
+answers the **direction**, the **first-to-last variation** and the
+**least-squares slope over the shot index**.
+
+A trend needs two shots: a session holding one is refused with that count in the
+words, as is a campaign whose values are all equal -- a flat campaign says
+neither rising nor falling. ``Exporter le rapport`` writes the same answer, with
+the per-shot table, to a self-contained HTML page under :file:`~/.imasviz/reports`.
+
+The tools go further than the menu on one point: ``campaign`` takes the **leaf**
+and how the per-shot value is taken -- ``at`` an index of the curve, or ``which``
+of ``mean`` / ``max`` / ``min`` -- and the shots themselves, in campaign order,
+which is what lets the agent run a trend over a list the user dictated rather
+than over the windows that happen to be open.
 

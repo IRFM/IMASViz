@@ -93,7 +93,10 @@ are available in the right-click menu.
    named below -- :guilabel:`Show/Hide error bars`,
    :guilabel:`Show error bars (with slicing)`,
    :guilabel:`Show/Hide confidence bands` and :guilabel:`Configure Plot` --
-   because the figure that drew the curve is the one holding it. An
+   because the figure that drew the curve is the one holding it -- and two
+   **sub-menus**, :guilabel:`Événements` and :guilabel:`Spectre`, which answer a
+   question about the curve on screen rather than about the window that holds it
+   (:ref:`physical_bricks`). An
    :guilabel:`Image` figure answers pyqtgraph's lines only: it draws no trace, and
    what says how a picture is read is its colour scale, which belongs to the
    picture. The same :guilabel:`Configure Plot` line is answered one panel at a
@@ -105,7 +108,9 @@ are available in the right-click menu.
    sections below describe lines that menu carried: :guilabel:`Auto Range` is
    not a line of its own on these frames -- it is the Auto/Manual pair in the
    axis sub-window, and :guilabel:`View All` applies it -- and no frame offers
-   grid or log-scale choices from a right click.
+   grid or log-scale choices from a right click. (A log axis is reachable from
+   :ref:`agentics`: ``set_log_scale`` names the axis and turns one around, and
+   refuses where the values cross zero.)
 
 .. figure:: images/plotDisplay_popupmenu.png
   :align: center

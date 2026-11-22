@@ -134,12 +134,15 @@ The declarative contract
 
 A plugin class declares **two** things -- and nothing else is asked of it:
 
-* **where it is offered** -- ``SCOPE``, one of four places: ``IDS`` (the root
+* **where it is offered** -- ``SCOPE``, one of five places: ``IDS`` (the root
   of one or more IDS roots in the tree), ``NODE`` (a quantity under the cursor),
-  ``CASE`` (the case's own menu bar), or ``APP`` (the application's menu bar).
+  ``CASE`` (the case's own menu bar), ``APP`` (the application's menu bar), or
+  ``FIGURE`` (the right-click menu box of a window of curves).
   For ``IDS`` it may name which IDS roots it applies to; an empty set means any.
   For ``NODE`` it may provide a predicate ``callable(node)`` to filter which
-  quantities it handles.
+  quantities it handles. ``CASE``, ``APP`` and ``FIGURE`` take nothing to match:
+  the answer of a case, of the whole application, or of a window of curves is
+  not something to filter, and passing a name or a predicate there is refused.
 
 * **what it can do** -- ``ACTIONS``, a tuple of ``QVizPluginAction`` objects.
   Each action has a stable integer ``key``, the ``label`` shown in the menu (and
@@ -176,6 +179,12 @@ Set ``SCOPE`` and ``ACTIONS`` in the constructor.
 
     # Or, if it answers any IDS root:
     # self.SCOPE = QVizPluginScope(IDS)
+
+    # Or on the right-click menu box of a window of curves. A FIGURE plugin
+    # also says what its sub-menu is titled -- LABEL, because the registered
+    # class name is not what a user should read:
+    # self.SCOPE = QVizPluginScope(FIGURE)
+    # self.LABEL = 'Mon outillage'
 
 **What it offers** -- ``ACTIONS``:
 
@@ -261,9 +270,11 @@ What your action receives, and what a session replay hands back
 
 Your ``run`` callback receives exactly one argument: a ``QVizPluginContext``.
 It tells the plugin where it was offered and who is calling: ``context.view``
-is the shot view (or ``None`` for ``APP``-scope plugins), ``context.node`` is
-the node the gesture was made on (or ``None`` for ``CASE`` or ``APP`` scope),
-and ``context.scope`` is one of ``IDS``, ``NODE``, ``CASE``, or ``APP``.
+is the shot view (or ``None`` for ``APP``- or ``FIGURE``-scope plugins),
+``context.node`` is the node the gesture was made on (or ``None`` for ``CASE``,
+``APP`` or ``FIGURE`` scope), ``context.figure`` is the frame whose menu box the
+line was clicked on (``None`` everywhere else), and ``context.scope`` is one of
+``IDS``, ``NODE``, ``CASE``, ``APP`` or ``FIGURE``.
 ``context.api`` is always the running session's own.
 
 .. note::
@@ -287,7 +298,7 @@ where the window came from, by stamping the frame it registers:
 
 The ``entry`` is the key of the ``QVizPluginAction`` that drew the window --
 here ``0``, the only action this tutorial's plugin declares. The **figure key**
-(e.g. ``SlicesPlot:1``) is not part of ``QVizPluginWindow``: it is the key the
+(e.g. ``Plot1``) is not part of ``QVizPluginWindow``: it is the key the
 window is registered under in ``Viz_API.figureframes``, which is what the
 :guilabel:`Windows` menu and its :guilabel:`Delete` lines address it by. A
 session replay hands it back to your action through ``context.answers.figureKey``.
@@ -347,6 +358,76 @@ A plugin can offer several features. Each is a ``QVizPluginAction`` in the
    not another. If an action cannot do its work in this context, raise a
    ``ValueError`` inside its ``run`` method -- the framework catches it, puts
    the reason in the log of the case, and the other actions keep working.
+
+.. _plugin_figure_scope:
+
+A plugin offered on a window of curves
+""""""""""""""""""""""""""""""""""""""
+
+A ``FIGURE`` plugin earns a **sub-menu** on the right-click menu box of a window
+of curves -- one sub-menu per plugin, titled by its ``LABEL`` (or by its
+registered name when it sets none), one line per offered action. The two the
+application ships are *Événements* and *Spectre*; both are documented in
+:ref:`IMASViz_plugins <IMASViz_plugins>`, and both are the shape below.
+
+.. code-block:: python
+    :caption: A FIGURE-scope plugin, in the shape the application ships
+    :linenos:
+
+    from imasviz.VizPlugins.VizPlugin import (FIGURE, QVizPluginAction,
+                                              QVizPluginScope, VizPlugin)
+
+    def _measure(context):
+        frame = context.figure          # the window the line was clicked on
+        if frame is None:
+            return
+        curve = frame.eventMarks.liveCurve()
+        if curve is None:
+            raise ValueError('this figure holds no curve following the sliders')
+        # ... read the curve, put the answer on the frame ...
+
+    class myFigureTool(VizPlugin):
+        SCOPE = QVizPluginScope(FIGURE)
+        LABEL = 'Mon outillage'
+        ACTIONS = (
+            QVizPluginAction(0, 'Mesurer la courbe vivante', run=_measure),
+        )
+
+The ``run`` callables come **before** the class, as they do in the shipped
+bricks: ``ACTIONS`` is read when the class body runs, so a name defined after it
+is not there yet.
+
+Three things belong to this place and to no other:
+
+- **the frame is an argument, not an attribute.** Reach the window through
+  ``context.figure``; never keep it on ``self``. The line is built once when the
+  frame is, so a callable closing over the frame makes a cycle (frame -> menu ->
+  action -> your callable -> frame), and a Qt widget freed by the cyclic
+  collector is freed on this stack while it still owes a paint event. The
+  framework already holds the frame through a ``weakref`` for exactly that
+  reason, and the context is rebuilt at click time.
+- **the refusal goes to the window, not to the log of a case.** A ``FIGURE``
+  plugin is clicked on a plot, and a case view may not be beside it: the two
+  shipped bricks answer in a message box titled by the sub-menu -- a refusal in
+  a warning, the count in an information line -- and the dialog is raised by the
+  object that stays on the frame, which is why the plugin's ``run`` adds nothing
+  to it. A ``ValueError`` out of ``run`` is still caught by the framework.
+- **a figure plugin does not own the work.** The shipped ones delegate to objects
+  that stay on the frame (``frame.eventMarks``, ``frame.spectrumMenu``), which
+  the tools of :ref:`agentics` drive as well. Switching the plugin off therefore
+  takes the **menu** away and leaves the window, its curves and everything the
+  agent can still ask that window unchanged.
+
+.. warning::
+   A ``FIGURE`` plugin is built when the frame is built, not when the menu is
+   opened, so a plugin edited mid-session reaches the **next** window of curves
+   you open, not the one already on screen. And it is looked for in the table of
+   what IMASViz **ships** (``RegisteredPlugins``) only: unlike the other four
+   scopes, this one does not scan :file:`$HOME/.imasviz/plugins`, so a plugin of
+   your own declaring ``FIGURE`` is offered nowhere. That is a limit of the
+   mechanism, not of the contract -- see the *Plugins* window of
+   :ref:`IMASViz_plugins <IMASViz_plugins>` for what a plugin of your own does
+   reach.
 
 Full Python code
 ^^^^^^^^^^^^^^^^
