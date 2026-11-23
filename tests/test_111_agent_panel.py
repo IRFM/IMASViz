@@ -44,9 +44,20 @@ class FakeLLMClient:
 
 
 class FakeCore:
-    """A stand-in for McpGuiCore."""
+    """A stand-in for McpGuiCore.
+
+    It carries ``list_prompts`` because the panel asks the catalogue while
+    it is being built: the prompt box is filled from that answer, so a
+    core that cannot answer it is a panel that cannot be built. What the
+    core itself answers is pinned by ``test_167``; here the shelf is empty.
+    """
     def list_cases(self):
         return [{'uri': 'fake', 'dd_version': '3.35.0'}]
+
+    def list_prompts(self, scope=None, category=None, query=None,
+                     limit=None):
+        return {'prompts': [], 'total': 0, 'categories': {},
+                'context': {'note': 'no case is open'}}
 
 
 class FakeDispatcher:

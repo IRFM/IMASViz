@@ -27,6 +27,14 @@ is in the *Windows* menu, where a raise keeps the place and the size
 the user gave the window. A show the user asks of the agent ("montre-moi
 Plot1") is an explicit gesture the loop runs like every other
 (``focus_window``), not a side effect of an accepted answer.
+
+The catalogue box and the *Prompts…* window are the two folders the page
+and the client read and write (``~/.imasviz/prompts`` and
+``SharedPromptsDir``), asked through the core's ``*_prompt`` gestures
+like every other surface asks them: a prompt chosen here arrives in the
+box with the holes this session already answered -- its open case, its
+open window -- and the source of each named. Filling is not running: the
+box is what is asked, through the same *Tourner* as any other prompt.
 """
 
 import threading
@@ -44,6 +52,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from imasviz.VizAgent.QVizPromptCatalog import NO_PROMPT, QVizPromptManager
 from imasviz.VizAgent.QVizPromptHistory import QVizPromptHistory
 
 from imasviz.Viz_API import QVizClosableWindow
@@ -85,6 +94,10 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
         self.api = api
         self.agent = agent
         self._run_thread = None
+        # The catalogue window, held here: a window no Python reference
+        # holds dies with the wrapper that made it, and this one is opened
+        # from a button.
+        self.promptManager = None
 
         # The key: the next available Agent: number in the session.
         self.figureKey = self._nextKey(api)
@@ -111,6 +124,19 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
         layout.addWidget(self.promptHistoryBox)
         self._loadHistory()
 
+        # The prompt catalogue: the prompts the user filed to ask again,
+        # grouped by category, each line saying its name and its one line
+        # of description. The history box is what this session typed; this
+        # one is what the user wrote on purpose, on disk. Choosing a line
+        # puts the prompt in the box below with the holes this session
+        # already answered filled in ({shot}, {figure}…) -- a hole nothing
+        # answers is a refusal naming it, never a value invented for it,
+        # and the *Prompts…* window is where such a hole gets typed.
+        self.promptCatalogueBox = QComboBox()
+        self.promptCatalogueBox.activated.connect(self._onCatalogueSelected)
+        layout.addWidget(self.promptCatalogueBox)
+        self._loadCatalogue()
+
         # Prompt
         self.promptEdit = QPlainTextEdit()
         self.promptEdit.setPlaceholderText(
@@ -131,6 +157,14 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
         self.clearButton = QPushButton('Effacer')
         self.clearButton.clicked.connect(self._onClear)
         buttons.addWidget(self.clearButton)
+        # The catalogue in its own window: the list, the holes of the one
+        # chosen, and the two asks -- put the filled prompt in the box, or
+        # run it. Non-modal on purpose: the transcript keeps scrolling
+        # behind it, and the gestures it makes are the core's, so the page
+        # and the client see the same catalogue change.
+        self.promptsButton = QPushButton('Prompts…')
+        self.promptsButton.clicked.connect(self._onPromptsWindow)
+        buttons.addWidget(self.promptsButton)
         # The tools switch. On (the default) the agent runs its gestures and
         # the transcript holds only the answer -- `hide`; off the agent is
         # offered no tool at all, a pure text shape -- `off`. It is the
@@ -291,6 +325,114 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
         text = self.promptHistoryBox.itemText(index)
         if text:
             self.promptEdit.setPlainText(text)
+
+    # ------------------------------------------------------------- catalogue
+
+    def _promptCore(self):
+        """The core the catalogue gestures live on.
+
+        The panel holds the ``AgentLoop``, and the loop holds the core --
+        the one standing in front of the open case and the open windows,
+        which is what answers ``{shot}`` and ``{figure}`` without asking.
+        A panel with no agent has no one to ask, and says so in the box
+        rather than reading the folders itself: two readers of the
+        catalogue, one of them blind to the session, is how a prompt would
+        start answering a case that is not the one on screen.
+        """
+        return getattr(self.agent, 'core', None)
+
+    def _loadCatalogue(self):
+        """The box from the two catalogues: category first, then name,
+        with the one line of description a reader chooses on. Separators
+        group the categories, so a catalogue of forty prompts is read as
+        the list the user wrote and not as a wall.
+
+        A shared catalogue with no folder named is not a missing half: the
+        personal prompts still answer, and the reason is in the status
+        line of the *Prompts…* window.
+        """
+        box = self.promptCatalogueBox
+        box.blockSignals(True)
+        box.clear()
+        box.addItem(NO_PROMPT)
+        core = self._promptCore()
+        if core is None:
+            box.addItem('(aucun agent pour répondre le catalogue)')
+        else:
+            try:
+                answer = core.list_prompts()
+            except ValueError as e:
+                box.addItem('REFUSAL — %s' % e)
+            else:
+                last = None
+                for entry in answer['prompts']:
+                    if last is not None and entry['category'] != last:
+                        box.insertSeparator(box.count())
+                    last = entry['category']
+                    label = '%s — %s' % (entry['category']
+                                         or '(sans catégorie)', entry['name'])
+                    if entry['description']:
+                        label += '  ·  %s' % entry['description']
+                    box.addItem(label, (entry['scope'], entry['id']))
+        box.blockSignals(False)
+
+    def _onCatalogueSelected(self, index):
+        """A prompt chosen: the text, with its holes filled by what the
+        four sources answer -- what was typed last time for it, this
+        session, its own defaults. The transcript says which source
+        answered each hole, because a value the user did not type is a
+        value they are told about before it is sent.
+
+        The box is filled, not run: choosing from a menu is not an ask to
+        start a turn. *Tourner* stays the ask.
+        """
+        where = self.promptCatalogueBox.itemData(index)
+        if not where:
+            return
+        scope, prompt_id = where
+        core = self._promptCore()
+        if core is None:
+            self._appendTranscript('ERROR: no agent to answer the catalogue.')
+            return
+        try:
+            answer = core.fill_prompt(name=prompt_id, scope=scope)
+        except ValueError as e:
+            self._appendTranscript('REFUSAL — catalogue: %s' % e)
+            return
+        self.promptEdit.setPlainText(answer['text'])
+        filled = sorted(name for name, one in answer['values'].items()
+                        if one['value'])
+        self._appendTranscript('Catalogue — %s : %s' % (
+            answer['name'],
+            '; '.join('{%s} (%s)' % (name, answer['values'][name]['source'])
+                      for name in filled) or 'aucun trou à remplir'))
+
+    def _onPromptsWindow(self):
+        """The catalogue in its own window: the list, the holes of the one
+        chosen, the write of a new one.
+
+        Non-modal, and raised instead of doubled when it is already on
+        screen. It is held here because a window no Python reference holds
+        dies with the wrapper that made it.
+        """
+        if self.promptManager is not None and self.promptManager.isVisible():
+            self.promptManager.raise_()
+            self.promptManager.activateWindow()
+            return
+        self.promptManager = QVizPromptManager(
+            self._promptCore(), parent=self,
+            onInsert=self.setPrompt,
+            onRun=self._runFromCatalogue,
+            onChanged=self._loadCatalogue)
+        self.promptManager.show()
+        self.promptManager.refresh()
+
+    def _runFromCatalogue(self, text):
+        """A catalogue prompt launched through the panel's own run: the
+        transcript, the history and the busy buttons are the panel's, so
+        the turn a catalogue prompt starts is the turn the user reads."""
+        self.promptEdit.setPlainText(text)
+        self._onRun()
 
     def _recordPrompt(self, prompt):
         """The prompt a run types in: it goes in the history, and the box
