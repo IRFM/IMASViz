@@ -834,6 +834,107 @@ guards, and each is a refusal of the face, named:
   named refusal, the gesture is not done, the figure, the case, the session
   are left standing -- and the answer says so, that nothing was closed.
 
+.. _agentics_prompts:
+
+The prompt catalogue
+--------------------
+
+A prompt the user wrote once is worth filing: the wording works, the turn it
+starts is the one they ask again next week, and typing it a second time is
+the cost the catalogue takes away. A prompt is a file of a front matter the
+reader chooses on -- a *name*, a *category*, a one-line *description*, the
+*variables* it asks for and their defaults, an *author* -- and the text
+itself, with its holes spelled with braces:
+
+.. code-block:: text
+
+   name: Profils des trois occurrences
+   category: équilibre
+   description: trace les profils des occurrences 0 à 2 d'equilibrium
+   variables: shot=; rho=0.85
+   author: g2lfleur
+
+   Ouvre le cas de la décharge {shot} et trace les profils de equilibrium
+   aux occurrences 0, 1 et 2, en marquant le rayon normalisé {rho}.
+
+The two catalogues are the two the journals answer by:
+
+- the **personal** one, under ``~/.imasviz/prompts/``, one for each user of
+  the node; and
+- the **shared** one, under :code:`SharedPromptsDir` in the preferences
+  (:ref:`agentics_prompts_shared`) -- an AFS directory the writers of the
+  node reach, so a prompt one writer filed is on the menu of the others.
+
+The read: ``list_prompts`` (the catalogue, by category and by name, narrowed
+by ``category`` or a word of ``query``, and answering how many prompts each
+category holds), ``prompt_detail`` (one prompt whole: its text and, for each
+of its holes, the value it would take today and **where that value comes
+from**), and the write: ``save_prompt`` (a new file, the id being the slug of
+its name), ``edit_prompt`` (one of the prompts, changed in place -- it keeps
+the id its values were remembered under) and ``delete_prompt`` (one of them,
+and the values remembered for it, gone).
+
+The holes are filled by four sources, in that order, and the answer names
+which one answered each:
+
+1. the value the caller names for this run;
+2. the last value typed for **that** prompt, kept in the user's own folder
+   (a shared prompt keeps its last values locally: a rerun costs the same
+   typing for the one who typed them and nothing for anybody else);
+3. what **this session** knows -- ``case``, ``uri``, ``shot``, ``run``,
+   ``database`` when the session holds exactly one open case, and
+   ``figure`` when it holds exactly one window; two cases open is not a
+   guess, it is a question, and the reason is named;
+4. the default the file declares.
+
+A hole none of the four answers is a **refusal naming the holes**. A prompt
+is never sent with ``{shot}`` still in it, and never sent with a value the
+application made up for it -- which is the whole reason filling is a separate
+ask from running.
+
+Filling is not running. There is no ``run_prompt`` gesture, and no face
+pretends there is one: ``fill_prompt`` answers the text, and the face asks it
+as its own turn -- the panel puts it in its box and *Tourner* runs it, the
+page puts it in its box or sends it through its *Run*, the client runs it on
+the line. A prompt of the catalogue is the user's own ask, and the turn it
+starts is the turn the transcript shows.
+
+The four faces, and the catalogue each asks of the same two folders:
+
+- the **panel** (*Windows → Agent*): a box of the catalogue beside the box of
+  the history -- the categories grouped, each line saying its name and its
+  description -- which fills the prompt box, and a *Prompts…* window for the
+  holes nothing answered, the write of a new prompt, and the delete;
+- the **page** (*viz_web*): a *Prompts* section under the notes, with its
+  category chips, a values form naming the source of every value, and
+  *Put in the box* / *Run*; every request of the list carries a *Save as
+  prompt* button, so filing the wording of a turn that worked is one name and
+  one line of description;
+- the **client** (*viz_cli*): ``/prompt`` (the catalogue), ``/prompt list``,
+  ``/prompt show``, ``/prompt run`` -- which asks the holes it cannot answer
+  on the line, never in a dialog -- and ``/prompt save``;
+- the **loop** itself: the six tools above, so that *relance le prompt sur
+  les instabilités* is a question asked of what the user filed, not a
+  sentence the model invents for it.
+
+The refusals, all named: a hole none of the four sources answers names the
+holes; a second prompt filed under an id the catalogue holds is refused, and
+the refusal names ``edit_prompt`` as the way to change the one it is; a hole
+declared and never opened by the text is refused by name, because a hole
+nobody is ever asked for is a declaration of nothing; an id two prompts carry
+as their display name names both ids and asks which one; and a shared
+catalogue with no folder named costs **its own half** of a listing -- the
+personal prompts still answer, with the reason in ``catalogues_unavailable``
+-- while one write that names ``shared`` and gets no folder is refused,
+because a write silently filed in the personal folder is a prompt its author
+believes shared.
+
+``save_prompt`` into the shared catalogue, like a note written to the shared
+journal, is a line other people read: the loop runs it when the request asks
+for it in the user's own words, not because a turn drew a figure worth
+keeping. The same goes for ``delete_prompt``, which takes away a file the
+user wrote.
+
 .. _agentics_llm:
 
 The model of the session
