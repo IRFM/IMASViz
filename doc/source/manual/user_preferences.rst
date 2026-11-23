@@ -83,7 +83,9 @@ the following content:
 
 #Disabled_bricks=
 
-These are the default values of the 23 options the file is read for.
+#SharedPromptsDir=
+
+These are the default values of the 24 options the file is read for.
 
 To change an option, just remove the # character preceding the option name and change the value.
 
@@ -364,6 +366,22 @@ The documents corpus
   line that is missing, while the two journals keep answering. The folder is
   the user's: its layout, its language and what is in it are nobody's business
   but the reader's, and what is in it is read without being checked over.
+
+.. _agentics_prompts_shared:
+
+The shared prompt catalogue
+---------------------------
+
+- **SharedPromptsDir** -- the directory the **shared** prompt catalogue lives
+  in (see :ref:`agentics_prompts`), the one the writers of the node reach (an
+  AFS path), so that a prompt one of them filed is on the menu of the others.
+  Empty by default: a listing that spans the two catalogues answers the
+  personal ones and names the missing half in its answer, and a write that
+  explicitly asks for the shared catalogue on a node that names no folder is
+  refused by name -- never filed in the personal folder instead, which is how
+  a prompt would end up believed shared by the one who wrote it. The values
+  last typed for a prompt are kept in the user's own folder whatever
+  catalogue the prompt sits in.
 
 .. _plugins_active_state_option:
 

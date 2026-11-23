@@ -4318,6 +4318,219 @@ class McpGuiCore:
                 % (scope, note_id, e))
         return answer
 
+    # ------------------------------------------------- the prompt catalogue
+
+    def _promptContext(self):
+        """What this session already knows, under the names a prompt's
+        holes may carry: ``case``, ``uri``, ``shot``, ``run``,
+        ``database``, ``figure``.
+
+        This is what makes re-running a prompt cost no typing: the shot
+        the user is looking at is the shot the prompt means, and it is
+        read off the case the session has open —
+        ``QVizIMASDataSource._readCaseFromUri`` is the one place a URI
+        spells a case, so the number comes from the case, not from what a
+        model recalls of the session. ``figure`` is the key of the one
+        figure window the session holds, the same key the *Windows* menu
+        and the other gestures take.
+
+        Nothing is guessed: with two cases open, ``case``/``uri``/``shot``
+        /``run``/``database`` are left unanswered — which one the prompt
+        means is not said, so the user is asked for the value instead of
+        getting the first view the walk reached. The reason is in
+        ``note``, and the fill shows it.
+        """
+        out = {}
+        note = []
+        views = []
+        try:
+            views = list(self.api.DTVlist)
+        except AttributeError:
+            views = []
+        if len(views) == 1:
+            uri = views[0].dataSource.uri
+            from imasviz.VizDataSource.QVizIMASDataSource import (
+                _readCaseFromUri, caseLabel)
+            database, shot, run = _readCaseFromUri(uri)
+            out['uri'] = uri
+            out['case'] = caseLabel(uri)
+            for name, value in (('database', database), ('shot', shot),
+                                ('run', run)):
+                if value is not None:
+                    out[name] = str(value)
+        elif len(views) > 1:
+            note.append('%d cases are open, so the prompt cannot be told '
+                        'which one it means: name %s yourself.'
+                        % (len(views), ', '.join(
+                            '{%s}' % name for name in
+                            ('case', 'uri', 'shot', 'run', 'database'))))
+        else:
+            note.append('no case is open, so the session answers no case '
+                        'value: name the one the prompt means.')
+        try:
+            keys = [one['key'] for one in self.list_windows()
+                    if one['kind'] != 'Agent']
+        except Exception:
+            keys = []
+        if len(keys) == 1:
+            out['figure'] = keys[0]
+        elif keys:
+            note.append('%d windows are open (%s), so the figure the '
+                        'prompt means is not said: name {figure} yourself.'
+                        % (len(keys), ', '.join(keys[:8])))
+        else:
+            note.append('no window is open, so the session answers no '
+                        '{figure}.')
+        if note:
+            out['note'] = ' '.join(note)
+        return out
+
+    def list_prompts(self, scope=None, category=None, query=None,
+                     limit=100):
+        """The catalogue: the prompts the user can ask again, and what
+        each one is.
+
+        One entry per prompt — its id (what a gesture takes), its display
+        name, its category, its one-line description, its holes and their
+        defaults — category first then name, so the list reads as the
+        catalogue the user wrote. ``category`` and ``query`` narrow it;
+        ``query`` is read against the name, the description, the category
+        and the id, because a reader remembers a word of the description,
+        not the id. ``categories`` answers how many prompts each category
+        holds — the filter the page and the panel build their chips from.
+        ``context`` says what this session would answer for free.
+
+        ``scope`` is the personal catalogue, the shared one
+        (``SharedPromptsDir``), or both — the default. A shared catalogue
+        with no folder named is not a refusal of the list: the personal
+        prompts still answer, and the reason the shared half is missing is
+        in ``catalogues_unavailable``, not left out.
+        """
+        from imasviz.VizAgent import prompts
+        entries = prompts.PromptStore.list_prompts(scope=scope,
+                                                   category=category,
+                                                   query=query)
+        out = {
+            'prompts': [one.asLine() for one in entries[:int(limit)]],
+            'total': len(entries),
+            'categories': prompts.PromptStore.categories(scope=scope),
+            'context': self._promptContext(),
+        }
+        unavailable = prompts.PromptStore.unavailable(scope)
+        if unavailable:
+            out['catalogues_unavailable'] = unavailable
+        if len(entries) > int(limit):
+            out['truncated'] = (
+                '%d of %d prompts are answered: raise `limit` or narrow '
+                'the ask.' % (int(limit), len(entries)))
+        return out
+
+    def prompt_detail(self, name, scope=None):
+        """One prompt of the catalogue, whole: its body, its holes, and
+        where each value would come from if it were asked right now.
+
+        ``name`` is the id or the display name — a catalogue is read out
+        loud ("relance Profils du plat-top"), and the answer names both.
+        A name two prompts carry is refused naming their ids, never
+        answered with the first one the walk reached.
+
+        The ``values`` preview is not a guess and not a fill: it answers,
+        per hole, the value the four sources would give (what the user
+        named last time, what this session knows, what the file declares)
+        and ``null`` for the holes that still need typing. Nothing is
+        remembered by this call — asking what a prompt would answer is not
+        typing an answer in.
+        """
+        from imasviz.VizAgent import prompts
+        entry = prompts.PromptStore.find(name, scope=scope)
+        context = self._promptContext()
+        answer = entry.asDict()
+        answer['values'] = prompts.resolveValues(entry, context=context,
+                                                 remember=False)
+        answer['context'] = context
+        return answer
+
+    def fill_prompt(self, name, values=None, scope=None):
+        """The prompt as it will be asked, its holes filled — and nothing
+        run.
+
+        This is what a catalogue click costs: the page puts the text in
+        its box or sends it as a turn, the panel puts it in its box, the
+        client runs it. Filling is the gesture because running from here
+        would stand inside the agent's own loop and ask it a second turn,
+        which is not what a button asks.
+
+        A hole is filled from the first source that answers it — what this
+        call names, what was typed last time for that prompt, what this
+        session knows, what the file declares — and the answer says which
+        one it was, because a value the user did not type is a value they
+        are entitled to see. A hole none of them answers is a refusal
+        naming the holes that are still empty: a prompt is not sent with
+        ``{shot}`` in it, and not sent with a guess in its place. The
+        values this call names are kept for the next one (locally, never
+        in the shared catalogue).
+        """
+        from imasviz.VizAgent import prompts
+        entry = prompts.PromptStore.find(name, scope=scope)
+        answers = prompts.resolveValues(entry, given=values,
+                                        context=self._promptContext())
+        filled = dict((name, one['value']) for name, one in answers.items()
+                      if one['value'] is not None)
+        text = prompts.fillTemplate(entry.body, filled)
+        return {
+            'id': entry.id, 'name': entry.name, 'scope': entry.scope,
+            'category': entry.category, 'text': text, 'values': answers,
+        }
+
+    def save_prompt(self, name, text, category=None, description=None,
+                    variables=None, scope='personal', prompt_id=None):
+        """One prompt into the catalogue, under a name and a description.
+
+        The prompt a turn just ran is the one worth filing: the user asks
+        for it once, the wording works, and the next run should not have
+        to type it again — which is what ``save_prompt`` is asked of on an
+        explicit ask, never on a turn that merely drew something (the rule
+        the shared journal's write answers by, for the same reason: it is
+        a line other people read).
+
+        ``variables`` left out is read off the text: every ``{hole}`` it
+        opens, with no default. The hole is then asked for on every run,
+        which is the safe reading of a prompt the user filed in a hurry.
+        A hole declared and never opened in the text is refused by name.
+        The shared catalogue is written to only when ``scope='shared'``
+        and ``SharedPromptsDir`` names a folder — a write silently filed
+        in the personal folder is a prompt its author believes shared.
+        """
+        from imasviz.VizAgent import prompts
+        entry = prompts.PromptStore.add_prompt(
+            text, name=name, category=category, description=description,
+            variables=variables, scope=scope, prompt_id=prompt_id)
+        return entry.asDict()
+
+    def edit_prompt(self, name, text=None, category=None, description=None,
+                    variables=None, scope=None):
+        """One prompt of the catalogue, changed in place: it keeps the id
+        the pages, the sessions and the remembered values read it under.
+
+        A field left out keeps the one the prompt held; a field named
+        takes the place of the one it held; an empty one clears it. The
+        body is the one field an edit cannot empty, and the id is not a
+        field an edit moves — a new prompt is ``save_prompt``.
+        """
+        from imasviz.VizAgent import prompts
+        entry = prompts.PromptStore.find(name, scope=scope)
+        changed = prompts.PromptStore.edit_prompt(
+            entry.scope, entry.id, body=text, category=category,
+            description=description, variables=variables)
+        return changed.asDict()
+
+    def delete_prompt(self, name, scope=None):
+        """One prompt out of the catalogue, and the values remembered for
+        it. Not there is a refusal naming the ids the catalogue holds."""
+        from imasviz.VizAgent import prompts
+        entry = prompts.PromptStore.find(name, scope=scope)
+        return prompts.PromptStore.delete_prompt(entry.scope, entry.id)
+
     @staticmethod
     def curveStats(xy):
         """The statistics of one curve, as the report says them.

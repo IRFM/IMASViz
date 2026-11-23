@@ -224,6 +224,15 @@ class QVizPreferences:
     # until this is set (the journals still answer, and the search does
     # not pretend the documents corpus answered when it is not named).
     AgentDocsDir = ''
+    # The shared prompt catalogue: the folder a team's reusable prompts
+    # sit in, read the way ``SharedJournalDir`` is read (an AFS path the
+    # writers can reach). The personal one is under ``~/.imasviz/prompts``
+    # and needs no preference. Empty is a refusal by name, on the write
+    # that names the shared catalogue and on a ``scope='shared'`` read: a
+    # prompt its author believes shared is not one silently filed in the
+    # personal folder. The list of both catalogues still answers on the
+    # personal one and names this reason.
+    SharedPromptsDir = ''
     # The agent's tools, and how its answer reads on the transcript. Three
     # shapes, and they are what the loop asks of the LLM:
     #   `hide`    -- the agent still runs its gestures, but the transcript
@@ -386,6 +395,7 @@ class QVizPreferences:
             option22 = "AgentDocsDir="
             userPreferencesFile = os.environ['HOME'] + '/.imasviz/preferences'
             option23 = "Disabled_bricks="
+            option24 = "SharedPromptsDir="
             if os.path.exists(userPreferencesFile):
                 with open(userPreferencesFile) as f:
                     for line in f:
@@ -474,6 +484,10 @@ class QVizPreferences:
                                 QVizPreferences.Disabled_bricks = \
                                     QVizPreferences.disabledBricks(
                                         line[len(option23):])
+                            elif line.startswith(option24):
+                                QVizPreferences.SharedPromptsDir = \
+                                    QVizPreferences.stripComment(
+                                        line[len(option24):])
                         except ValueError as bad:
                             logging.warning('Ignoring %s in %s: %s',
                                             line.split('=', 1)[0],

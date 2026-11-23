@@ -128,6 +128,28 @@ How to work with it:
    endpoint the run is no longer under). It keeps the rows it has,
    re-embeds the ones that moved, and drops the ones that left the
    folder.
+12. the prompt catalogue is what the prompt tools answer: the prompts
+   the user wrote once and keeps to ask again, each filed under a
+   category with a one-line description, in their own folder
+   (~/.imasviz/prompts) or in the shared one SharedPromptsDir names.
+   When they ask for one of their own prompts by a name whose wording
+   you do not have -- "relance le prompt sur les instabilités", "run my
+   usual equilibrium comparison" -- list_prompts and prompt_detail are
+   the question asked of what they filed; reciting a sentence you
+   imagine they meant is not what they filed. To ask one, fill_prompt
+   first: it fills the prompt's holes ({shot}, {uri}, {figure}, or the
+   names the user declared) from what was typed last time for that
+   prompt, from this session (its open case, its open window) and from
+   the defaults the file carries, and its answer says where each value
+   came from. Then ask the `text` it returns like any other turn, and
+   tell the user which values were filled for them. A hole it cannot
+   answer is a question for the user, never a value you pick: ask it,
+   then fill again with their answer. save_prompt files a request as a
+   reusable prompt only when the user asked for it in their own words
+   ("garde ce prompt") -- a turn that merely drew a figure is not an ask
+   to file its wording -- and the same rule, asked in the user's own
+   words, covers scope=shared, which writes where the team reads, and
+   delete_prompt, which takes their file away.
 
 The state of a figure is what the calls of this exchange made, and a read
 this exchange answered -- not what was said of it. A curve you say was
@@ -1567,6 +1589,142 @@ TOOLS = [
         'not indexed yet" or "it was indexed under another endpoint".',
         {'type': 'object', 'properties': {},
          'additionalProperties': False},
+    ),
+    _tool(
+        'list_prompts',
+        'The prompt catalogue: the prompts the user wrote once and '
+        'keeps to ask again, each with its id, its name, its category, '
+        'its one-line description and the holes it opens. The personal '
+        'catalogue is under ~/.imasviz/prompts and the shared one under '
+        'the folder SharedPromptsDir names (an unnamed shared folder '
+        'costs its own half of the list, named in '
+        'catalogues_unavailable -- the personal prompts still answer). '
+        '`category` and `query` narrow it, and `categories` answers how '
+        'many prompts each category holds. Ask of it when the user says '
+        '"relance le prompt …" / "run my usual X" and you do not know '
+        'the wording they filed.',
+        {'type': 'object', 'properties': {
+            'scope': {'type': ['string', 'null'],
+                      'enum': ['personal', 'shared'],
+                      'description': 'the one catalogue to ask of; left '
+                                     'out, both are asked'},
+            'category': {'type': ['string', 'null'],
+                         'description': 'the prompts that name this '
+                                        'category; compared without '
+                                        'minding the case'},
+            'query': {'type': ['string', 'null'],
+                      'description': 'a word of the name, the '
+                                     'description, the category or the '
+                                     'id'},
+            'limit': {'type': 'integer', 'default': 100},
+        }, 'additionalProperties': False},
+    ),
+    _tool(
+        'prompt_detail',
+        'One prompt of the catalogue, whole: its body with its holes '
+        'still open, and `values` -- what each hole would be answered '
+        'from right now (what the user typed last time, what this '
+        'session knows, what the file declares) and null for the ones '
+        'that still need a value. `name` is the id or the display name; '
+        'a name two prompts carry is refused naming their ids. Asking '
+        'this remembers nothing: it is the look, not the typing.',
+        {'type': 'object', 'properties': {
+            'name': {'type': 'string',
+                     'description': 'the id or the display name of the '
+                                    'prompt'},
+            'scope': {'type': ['string', 'null'],
+                      'enum': ['personal', 'shared']},
+        }, 'required': ['name'], 'additionalProperties': False},
+    ),
+    _tool(
+        'fill_prompt',
+        'The prompt as it will be asked, its holes filled -- and '
+        'nothing run. A hole is filled from the first source that '
+        'answers it: what you name in `values`, what was typed last '
+        'time for that prompt, what this session knows (its open case: '
+        'case, uri, shot, run, database; its one open window: figure), '
+        'what the file declares -- and the answer says which one it '
+        'was. A hole none of them answers is a refusal naming the '
+        'holes: a prompt is never sent with {shot} in it and never '
+        'sent with a guess. Take the `text` this answers and ask it as '
+        'the user asked it -- filling is not running.',
+        {'type': 'object', 'properties': {
+            'name': {'type': 'string'},
+            'values': {'type': ['object', 'null'],
+                       'additionalProperties': {'type': 'string'},
+                       'description': 'the hole -> the value to use '
+                                      'this time, for the holes the '
+                                      'session does not answer'},
+            'scope': {'type': ['string', 'null'],
+                      'enum': ['personal', 'shared']},
+        }, 'required': ['name'], 'additionalProperties': False},
+    ),
+    _tool(
+        'save_prompt',
+        'One prompt into the catalogue, named and described, so the '
+        'next run does not type it again. `text` is the prompt as it '
+        'is asked, with its holes spelled {name}; `variables` left out '
+        'is read off the text (every hole it opens, asked for on every '
+        'run), and a hole declared and never opened is refused by name. '
+        'The user asks for this in their own words ("garde ce prompt", '
+        '"enregistre-le") -- a turn that merely drew a figure is not an '
+        'ask to file its wording. scope=shared writes into the folder '
+        'the team reads, which is a line others see: it is asked for in '
+        'the user\'s own words too.',
+        {'type': 'object', 'properties': {
+            'name': {'type': 'string',
+                     'description': 'the name the catalogue lists it by'},
+            'text': {'type': 'string',
+                     'description': 'the prompt, holes spelled {name}'},
+            'category': {'type': ['string', 'null']},
+            'description': {'type': ['string', 'null'],
+                            'description': 'one line saying what it '
+                                           'asks, for the reader of '
+                                           'the list'},
+            'variables': {'type': ['object', 'string', 'null'],
+                          'description': 'hole -> default, as an '
+                                         'object or as the "a=1; b=" '
+                                         'line the file spells; left '
+                                         'out, read off the text'},
+            'scope': {'type': 'string', 'enum': ['personal', 'shared'],
+                      'default': 'personal'},
+            'prompt_id': {'type': ['string', 'null'],
+                          'description': 'the file name to file it '
+                                         'under; left out, the slug of '
+                                         'the name'},
+        }, 'required': ['name', 'text'], 'additionalProperties': False},
+    ),
+    _tool(
+        'edit_prompt',
+        'One prompt of the catalogue, changed in place: it keeps the id '
+        'the pages, the sessions and the remembered values read it '
+        'under. A field you leave out keeps the one the prompt held, a '
+        'field you name replaces it, an empty one clears it -- the body '
+        'excepted, which an edit cannot empty. A new prompt is '
+        'save_prompt, not this one.',
+        {'type': 'object', 'properties': {
+            'name': {'type': 'string'},
+            'text': {'type': ['string', 'null'],
+                     'description': 'the new body; left out, the one '
+                                    'the prompt held'},
+            'category': {'type': ['string', 'null']},
+            'description': {'type': ['string', 'null']},
+            'variables': {'type': ['object', 'string', 'null']},
+            'scope': {'type': ['string', 'null'],
+                      'enum': ['personal', 'shared']},
+        }, 'required': ['name'], 'additionalProperties': False},
+    ),
+    _tool(
+        'delete_prompt',
+        'One prompt out of the catalogue, and the values that were '
+        'remembered for it. Not there is a refusal naming the ids the '
+        'catalogue holds. This takes a file the user wrote off the disk: '
+        'it is asked for in their own words, not decided for them.',
+        {'type': 'object', 'properties': {
+            'name': {'type': 'string'},
+            'scope': {'type': ['string', 'null'],
+                      'enum': ['personal', 'shared']},
+        }, 'required': ['name'], 'additionalProperties': False},
     ),
 ]
 
