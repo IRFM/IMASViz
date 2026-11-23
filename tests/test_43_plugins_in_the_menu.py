@@ -961,8 +961,8 @@ def test_the_reference_case_offers_the_lines_for_equilibrium(qtbot):
     entries = QVizPluginCatalog(frame.dataTreeView).entriesFor(
         frame.dataTreeView.IDSRoots['equilibrium'])
     # equilibriumcharts offers one, equilibriumsurfaces two (surfaces of three
-    # instants, or one instant with its profiles), VizProfiles_plugin one and
-    # VizSlicePlugin one -- and the numbers they run under are theirs, not their
+    # instants, or one instant with its profiles), VizProfiles_plugin one --
+    # and the numbers they run under are theirs, not their
     # place in the menu. The order is the registration order, each plugin's
     # entries in the numbers it declared. The Profiles plugin used to answer two
     # lines here, each spelling the array of structures and the abscissa in its
@@ -972,8 +972,7 @@ def test_the_reference_case_offers_the_lines_for_equilibrium(qtbot):
         ('equilibriumcharts', 0, 'Equilibrium overview...'),
         ('equilibriumsurfaces', 0, 'Surfaces de flux (début, milieu, fin)...'),
         ('equilibriumsurfaces', 1, 'Équilibre à un instant (surface + profils)...'),
-        ('VizProfiles_plugin', 0, 'Plot what the equilibrium IDS holds...'),
-        ('VizSlicePlugin', 0, 'Draw the slice of the equilibrium IDS…')]
+        ('VizProfiles_plugin', 0, 'Plot what the equilibrium IDS holds...')]
 
 
 @pytest.mark.case
@@ -986,10 +985,9 @@ def test_the_reference_case_offers_lines_for_core_profiles(qtbot):
         frame.dataTreeView.IDSRoots['core_profiles'])
     # An IDS with no list of quantities of its own used to get no line at all: the
     # Profiles plugin knew five IDSs by name. What it can offer is the tree's
-    # answer, so any IDS root earns the line -- and the slice entry is offered on
-    # every IDS root the same way, so this one earns that line too.
+    # answer, so any IDS root earns the line.
     assert [(entry.pluginName, entry.number) for entry in entries] == \
-        [('VizProfiles_plugin', 0), ('VizSlicePlugin', 0)]
+        [('VizProfiles_plugin', 0)]
 
 
 @pytest.mark.case
@@ -1054,8 +1052,7 @@ def test_the_right_click_menu_of_a_node_offers_the_plugins_of_that_node(qtbot):
         'Equilibrium overview...',
         'Surfaces de flux (début, milieu, fin)...',
         'Équilibre à un instant (surface + profils)...',
-        'Plot what the equilibrium IDS holds...',
-        'Draw the slice of the equilibrium IDS…']
+        'Plot what the equilibrium IDS holds...']
 
 
 @pytest.mark.case
@@ -1070,12 +1067,12 @@ def test_a_view_asks_its_plugins_once_across_its_menus(qtbot):
     assert first is second is view.pluginCatalog
     assert sorted(name for name, _ in first.plugins()) == \
         ['VizCampaignTrend', 'VizDerivedQuantities', 'VizEventDetection',
-         'VizProfiles_plugin', 'VizSlicePlugin', 'VizSpectral',
+         'VizProfiles_plugin', 'VizSpectral',
          'equilibriumcharts', 'equilibriumsurfaces']
     equilibrium = view.IDSRoots['equilibrium']
     for _ in range(3):
         menu = QMenu()
         menu.setParent(view)
-        # Five lines on equilibrium: equilibriumcharts one, equilibriumsurfaces
-        # two, VizProfiles_plugin one, VizSlicePlugin one.
-        assert QVizPluginMenu().buildPluginsMenu(equilibrium, view, menu) == 5
+        # Four lines on equilibrium: equilibriumcharts one, equilibriumsurfaces
+        # two, VizProfiles_plugin one.
+        assert QVizPluginMenu().buildPluginsMenu(equilibrium, view, menu) == 4

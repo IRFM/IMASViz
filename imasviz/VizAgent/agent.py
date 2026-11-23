@@ -1285,7 +1285,7 @@ _CLAIM_NEGATION_RE = re.compile(r'\bnot\b|\bpas\b|\bnever\b')
 # what refuses a key it does not hold), so the ask of such a call is as
 # grounded as its answer.
 _WORK_GESTURES = frozenset((
-    'plot_one', 'plot_slice', 'plot_slice_all', 'plot_selection',
+    'plot_one', 'plot_slice', 'plot_selection',
     'plot_table', 'plot_stacked', 'equilibrium_surfaces',
     'equilibrium_at_time', 'scale_curve', 'shift_curve',
     'normalize_curve', 'reset_curve', 'remove_curve', 'set_axis_range',

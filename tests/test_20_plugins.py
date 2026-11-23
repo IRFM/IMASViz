@@ -100,6 +100,23 @@ def test_the_solps_plugin_is_out_of_the_package():
                    for name, where in RegisteredPlugins.items())
 
 
+def test_the_slice_plugin_is_out_of_the_package():
+    # The line drew every filled 1D-profile of one IDS at the slice the tree
+    # stood on. The user who asked for it reported that it did not work and asked
+    # for the line to go, so the gesture behind it went with it rather than stay
+    # as code nothing reaches. An active registration would now answer
+    # ModuleNotFoundError. The interpolated value at a named instant -- the
+    # `plot_slice` tool -- is untouched.
+    assert importlib.util.find_spec('imasviz.VizPlugins.viz_slice') is None
+    assert not any('slice' in str(name + where).lower()
+                   for name, where in RegisteredPlugins.items())
+
+
+def test_the_slice_gesture_is_out_of_the_core():
+    from imasviz.VizAgent.core import McpGuiCore
+    assert not hasattr(McpGuiCore, 'plot_slice_all')
+
+
 @pytest.mark.parametrize('name', KILLED)
 def test_a_plugin_is_no_longer_looked_up_by_name_somewhere_else(name):
     # Every one of these named the registered plugins a second time, by hand,

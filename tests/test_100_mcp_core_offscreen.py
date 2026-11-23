@@ -507,14 +507,14 @@ def test_a_call_naming_no_ids_root_is_answered_from_the_case(core):
 def test_an_entry_several_branches_earn_names_the_choice(core):
     """A plugin offered on any IDS is a question, not a guess.
 
-    `VizSlicePlugin` earns a line on every branch of the case, and the slice it
-    draws and the occurrence it reads differ per branch -- so the answer is the
-    list of branches, not the first one.
+    `VizProfiles_plugin` earns a line on every branch of the case, and the
+    list it builds and the occurrence it reads differ per branch -- so the
+    answer is the list of branches, not the first one.
     """
     session, _home = core
     before = set(session.api.figureframes)
     with pytest.raises(ValueError) as caught:
-        session.run_plugin(CASE_URI, 'VizSlicePlugin', 0, occurrence=0)
+        session.run_plugin(CASE_URI, 'VizProfiles_plugin', 0, occurrence=0)
     refusal = str(caught.value)
     assert 'is offered on' in refusal and 'ids_name' in refusal, refusal
     assert IDS_NAME in refusal, 'the refusal names the branches it found'
@@ -554,48 +554,6 @@ def test_entry_1_without_the_instant_is_refused_and_opens_no_dialog(core,
                            ids_name=IDS_NAME)
     refusal = str(caught.value)
     assert 'instant' in refusal and 'equilibriumsurfaces' in refusal, refusal
-    assert not (set(session.api.figureframes) - before), \
-        'a refusal left a window on the screen'
-
-
-def test_slice_plugin_offered_and_draws_the_filled_profiles(core):
-    """The Slice entry is offered for an IDS root, and running it adds a
-    window that holds the IDS's filled 1D-profiles as curves -- the reader
-    says which leaf holds a value, and the ones that do are drawn, in the
-    `Plot` namespace, so the *Windows* menu reaches them.
-
-    `core_profiles` occurrence 0 holds a handful of filled profiles and many
-    that read empty in this shot; the window shows the filled ones, not the
-    empty ones mistaken for curves.
-    """
-    session, _home = core
-    session.load_ids(CASE_URI, 'core_profiles', 0)
-    offer = session.list_plugins(CASE_URI, 'core_profiles')
-    entry = next(e for e in offer['entries'] if e['plugin'] == 'VizSlicePlugin')
-
-    before_keys = set(session.api.figureframes)
-    session.run_plugin(CASE_URI, 'VizSlicePlugin', entry['entry'],
-                       occurrence=0, ids_name='core_profiles')
-    new_keys = set(session.api.figureframes) - before_keys
-    assert new_keys, 'the slice entry added no window'
-
-    from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
-    figure = session.api.figureframes[next(iter(new_keys))]
-    assert isinstance(figure, QVizCurvePlot), 'the slice window is a curve figure'
-    curves = figure.styleCurves()
-    assert len(curves) > 0, 'the filled profiles were not drawn'
-
-
-def test_slice_all_refuses_an_ids_the_case_does_not_hold_and_costs_no_window(core):
-    """`plot_slice_all` on an IDS the case does not build is refused -- by
-    whichever branch answers first -- and, in the repository style, costs no
-    window: a refusal is not an empty figure on the screen."""
-    session, _home = core
-    before = set(session.api.figureframes)
-    with pytest.raises(ValueError) as exc:
-        session.plot_slice_all(CASE_URI, 'no_such_ids_root', occurrence=0)
-    refusal = str(exc.value)
-    assert 'no_such_ids_root' in refusal, 'the refusal names what was asked'
     assert not (set(session.api.figureframes) - before), \
         'a refusal left a window on the screen'
 
@@ -805,13 +763,17 @@ def test_case_ids_report_inventories_the_case_the_same_way(core):
     carries as available (its own colouring test), a 0-D scalar held by
     the dynamic array among them.
 
-    Pinned at the state this file's run holds when it runs: the
-    equilibrium occurrence 0 and the ``core_profiles`` occurrence 0
-    both loaded -- so the summary names "loaded" for the two, and
-    "the case holds no data for it" and "not loaded" for the others,
-    without inventing a load.
+    Pinned at a state this test takes for itself: the equilibrium
+    occurrence 0 -- loaded by the file's own first tests -- and the
+    ``core_profiles`` occurrence 0, loaded here. The two occurrence
+    sections below only exist if this run loaded both, so the load is
+    asked here rather than left to whatever a neighbour test happened
+    to open: the summary names "loaded" for the two, and "the case
+    holds no data for it" and "not loaded" for the others, without
+    inventing a load.
     """
     session, home = core
+    session.load_ids(CASE_URI, 'core_profiles', 0)
     answer = session.case_ids_report(CASE_URI, name='mcp_case_ids_report')
     saved = answer['saved_to']
     assert saved.endswith('mcp_case_ids_report.html'), saved
@@ -820,7 +782,7 @@ def test_case_ids_report_inventories_the_case_the_same_way(core):
     assert os.path.exists(saved), saved
     assert answer['idss'] >= 3, 'the summary names fewer IDSs than the case declares'
     assert answer['loaded'] == 2, \
-        'this file has loaded equilibrium 0 and core_profiles 0 before this test'
+        'this test loads equilibrium 0 and core_profiles 0, both at occurrence 0'
 
     with open(saved, encoding='utf-8') as file:
         page = file.read()
@@ -843,8 +805,8 @@ def test_case_ids_report_inventories_the_case_the_same_way(core):
     assert '>loaded</td>' in page, 'the loaded occurrence is not named loaded'
     assert 'the case holds no data for it' in page, \
         'an IDS the dictionary declares but the case does not fill is not named'
-    # ...and an IDS that holds data the session has not loaded (the state
-    # of this run: core_profiles at the point this test runs).
+    # ...and an IDS that holds data the session has not loaded: `magnetics`
+    # holds occurrences 0 and 1 of this case and no test of this file loads it.
     assert '>not loaded</td>' in page, \
         'a held-but-not-loaded occurrence answers not loaded'
 

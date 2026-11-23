@@ -123,9 +123,6 @@ What IMASViz ships, and what each one is offered on:
    * - ``VizProfiles_plugin``
      - any IDS root
      - what that IDS holds that can be drawn
-   * - ``VizSlicePlugin``
-     - any IDS root
-     - every filled 1D-profile of that IDS at one slice, in one figure
    * - ``VizEventDetection``
      - a figure
      - *Événements*: ELM, sawtooth and L-H events marked on the curve on screen
@@ -488,30 +485,6 @@ IDS with no time base.
    the *Windows* menu, but it is not inside the MDI area: it travels with the
    shot view it was opened from, and a session puts it back by asking the plugin's
    menu line again -- see :ref:`plugin_answers_and_sessions`.
-
-'Slice' plugin
---------------
-
-One line on **any IDS root** -- :guilabel:`Draw the slice of the <ids> IDS…`, so
-the same line reads *the equilibrium IDS* under one root and *the wall IDS* under
-another -- and one window: every 1D-profile that IDS holds a value for at the
-slice the tree is standing on, one curve each, in a single figure of curves.
-
-What that window answers is **which leaves carry a value**. The application
-already knows the structure of the IDS, so the entry asks the case which of its
-profiles are filled and draws those; the empty ones are counted and said, not
-handed to the screen as flat lines. An IDS occurrence that holds no filled
-1D-profile at all is refused by name and costs no window.
-
-The line draws the first occurrence the case holds. A session replaying the
-window puts back the occurrence the file recorded, and an occurrence the case
-does not hold is refused by name, with the ones it does answer spelled out.
-
-.. note::
-   This is the slice **the tree stands on**, not an instant you name. A value
-   interpolated at an arbitrary time is the ``plot_slice`` gesture of
-   :ref:`agentics`, and a quantity of two axes of its own is no 1D-profile: it
-   belongs to a picture window, and the tree's own entries are the way to it.
 
 .. _physical_bricks:
 

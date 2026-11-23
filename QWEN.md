@@ -180,7 +180,7 @@ imasviz/
 │   │                          #   (QVizNodeFacts: what a node holds; the panel draws it)
 │   ├── VizGuiCustomization/   # QVizDefault defaults, QVizStyle (the two themes)
 │   └── VizConfigurations/
-├── VizPlugins/                # plugin framework + the eight shipped plugins (see below)
+├── VizPlugins/                # plugin framework + the seven shipped plugins (see below)
 ├── VizAgent/                  # one core, five faces (see *One core, five faces*)
 │   ├── core.py                # McpGuiCore: the gestures, offscreen-safe, no LLM in it
 │   ├── tools.py               # the tool schema that face is offered through
@@ -496,9 +496,9 @@ callers import as `from imasviz.VizUtils import QVizLogger`.
    no *Windows* menu line can bring back.
 2. Register the class in the `RegisteredPlugins` dict in `VizPlugins/VizPlugin.py`
    (`'PluginName': 'viz_<name>.PluginName'` — the class must bear the key's name, since
-   that is what the catalog takes out of the module). **Eight** are active:
+   that is what the catalog takes out of the module). **Seven** are active:
    `equilibriumcharts`, `equilibriumsurfaces` (both in `viz_equi/`),
-   `VizProfiles_plugin`, `VizSlicePlugin`, `VizEventDetection`, `VizSpectral`,
+   `VizProfiles_plugin`, `VizEventDetection`, `VizSpectral`,
    `VizDerivedQuantities` (`CASE` scope) and `VizCampaignTrend` (`APP` scope).
    Several entries are commented out —
    an unregistered plugin never loads, and a registered path that no longer resolves is
@@ -529,6 +529,12 @@ callers import as `from imasviz.VizUtils import QVizLogger`.
    The SOLPS plugin (`viz_solps/`, 11 files and 1 451 lines, with its own `SOLPSwidget`
    class and a `.ui` that lost 3 connections the same way) was removed on request: it was
    never registered, and the manual's section that documented it is gone with it.
+   The Slice plugin (`viz_slice/`, one `IDS`-scoped line — *Draw the slice of the
+   `<ids>` IDS…*) was removed on request for the same reason as SOLPS: the user who
+   asked for it reported that it did not work. Its `draw()` was only a call to
+   `McpGuiCore.plot_slice_all`, so that gesture went with it rather than stay as
+   code nothing reaches; `plot_slice` (a value interpolated at an instant the caller
+   names) is a **tool** and stays. `test_20` refuses the return of both names.
 
 The menu side is two modules: `VizPlugins/QVizPluginCatalog.py` (the registered plugins of
 one shot view, imported and built **once for that view**, each asked on its own, every
@@ -643,7 +649,7 @@ registers stub plugins through a fake module in `sys.modules` and asks the catal
 `tests/test_54_equilibrium_surfaces_on_a_real_case.py` runs a shipped entry against the
 reference case through `catalog.run(entry, answers=...)`.
 
-**Eight** plugins are registered (`VizPlugin.py:230-240`), and the case-running ones are
+**Seven** plugins are registered (`VizPlugin.py:230-239`), and the case-running ones are
 run end to end on the reference case by `tests/test_51_*` and `tests/test_85_*` (Profiles),
 `tests/test_69_*` (what a session does with a Profiles window), `tests/test_53_*`
 (the Equilibrium chart) and `tests/test_54_equilibrium_surfaces_*` (the flux-surface
