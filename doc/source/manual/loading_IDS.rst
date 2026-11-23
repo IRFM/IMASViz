@@ -170,6 +170,14 @@ the procedure will be shown on a **magnetics IDS**.
     .. image:: images/DTV_magnetics_IDS_contents_FLT_1D.png
       :align: center
       :scale: 80%
+
+   Whether a node holds anything is answered by **reading** it, so a leaf whose
+   read the backend refuses is shown as one that holds nothing, and the
+   :guilabel:`Log` widget names that leaf and the reason it gave. It costs only
+   itself: the rest of the branch is displayed and stays plottable. That happens
+   when an array is filled while the time base its dictionary coordinate names is
+   not -- the backend then answers something like
+   ``Unable to open HDF5 dataset: time``.
       
 Adding a new view for IDSs containing a dynamic Array Of Structure
 ------------------------------------------------------------------

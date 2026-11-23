@@ -591,6 +591,34 @@ class QVizTreeNode(QTreeWidgetItem):
         font.setBold(True)
         self.setFont(0, font)
 
+    def styleValue(self):
+        """The value the style of this leaf is settled from, `None` when the
+        case refuses the read.
+
+        The style of a leaf is settled by **reading** it, so a leaf whose read
+        the backend refuses used to abort the build of the whole branch: on
+        WEST 54924 run 0, `hard_x_rays/code/output_flag` answers
+        `Unable to open HDF5 dataset: time` -- its array is filled while the
+        time base its coordinate names is not -- and `hard_x_rays` occurrence 0
+        landed **0** leaves in the view, so nothing of that IDS could be
+        searched or drawn, while the load still reported success. A leaf that
+        cannot be read is nothing to draw: it is left as not containing data,
+        named in the log of the case, and the rest of the IDS is built.
+        """
+        try:
+            return self.resolvePath(self.getDataName())
+        except Exception as refusal:
+            view = self.dataTreeView
+            while view is None:
+                parent = self.parent()
+                if parent is None:
+                    break
+                view = getattr(parent, 'dataTreeView', None)
+            logging.getLogger(getattr(view, 'uri', None) or 'logPanel').warning(
+                'The leaf "%s" of the %s IDS could not be read and is left '
+                'unusable: %s' % (self.getPath(), self.getIDSName(), refusal))
+            return None
+
     # Define the color of a node which contains a signal
     def updateStyle(self):
 
@@ -599,12 +627,12 @@ class QVizTreeNode(QTreeWidgetItem):
             # And error occurs for non-homogeneous cases (time array is
             # different or empty). This is 'solved' with the below fix using
             # 'e' variable
-            e = self.resolvePath(self.getDataName())
+            e = self.styleValue()
             #print(e)
             if self.getDataType() != 'STR_1D' and (e is None or e.all() is None):
                 self.setAvailableData(0)
                 self.setStyleForWhenNotContainingData()
-            elif len(self.resolvePath(self.getDataName())) == 0:  # empty (signals) arrays appear in black
+            elif e is None or len(e) == 0:  # empty (signals) arrays appear in black
                 self.setAvailableData(0)
                 self.setStyleForWhenNotContainingData()
             else:
@@ -619,7 +647,7 @@ class QVizTreeNode(QTreeWidgetItem):
                 self.setStyleForWhenNotContainingData()
                 return
 
-            e = self.resolvePath(self.getDataName())
+            e = self.styleValue()
 
             emptyField = False
             if self.getDataType() == 'FLT_0D' or self.getDataType() == 'flt_type':
@@ -634,6 +662,11 @@ class QVizTreeNode(QTreeWidgetItem):
                 if e == '':
                     emptyField = True
 
+            if e is None:
+                # A read the case refused is not a value: the leaf is unusable,
+                # and it must not be offered as one that holds data.
+                emptyField = True
+
             if emptyField:  # empty (signals) arrays appear in black
                 self.setAvailableData(0)
                 self.setStyleForWhenNotContainingData()
@@ -643,8 +676,8 @@ class QVizTreeNode(QTreeWidgetItem):
 
 
         elif self.is2DOrLarger():
-            e = self.resolvePath(self.getDataName())
-            if e.shape[0] == 0:
+            e = self.styleValue()
+            if e is None or e.shape[0] == 0:
                 self.setAvailableData(0)
                 self.setStyleForWhenNotContainingData()
             else:

@@ -726,8 +726,8 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 2248 passed, 12 warnings, 1075,56 s (0:17:55), offscreen
-                                # — measured 2026-11-22 on feature/tensor-plot-core
+python3 -m pytest tests/ -q     # 2254 passed, 12 warnings, 1118,81 s (0:18:38), offscreen
+                                # — measured 2026-11-23 on feature/tensor-plot-core
 ```
 
 The 12 warnings are pyqtgraph's own (`parametertree`: *Parameter has no default
@@ -943,6 +943,27 @@ artifacts of this codebase, and several are load-bearing:
   `postEvent`; anything that creates, shows, renames or closes a window belongs on the GUI
   thread. The symptom to recognise is a probe or test that stops printing with no exception
   — confirm it with `faulthandler.dump_traceback_later(n, exit=True)`, do not guess.
+- **The colour of a leaf is settled by reading it**, so one leaf whose read the
+  backend refuses is a build risk and not a cosmetic one. `QVizDataTreeViewBuilder.build_nodes`
+  calls `QVizTreeNode.updateStyle()` and lets the exception go, and
+  `QVizIDSViewParser.run()` catches it broadly (an ERROR line in the log of the case
+  and nothing else), so the whole occurrence lands with **0** leaves — `showOccurrenceView`
+  is reached from `endBuildView`, which the aborted build never got to, so `signalsList`
+  never grew — while the load itself still reported success. Measured on the reference
+  case: `hard_x_rays/code/output_flag` is a **filled** array whose dictionary coordinate
+  `time` names a base that case does not hold (`homogeneous_time = 0`, `IDS.time` empty),
+  so the Access Layer answers `Unable to open HDF5 dataset: time`, and `hard_x_rays`
+  occurrence 0 kept **0** leaves against **5687** once the guard stands. Every later
+  *Plot* and every `search_nodes` on that IDS was then refused as "not a leaf of the
+  case" — the user's « je ne peux plus rien tracer ». `QVizTreeNode.styleValue()` answers
+  `None` for such a read, names the leaf and the reason in the log of the case, and
+  `updateStyle` leaves that leaf as not containing data; do not "simplify" it back to a
+  bare `resolvePath`. `tests/test_165_one_leaf_that_cannot_be_read_costs_only_itself.py`
+  pins the refusal (stub, three leaf shapes), the walk of the real branch, and the
+  neighbours that must stay drawable. Two things that are **not** fixed: a read refused
+  inside the parser's own walk (`buildLeaf` → `scalarContent`) has the same
+  all-or-nothing shape, and `load_ids` still answers success after a build that died.
+  The read refusal itself is a backend/data matter, not an `imasviz` one.
 - A plain-Python helper stored on a Qt widget may not keep a **bound method** of that
   widget. `QVizCurvePlot` owns `QVizCurveErrors`, and that object has to ask the frame
   which curve came from which node; handing it `self.errorQuantities` — a bound method,

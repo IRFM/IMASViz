@@ -87,7 +87,7 @@ Everything else the application needs (`VIZ_HOME`, `VIZ_PRODUCTION`,
 
 ```bash
 cd $VIZ_HOME                      # repository root
-python3 -m pytest tests/ -q       # 2248 passed, 12 warnings, 1075,56 s (2026-11-22)
+python3 -m pytest tests/ -q       # 2254 passed, 12 warnings, 1118,81 s (2026-11-23)
 ```
 
 Useful variants:
@@ -106,11 +106,14 @@ dialog or a remote backend.
 
 ### A green summary is not a clean exit
 
-That run answers `2248 passed` and still dies of a **segmentation fault**: exit
+That run answered `2248 passed` and still died of a **segmentation fault**: exit
 **139**. Measured twice on 2026-11-22 -- at `eacf10d` (`2248 passed` in **1075,69 s**,
 exit 139) and in a detached worktree at `2f9493c`, before those commits (`3 failed,
 2244 passed` in **1083,29 s**, exit 139) -- so it is not damage a change left behind,
-and it is not a test. The summary is printed **in full**, which puts the crash in
+and it is not a test. It is not constant either: the run quoted above (`2254 passed`
+in **1118,81 s**, 2026-11-23) exited **0**, which is what a shutdown-order hazard
+answers, not what a defect in the tree answers. The summary is printed **in full**,
+which puts the crash in
 interpreter finalisation, where CPython has already taken `faulthandler`'s handlers
 back: running `python3 -X faulthandler -m pytest tests/ -q -p no:faulthandler` prints
 nothing more for it. What fits: `tests/support/ownership.py` keeps every frame its
