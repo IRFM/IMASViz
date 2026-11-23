@@ -36,10 +36,13 @@ from PySide6.QtWidgets import QLabel, QScrollArea, QVBoxLayout, QWidget
 from imasviz.VizDataAccess.QVizAxesSpec import QVizAxis
 from imasviz.VizDataAccess.QVizCurveAbscissa import TIME, describe, identityOf
 from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
+from imasviz.VizDataAccess.QVizTensorExtractor import QVizTensorExtractor
+from imasviz.VizDataAccess.QVizSlices import elementLabel
 from imasviz.VizGUI.VizGuiCustomization import QVizStyle
 from imasviz.VizGUI.VizPlot.QVizCurveColors import penFor
 from imasviz.VizGUI.VizPlot.QVizPlotStyling import QVizPlotStyling
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizSliceControls import QVizSliceControls
+from imasviz.VizUtils import QVizGlobalValues
 
 
 class QVizPanelScrollArea(QScrollArea):
@@ -137,13 +140,19 @@ class QVizPanel(QWidget):
 
         self.pgPlotWidget.clear()
         self._curves = []
+        # The legend tells which element of which array the panel holds. The
+        # AOS index is spelled into the path (elementLabel, on the same reading
+        # as the curve figure uses), and for a time-based AOS the value at that
+        # element is appended too: two panels of one array drawn side by side
+        # carry the same array name, and once there is no slider to say where,
+        # the index is the only answer.
+        label = self._curveLabel(treeNode, axesSpec, plotted)
+        self.pgPlotWidget.addLegend()
         for index in range(y.shape[0]):
-            # One colour per trace, in the order they were laid down, as a figure
-            # of curves does: a panel drawing several rows of one quantity drew
-            # them all in pyqtgraph's own default (200, 200, 200), which is the
-            # same grey twice over on the one window meant to compare them.
+            suffix = '' if y.shape[0] == 1 else '[%d]' % index
             self._curves.append(self.pgPlotWidget.plot(x[0], y[index],
-                                                       pen=penFor(index)))
+                                                       pen=penFor(index),
+                                                       name=label + suffix))
 
         self.pgPlotWidget.setTitle(self._frame.dataPathOf(treeNode))
         self.setAxisLabels(treeNode, axesSpec, alongTime)
@@ -193,6 +202,55 @@ class QVizPanel(QWidget):
 
     def curves(self):
         return list(getattr(self, '_curves', []))
+
+    def _curveLabel(self, treeNode, axesSpec, plotted):
+        """The legend label for a panel's curve: the AOS index, and the time
+        at that index when the AOS is time-based.
+
+        A panel holds one element of its quantity, fixed by the tree the user
+        is standing on. Two panels of one array therefore carry the same name
+        if the label only names the array, and once there is no slider to say
+        where (a panel is a quantity with fixed controls, not a curve a slider
+        moves), the index is the only answer. `elementLabel` spells it into
+        the path on the same reading the curve figure uses; for a time-based
+        AOS the value at that element is appended too, so two panels of one
+        array three slices apart are not read as the same comparison.
+        """
+        pinned = [axis for position, axis in enumerate(axesSpec.axes)
+                  if position not in plotted]
+        slices = {}
+        for axis in pinned:
+            if axis.origin == QVizAxis.AOS:
+                letter = QVizGlobalValues.indices.get(str(axis.level))
+                if letter is not None:
+                    index = treeNode.parameters_values.get(letter)
+                    if index is not None:
+                        slices[axis.key()] = int(index)
+        label = elementLabel(treeNode, pinned, slices)
+        for axis in pinned:
+            if axis.origin == QVizAxis.AOS and axis.is_time:
+                value = self._timeValue(treeNode, axesSpec, axis)
+                if value is not None:
+                    label += ' (t = %g %s)' % (value, axis.units or 's')
+                    break
+        return label
+
+    def _timeValue(self, treeNode, axesSpec, axis):
+        """The time (in seconds) at the index-th element of a time-based AOS,
+        or None when it cannot be read."""
+        letter = QVizGlobalValues.indices.get(str(axis.level))
+        if letter is None:
+            return None
+        index = treeNode.parameters_values.get(letter)
+        if index is None:
+            return None
+        try:
+            timeBase = QVizTensorExtractor(treeNode.getIDSRef()).timeBase(axesSpec)
+            if timeBase is not None and len(timeBase) > int(index):
+                return float(timeBase[int(index)])
+        except Exception:
+            pass
+        return None
 
     # ---------------------------------- what the Configure Plot window is asked
 
