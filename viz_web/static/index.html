@@ -302,6 +302,85 @@ details.tool summary strong { color: var(--accent-strong); }
   border-radius: 4px; padding: 4px 8px; font-size: 13px; cursor: pointer;
 }
 
+/* The prompt catalogue: the prompts the user wrote once and keeps to
+   ask again, read and written through the same /api/tool the notes
+   section drives. The list says what each prompt is (name, category,
+   one line of description) and which holes it opens; the values form
+   under it is where those holes are answered, with the source of every
+   value already known named under its input. The shapes are the notes'
+   shapes repeated on purpose: two sections that look alike and behave
+   alike are easier to read than one that borrows the other's name. */
+.promptsWrap { display: flex; flex-direction: column; gap: 10px; }
+.promptsStats { color: var(--ink-faint); font-size: 12px; }
+.promptsTabs { display: flex; gap: 6px; }
+.promptsTabs button {
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  border-radius: 4px; padding: 3px 8px; font-size: 13px; cursor: pointer;
+}
+.promptsTabs button[aria-pressed="true"] {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+}
+.promptsFilters { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+.promptsFilters input[type="text"] {
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  border-radius: 4px; padding: 3px 6px; font-size: 13px;
+}
+.promptsFilters button {
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  border-radius: 4px; padding: 3px 8px; font-size: 13px; cursor: pointer;
+}
+.promptsFilters button.chosen {
+  border-color: var(--accent); color: var(--accent);
+}
+.promptsList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.promptsList li {
+  border: 1px solid var(--line); border-radius: 6px;
+  padding: 6px 10px; display: flex; flex-direction: column; gap: 2px;
+}
+.promptsList li.active { border-color: var(--accent); }
+.promptsList .promptName { font-size: 13px; color: var(--ink); font-weight: 600; }
+.promptsList .promptDesc { font-size: 13px; color: var(--ink-soft); }
+.promptsList .promptVars { font-size: 12px; color: var(--ink-faint); }
+.promptsList .promptActions { margin-top: 4px; display: flex; gap: 6px; }
+.promptsList .promptActions button {
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  border-radius: 4px; padding: 2px 6px; font-size: 12px; cursor: pointer;
+}
+.promptRun {
+  border: 1px solid var(--line); border-radius: 6px; background: var(--surface);
+  padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; font-size: 13px;
+}
+.promptRun .promptHoles { display: flex; flex-direction: column; gap: 6px; }
+.promptRun .promptHoles label { font-size: 13px; color: var(--ink-soft); }
+.promptRun .promptHoles input[type="text"] {
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  border-radius: 4px; padding: 4px 6px; font-size: 13px;
+}
+.promptRun .promptFrom { font-size: 12px; color: var(--ink-faint); }
+.promptRun .promptBody {
+  white-space: pre-wrap; border-left: 2px solid var(--line-soft);
+  padding-left: 8px; color: var(--ink-soft);
+}
+.promptRun button {
+  border: 1px solid var(--accent); background: var(--accent); color: #fff;
+  border-radius: 4px; padding: 4px 8px; font-size: 13px; cursor: pointer;
+}
+.promptForm {
+  border: 1px solid var(--line); border-radius: 6px; background: var(--surface);
+  padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;
+}
+.promptForm label { font-size: 13px; color: var(--ink-soft); }
+.promptForm input[type="text"], .promptForm textarea {
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  border-radius: 4px; padding: 4px 6px; font-size: 13px;
+}
+.promptForm textarea { min-height: 96px; resize: vertical; }
+.promptForm .promptFormRow { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+.promptForm button {
+  border: 1px solid var(--accent); background: var(--accent); color: #fff;
+  border-radius: 4px; padding: 4px 8px; font-size: 13px; cursor: pointer;
+}
+
 /* The lightbox: the picture at the size it was drawn, over the page. */
 #lightbox {
   position: fixed; inset: 0; z-index: 50;
@@ -380,6 +459,17 @@ details.tool summary strong { color: var(--accent-strong); }
       <details id="notesReader"></details>
       <details id="notesAdd" class="notesAdd"></details>
       <details id="notesEdit" class="notesAdd"></details>
+    </div>
+
+    <h2>Prompts</h2>
+    <div id="prompts" class="promptsWrap" aria-live="polite">
+      <div id="promptsStats" class="promptsStats"></div>
+      <div id="promptsTabs" class="promptsTabs" role="tablist"></div>
+      <div id="promptsFilters" class="promptsFilters"></div>
+      <div id="promptsChips" class="promptsFilters"></div>
+      <ul id="promptsList" class="promptsList"></ul>
+      <details id="promptRun" class="promptRun"></details>
+      <details id="promptForm" class="promptForm"></details>
     </div>
   </section>
 </div>
@@ -593,6 +683,20 @@ details.tool summary strong { color: var(--accent-strong); }
       copyText(prompt, copy);
     });
     li.appendChild(copy);
+    // The request the user just ran is the prompt worth filing: this
+    // button opens the catalogue form with that text already in it, so
+    // saving a prompt is a name and a line of description, not a copy
+    // and a paste. Nothing is written until the form is saved -- a turn
+    // that merely drew a figure is not yet a line of the catalogue.
+    var file = el('button', { 'class': 'copyBtn', type: 'button',
+      'title': 'Keep this request as a reusable prompt',
+      'data-label': 'Save as prompt' }, ['Save as prompt']);
+    file.addEventListener('click', function (e) {
+      e.stopPropagation();
+      promptFormOpen({ text: prompt });
+      byId('prompts').scrollIntoView({ 'block': 'nearest' });
+    });
+    li.appendChild(file);
     return li;
   }
 
@@ -1096,6 +1200,431 @@ details.tool summary strong { color: var(--accent-strong); }
       notesDoSearch();
       notesRefreshStats();
     }
+  }
+
+  /* ------------------------------------------------------- the prompt catalogue
+
+     The prompts the user wrote once and keeps to ask again:
+     `list_prompts` for the catalogue (its categories, a word of search,
+     one catalogue or both), `prompt_detail` for the body of one and what
+     each of its holes would be answered from today, `fill_prompt` for
+     the text with the holes filled, and `save_prompt` / `edit_prompt` /
+     `delete_prompt` for the files under ~/.imasviz/prompts and under the
+     folder SharedPromptsDir names. They are asked through `/api/tool`,
+     like the notes and the raw gestures: the catalogue is a set of
+     gestures on the core, not a route of its own.
+
+     There is no `run_prompt` gesture, and the page does not pretend
+     there is one: a prompt is the user's own ask, so the catalogue fills
+     the text and the box asks it through the same Run as any other
+     prompt. What the catalogue keeps is the wording and the values, not
+     a way around the turn it starts.
+
+     The scope tabs are both / personal / shared, because an unnamed
+     shared folder costs its own half of the list and says why in the
+     stats line -- not the section. Every value already known is shown
+     with the source it came from: a value the user did not type is a
+     value they are entitled to see before it is sent. A hole nothing
+     answers stays an empty input and `fill_prompt` refuses by naming it
+     -- the page never sends a prompt with `{shot}` still in it. */
+
+  var promptsScope = '';       // '' asks the two catalogues at once
+  var promptsCategory = '';    // the category chip the user pressed
+  var promptsOpen = null;      // {scope, id, holes} of the values form
+  var promptsEditing = null;   // {scope, id} of the prompt the form changes
+
+  function promptsArgs() {
+    var args = {};
+    if (promptsScope) args.scope = promptsScope;
+    if (promptsCategory) args.category = promptsCategory;
+    var query = (byId('promptsQuery') || {}).value || '';
+    if (query.trim()) args.query = query.trim();
+    return args;
+  }
+
+  function promptsRenderChips(categories) {
+    var chips = byId('promptsChips');
+    chips.innerHTML = '';
+    var names = Object.keys(categories).sort();
+    if (names.length < 2 && !promptsCategory) return;
+    names.forEach(function (category) {
+      var button = el('button', {
+        'class': category === promptsCategory ? 'chosen' : '',
+        'onclick': function () {
+          promptsCategory = promptsCategory === category ? '' : category;
+          promptsRefresh();
+        },
+      });
+      button.textContent = (category || 'no category') +
+        ' (' + categories[category] + ')';
+      chips.appendChild(button);
+    });
+  }
+
+  function promptsRenderList(list) {
+    var wrap = byId('promptsList');
+    wrap.innerHTML = '';
+    if (!list.length) {
+      wrap.appendChild(el('li', null, [
+        'No prompt in the catalogue yet. Write one below, or save the ' +
+        'request you just ran with the button beside it: the holes it ' +
+        'opens with {braces} are what the next run will be asked for.']));
+      return;
+    }
+    list.forEach(function (p) {
+      var li = el('li');
+      if (promptsOpen && promptsOpen.scope === p.scope &&
+          promptsOpen.id === p.id) li.className = 'active';
+      li.appendChild(el('span', { 'class': 'promptName' },
+        [p.name + '  —  ' + (p.category || 'no category') +
+         '  [' + p.scope + ']']));
+      if (p.description) {
+        li.appendChild(el('span', { 'class': 'promptDesc' }, [p.description]));
+      }
+      var holes = p.holes || [];
+      var defaults = p.variables || {};
+      if (holes.length) {
+        li.appendChild(el('span', { 'class': 'promptVars' },
+          ['asks: ' + holes.map(function (name) {
+            var given = defaults[name];
+            return '{' + name + '}' + (given ? '=' + given : '');
+          }).join('  ')]));
+      }
+      if (p.variables_refusal) {
+        li.appendChild(el('span', { 'class': 'promptVars' },
+          ['REFUSAL — ' + p.variables_refusal]));
+      }
+      var actions = el('div', { 'class': 'promptActions' });
+      actions.appendChild(el('button', { 'onclick': function () {
+        promptRunOpen(p.scope, p.id);
+      } }, ['Use']));
+      actions.appendChild(el('button', { 'onclick': function () {
+        promptEditOpen(p.scope, p.id);
+      } }, ['Edit']));
+      actions.appendChild(el('button', { 'onclick': function () {
+        if (confirm('Delete the prompt ' + p.id + ' from the ' + p.scope +
+                    ' catalogue? Its remembered values go with it.'))
+          promptDelete(p.scope, p.id);
+      } }, ['Delete']));
+      li.appendChild(actions);
+      wrap.appendChild(li);
+    });
+  }
+
+  function promptsRefresh() {
+    return notesFetch('list_prompts', promptsArgs()).then(function (j) {
+      var stats = byId('promptsStats');
+      var wrap = byId('promptsList');
+      wrap.innerHTML = '';
+      if (j.error) {
+        stats.textContent = '';
+        wrap.appendChild(el('li', null, ['REFUSAL — ' + j.error]));
+        return;
+      }
+      var r = j.result || {};
+      var line = (r.total || 0) + ' prompt(s) in ' +
+        (promptsScope || 'the two catalogues');
+      var unavailable = r.catalogues_unavailable || {};
+      Object.keys(unavailable).forEach(function (scope) {
+        line += '  •  ' + scope + ': ' + unavailable[scope];
+      });
+      if (r.truncated) line += '  •  ' + r.truncated;
+      var context = r.context || {};
+      var known = Object.keys(context).filter(function (name) {
+        return name !== 'note';
+      });
+      if (known.length) {
+        line += '  •  this session answers ' + known.map(function (name) {
+          return '{' + name + '}=' + context[name];
+        }).join(' ');
+      }
+      stats.textContent = line;
+      promptsRenderChips(r.categories || {});
+      promptsRenderList(r.prompts || []);
+    });
+  }
+
+  function promptRunOpen(scope, id) {
+    return notesFetch('prompt_detail', { name: id, scope: scope })
+      .then(function (j) {
+        var box = byId('promptRun');
+        box.innerHTML = '';
+        if (j.error) {
+          promptsOpen = null;
+          box.appendChild(el('summary', null, ['Use prompt ' + id]));
+          box.appendChild(el('p', null, ['REFUSAL — ' + j.error]));
+          box.setAttribute('open', 'true');
+          return;
+        }
+        var p = j.result;
+        var values = p.values || {};
+        var holes = Object.keys(values);
+        promptsOpen = { scope: p.scope, id: p.id, holes: holes };
+        box.appendChild(el('summary', null,
+          ['Use ' + p.name + '  —  ' + (p.category || 'no category') +
+           '  (a hole you leave empty is a value to type, never a guess)']));
+        box.appendChild(el('div', { 'class': 'promptBody' }, [p.text]));
+        var form = el('div', { 'class': 'promptHoles' });
+        if (!holes.length) {
+          form.appendChild(el('span', { 'class': 'promptFrom' },
+            ['This prompt opens no hole: it is asked as it stands.']));
+        }
+        holes.forEach(function (name) {
+          var known = values[name] || {};
+          var value = (known.value === null || known.value === undefined)
+            ? '' : String(known.value);
+          form.appendChild(el('label', null, [
+            '{' + name + '}',
+            el('input', { 'type': 'text', 'id': 'promptValue_' + name,
+                          'size': '28', 'value': value }),
+          ]));
+          form.appendChild(el('span', { 'class': 'promptFrom' },
+            [known.value
+             ? ('filled from ' + known.source +
+                ' — clear the box to answer it yourself')
+             : 'nothing answers this one yet: type the value']));
+        });
+        box.appendChild(form);
+        if (p.context && p.context.note) {
+          box.appendChild(el('div', { 'class': 'promptFrom' },
+            [p.context.note]));
+        }
+        box.appendChild(el('div', { 'class': 'row' }, [
+          el('button', { 'onclick': function () { promptFill(false); } },
+             ['Put in the box']),
+          el('button', { 'onclick': function () { promptFill(true); } },
+             ['Run']),
+          el('button', { 'onclick': function () {
+            promptsOpen = null;
+            box.removeAttribute('open');
+            promptsRefresh();
+          } }, ['Close']),
+        ]));
+        box.setAttribute('open', 'true');
+        promptsRefresh();
+      });
+  }
+
+  function promptFill(thenRun) {
+    if (!promptsOpen) {
+      appendLine('Choose a prompt first: the Use button of one of the ' +
+        'rows is the one that opens its values.', 'refusal');
+      return;
+    }
+    var values = {};
+    (promptsOpen.holes || []).forEach(function (name) {
+      var input = byId('promptValue_' + name);
+      if (input && input.value.trim()) values[name] = input.value.trim();
+    });
+    var args = { name: promptsOpen.id, scope: promptsOpen.scope };
+    if (Object.keys(values).length) args.values = values;
+    notesFetch('fill_prompt', args).then(function (j) {
+      if (j.error) {
+        appendLine('  ← REFUSAL — fill_prompt: ' + j.error, 'refusal');
+        return;
+      }
+      var r = j.result;
+      var filled = Object.keys(r.values || {}).filter(function (name) {
+        return r.values[name].value;
+      });
+      appendLine('  ← fill_prompt: ' + r.name + (filled.length
+        ? (' — ' + filled.map(function (name) {
+            return '{' + name + '} from ' + r.values[name].source;
+          }).join(', '))
+        : ' — no hole to fill'));
+      byId('prompt').value = r.text;
+      if (thenRun) runAgent(r.text);
+    });
+  }
+
+  function promptDelete(scope, id) {
+    return notesFetch('delete_prompt', { name: id, scope: scope })
+      .then(function (j) {
+        if (j.error) {
+          appendLine('  ← REFUSAL — delete_prompt: ' + j.error, 'refusal');
+        } else {
+          appendLine('  ← delete_prompt: ' + id + ' is out of the ' + scope +
+            ' catalogue');
+          if (promptsOpen && promptsOpen.id === id) {
+            promptsOpen = null;
+            byId('promptRun').innerHTML = '';
+          }
+        }
+        promptsRefresh();
+      });
+  }
+
+  /* The form of a prompt: the one that files a request the user just ran
+     (the button beside each request fills the text box of the form with
+     it, so filing is one name and one click), the one that writes a
+     prompt from scratch, and the one that changes a prompt in place --
+     which keeps the id its remembered values sit under, because an id is
+     not a field an edit moves. */
+  /* The edit reads the prompt back through `prompt_detail` before the
+     form opens: the catalogue line carries the name, the category and the
+     description, not the body -- so the form holds what the file holds,
+     not what the list showed. The same reading the notes' Edit answers
+     by, for the same reason. */
+  function promptEditOpen(scope, id) {
+    return notesFetch('prompt_detail', { name: id, scope: scope })
+      .then(function (j) {
+        if (j.error) {
+          appendLine('  ← REFUSAL — prompt_detail: ' + j.error, 'refusal');
+          return;
+        }
+        var p = j.result;
+        var defaults = p.variables || {};
+        promptFormOpen({
+          scope: p.scope, id: p.id, name: p.name, category: p.category,
+          description: p.description, text: p.text,
+          variablesLine: Object.keys(defaults).filter(function (name) {
+            return defaults[name];
+          }).map(function (name) {
+            return name + '=' + defaults[name];
+          }).join('; '),
+        });
+      });
+  }
+
+  function promptFormOpen(prefill) {
+    prefill = prefill || {};
+    promptsEditing = (prefill.scope && prefill.id)
+      ? { scope: prefill.scope, id: prefill.id } : null;
+    var box = byId('promptForm');
+    box.innerHTML = '';
+    box.appendChild(el('summary', null, [promptsEditing
+      ? ('Edit prompt ' + promptsEditing.id + ' — it keeps the id its ' +
+         'values were remembered under; a field you empty loses it')
+      : 'New prompt']));
+    var scope = promptsEditing ? promptsEditing.scope
+      : (promptsScope || 'personal');
+    var scopeBox = el('select', { 'id': 'promptScope' });
+    ['personal', 'shared'].forEach(function (one) {
+      var option = el('option', { 'value': one }, [one]);
+      if (one === scope) option.setAttribute('selected', 'selected');
+      scopeBox.appendChild(option);
+    });
+    // The name and the catalogue of an existing prompt are not fields
+    // this form moves: the id is what the catalogue, the remembered
+    // values and the asks read it under, and the folder it sits in is
+    // part of what that id means. An edit is asked by that id in that
+    // folder; a prompt elsewhere or under another name is a new prompt.
+    var nameField = promptsEditing
+      ? el('span', { 'class': 'promptFrom' },
+           [prefill.name + '  (id: ' + promptsEditing.id + ')'])
+      : el('input', { 'type': 'text', 'id': 'promptName', 'size': '24',
+                      'value': prefill.name || '' });
+    var scopeField = promptsEditing
+      ? el('span', { 'class': 'promptFrom' }, [promptsEditing.scope])
+      : scopeBox;
+    box.appendChild(el('div', { 'class': 'promptFormRow' },
+      [el('label', null, ['name', nameField]),
+       el('label', null, ['category', el('input', {
+        'type': 'text', 'id': 'promptCategory', 'size': '18',
+        'value': prefill.category || '' })]),
+       el('label', null, ['catalogue', scopeField])]));
+    box.appendChild(el('label', null, ['description', el('input', {
+      'type': 'text', 'id': 'promptDescription', 'size': '56',
+      'placeholder': 'one line saying what this prompt asks',
+      'value': prefill.description || '' })]));
+    var area = el('textarea', { 'id': 'promptText' });
+    area.placeholder = 'the prompt, with its holes spelled {shot}, ' +
+      '{figure}, {rho}… — a hole is asked for on every run unless a ' +
+      'default or this session answers it';
+    area.value = prefill.text || '';
+    box.appendChild(area);
+    box.appendChild(el('label', null, ['defaults (optional)', el('input', {
+      'type': 'text', 'id': 'promptVariables', 'size': '40',
+      'placeholder': 'shot=54924; rho=0.8',
+      'value': prefill.variablesLine || '' })]));
+    box.appendChild(el('div', { 'class': 'row' }, [
+      el('button', { 'onclick': promptFormSave },
+         [promptsEditing ? 'Save edit' : 'Save prompt']),
+      el('button', { 'onclick': function () {
+        box.removeAttribute('open');
+      } }, ['Cancel']),
+    ]));
+    box.setAttribute('open', 'true');
+    var nameInput = byId('promptName');
+    if (nameInput) nameInput.focus();
+  }
+
+  function promptFormSave() {
+    function val(id) { var i = byId(id); return i ? i.value.trim() : ''; }
+    var text = val('promptText');
+    if (!text) {
+      appendLine('A prompt needs what it asks: the form named an empty ' +
+        'text.', 'refusal');
+      return;
+    }
+    var name = promptsEditing ? promptsEditing.id : val('promptName');
+    if (!name) {
+      appendLine('A prompt needs a name: it is what the catalogue lists ' +
+        'it by and what the values are remembered under.', 'refusal');
+      return;
+    }
+    var args = {
+      name: name, text: text,
+      scope: promptsEditing ? promptsEditing.scope
+                            : ((byId('promptScope') || {}).value || 'personal'),
+      category: val('promptCategory'),
+      description: val('promptDescription'),
+    };
+    var variables = val('promptVariables');
+    // An edit always names its declaration, so an empty box clears the
+    // defaults and leaves the holes the text opens standing on their own;
+    // a new prompt left empty has no declaration to clear, and the
+    // catalogue reads its holes off the text.
+    if (variables || promptsEditing) args.variables = variables;
+    var tool = promptsEditing ? 'edit_prompt' : 'save_prompt';
+    notesFetch(tool, args).then(function (j) {
+      if (j.error) {
+        appendLine('  ← REFUSAL — ' + tool + ': ' + j.error, 'refusal');
+        return;
+      }
+      appendLine('  ← ' + tool + ': ' + j.result.id + '  under  ' +
+        j.result.path);
+      promptsEditing = null;
+      byId('promptForm').removeAttribute('open');
+      promptsRefresh();
+    });
+  }
+
+  function promptsInit() {
+    var tabs = byId('promptsTabs');
+    tabs.innerHTML = '';
+    [['', 'both'], ['personal', 'personal'], ['shared', 'shared']]
+      .forEach(function (pair) {
+        var button = el('button', {
+          'aria-pressed': String(pair[0] === promptsScope),
+          'role': 'tab',
+          'onclick': function () {
+            promptsScope = pair[0];
+            tabs.querySelectorAll('button').forEach(function (b) {
+              b.setAttribute('aria-pressed', 'false');
+            });
+            button.setAttribute('aria-pressed', 'true');
+            promptsRefresh();
+          },
+        });
+        button.textContent = pair[1];
+        tabs.appendChild(button);
+      });
+
+    var filters = byId('promptsFilters');
+    filters.innerHTML = '';
+    filters.appendChild(el('input', {
+      'type': 'text', 'id': 'promptsQuery', 'size': '24',
+      'placeholder': 'a word of name, description, category (optional)',
+    }));
+    filters.appendChild(el('button', { 'onclick': function () {
+      promptsRefresh();
+    } }, ['Search']));
+    filters.appendChild(el('button', { 'onclick': function () {
+      promptFormOpen({});
+    } }, ['New prompt']));
+
+    promptsRefresh();
   }
 
   /* ---------------------------------------------------------------- the gallery
@@ -1646,6 +2175,10 @@ details.tool summary strong { color: var(--accent-strong); }
     // scope tab, read from the disk the core answers -- a reload does not
     // cost the notes the session already wrote.
     notesInit();
+    // The prompt catalogue: the same reading, from the two folders the
+    // core answers. A reload does not cost the user the prompts they
+    // filed, and the values they typed for one are remembered locally.
+    promptsInit();
   });
 })();
 </script>
