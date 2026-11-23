@@ -104,6 +104,29 @@ dictionary), `case` (needs the reference case). `timeout = 180` caps every test,
 which matters because several application code paths can block on a modal
 dialog or a remote backend.
 
+### A green summary is not a clean exit
+
+That run answers `2248 passed` and still dies of a **segmentation fault**: exit
+**139**. Measured twice on 2026-11-22 -- at `eacf10d` (`2248 passed` in **1075,69 s**,
+exit 139) and in a detached worktree at `2f9493c`, before those commits (`3 failed,
+2244 passed` in **1083,29 s**, exit 139) -- so it is not damage a change left behind,
+and it is not a test. The summary is printed **in full**, which puts the crash in
+interpreter finalisation, where CPython has already taken `faulthandler`'s handlers
+back: running `python3 -X faulthandler -m pytest tests/ -q -p no:faulthandler` prints
+nothing more for it. What fits: `tests/support/ownership.py` keeps every frame its
+tests built alive for the whole session -- deliberately, that is its job -- and nothing
+releases it at the end, while `QWEN.md` records that a `QVizImagePlot` is never freed
+at all. At shutdown a pile of live `QWidget` is destroyed in an order nobody controls,
+the `QApplication` already gone. `LEGACY_REPLACEMENT.md` (row T52) carries the mid-run
+variant of the same hazard: a run ending exit 139 with `Fatal Python error: Segmentation
+fault` and **no** summary.
+
+Two rules for anyone reading a run. Capture the status before calling a run green --
+`python3 -m pytest tests/ -q | tail -40` reports **tail's** exit code, so a segfaulting
+suite reads clean; write it as `pytest ... > file 2>&1; echo exit=$?`. And a small
+subset is no evidence either way: the **74** tests of the three picture files exit **0**
+in **13,94 s**, which says nothing about what the whole session leaves alive.
+
 ## 3. What the suite covers
 
 | File | Component | Notes |
