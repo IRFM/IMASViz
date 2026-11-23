@@ -32,7 +32,7 @@ import urllib.request
 from imasviz.VizAgent.QVizPromptHistory import QVizPromptHistory
 
 COMMANDS = ('llm', 'mcp', 'ids', 'shots', 'session', 'history', 'tools',
-            'note', 'help', 'quit')
+            'note', 'prompt', 'help', 'quit')
 
 LLM_FIELDS = ('endpoint', 'model', 'key', 'max_turns', 'temperature',
               'max_tokens')
@@ -95,6 +95,26 @@ named after the turn. Commands:
                              --date --title
   /note delete ID            take a line out of a journal (the search or
                              the list answer names it)
+  /prompt                    the prompt catalogue: the two folders, how
+                             many prompts each category holds
+  /prompt list [WORD]        the prompts that fit -- --category --scope
+                             --limit: id, name, category, its one line,
+                             the holes it opens
+  /prompt show ID            one prompt: its text, and where each of its
+                             holes would come from today (last value
+                             typed, this session, its own default)
+  /prompt run ID [name=value] fill the holes and run the prompt: what
+                             this session knows is filled by it (its open
+                             case, its one window), what it does not is
+                             asked here, on the line -- never guessed;
+                             --scope picks the catalogue when two hold
+                             the same id
+  /prompt save NAME TEXT     file a prompt in the catalogue: --category
+                             --description --scope personal|shared
+                             --variables "shot=54924; rho=0.8"; the
+                             holes are read off TEXT when --variables is
+                             left out, and a hole TEXT never opens is
+                             refused by name
   /help                      this text
   /quit                      leave; the arrows keep the prompts they
                              recall in ~/.imasviz/agent_prompts, with the
@@ -165,6 +185,8 @@ def execute(cmd, session):
         _toolsMode(cmd, session)
     elif cmd.name == 'note':
         _note(cmd, session)
+    elif cmd.name == 'prompt':
+        _prompt(cmd, session)
     return True
 
 
@@ -525,11 +547,13 @@ _NOTE_FLAGS = (
 )
 
 
-def _parseFlagged(words):
+def _parseFlagged(words, known=_NOTE_FLAGS):
     """`--shot 54924 --scope personal` -> ({shot: '54924', scope:
     'personal'}, []) -- the flags in order, the bare words left. A
     flag this client does not hold, or a `--flag` with no value, is
-    refused by naming the ones it does.
+    refused by naming the ones it does. `known` is the table of the
+    command asking: `/note` and `/prompt` answer different flags, and
+    the refusal of one is not the list of the other.
     """
     flags, bare = {}, []
     while words:
@@ -540,10 +564,10 @@ def _parseFlagged(words):
                     '%s needs its value: --shot 54924, --scope '
                     'personal.' % word)
             key = word[2:]
-            if key not in _NOTE_FLAGS:
+            if key not in known:
                 raise ValueError(
                     'unknown flag %s -- this client answers %s.'
-                    % (word, ' '.join('--' + f for f in _NOTE_FLAGS)))
+                    % (word, ' '.join('--' + f for f in known)))
             flags[key] = words.pop(0)
         else:
             bare.append(word)
@@ -724,3 +748,246 @@ def _flagWords(flags):
                     'date_to': 'date_to'}.get(field, field.lstrip('-'))
             pairs.append('--%s %s' % (field, flags[field]))
     return ' '.join(pairs)
+
+
+# -------------------------------------------------------------------- /prompt
+
+# The flags `/prompt` answers. `scope` is which catalogue is asked (the
+# user's own folder, the shared one SharedPromptsDir names, or both);
+# `variables` is the declaration of the holes and their defaults, which
+# the catalogue also reads off the text when it is left out.
+_PROMPT_FLAGS = ('scope', 'category', 'description', 'variables', 'limit')
+
+
+def _prompt(cmd, session):
+    """The prompt catalogue, off the core: the same gestures the panel,
+    the page and the agent ask, and the same refusals the core answers --
+    read raw into the console, no LLM in between, as `/ids` and `/note`
+    read theirs.
+
+    `run` is the one command here that starts a turn: it fills the holes
+    and hands the text to the session's own `runPrompt`, so the
+    transcript, the turn directory and the shared history are what any
+    typed line leaves. The holes are the only typing a filed prompt costs:
+    what this session knows it answers by itself, and what it does not is
+    asked on the line -- a value the client makes up is not a value.
+    """
+    words = cmd.words
+    if not words:
+        return _promptList(session, [])
+    sub, rest = words[0], words[1:]
+    if sub == 'list':
+        return _promptList(session, rest)
+    if sub in ('show', 'read', 'get', 'detail'):
+        return _promptShow(session, rest)
+    if sub == 'run':
+        return _promptRun(session, rest)
+    if sub == 'save':
+        return _promptSave(session, rest)
+    raise ValueError(
+        '/prompt %s -- this client answers /prompt list, /prompt show, '
+        '/prompt run, /prompt save, and /prompt alone (the catalogue).'
+        % sub)
+
+
+def _promptList(session, words):
+    flags, bare = _parseFlagged(words, _PROMPT_FLAGS)
+    args = {}
+    for field in ('scope', 'category'):
+        if field in flags:
+            args[field] = flags[field]
+    if 'limit' in flags:
+        args['limit'] = _promptLimit(flags['limit'])
+    if bare:
+        args['query'] = ' '.join(bare)
+    answer = session.core.list_prompts(**args)
+    line = '%d prompt(s)' % answer['total']
+    for scope, why in sorted(
+            (answer.get('catalogues_unavailable') or {}).items()):
+        line += '\n  %s : %s' % (scope, why)
+    if answer.get('truncated'):
+        line += '\n  %s' % answer['truncated']
+    print(line)
+    counts = answer.get('categories') or {}
+    if counts:
+        print('  categories : %s' % ', '.join(
+            '%s (%d)' % (name or '(none)', count)
+            for name, count in sorted(counts.items())))
+    for entry in answer['prompts']:
+        print('  %s' % _promptLine(entry))
+    if not answer['prompts']:
+        print('  (none: /prompt save NAME TEXT files one, and the holes '
+              'its text opens with braces are what a run will ask for)')
+    _promptContext(answer.get('context'))
+    return True
+
+
+def _promptLine(entry):
+    """One line of the catalogue: its id, who wrote it, its category, the
+    name a reader chooses on, and the holes a run will be asked for."""
+    holes = ' '.join(
+        '{%s=%s}' % (name, value) if value else '{%s}' % name
+        for name, value in sorted(entry['variables'].items()))
+    tail = entry['description'] or ''
+    if entry.get('variables_refusal'):
+        tail = (tail + '  ' if tail else '') + \
+            'REFUSAL — %s' % entry['variables_refusal']
+    return '%-24s %-8s %-14s %-24s %s   %s' % (
+        entry['id'], entry['scope'], entry['category'] or '(none)',
+        entry['name'], holes or '(no hole)', tail)
+
+
+def _promptContext(context):
+    """What this session would answer for free — the reason re-running a
+    prompt costs no typing, and the reason a refusal says which value is
+    still owed."""
+    if not context:
+        return
+    known = sorted(name for name in context if name != 'note')
+    if known:
+        print('  this session answers: %s' % ', '.join(
+            '{%s}=%s' % (name, context[name]) for name in known))
+    if context.get('note'):
+        print('  %s' % context['note'])
+
+
+def _promptShow(session, words):
+    flags, bare = _parseFlagged(words, _PROMPT_FLAGS)
+    if not bare:
+        raise ValueError(
+            '/prompt show needs the id or the name of a prompt: /prompt '
+            'list names them.')
+    if len(bare) > 1:
+        raise ValueError('/prompt show takes one prompt, got %d: %s.'
+                         % (len(bare), ' '.join(bare)))
+    detail = session.core.prompt_detail(bare[0], scope=flags.get('scope'))
+    print('  id         : %s' % detail['id'])
+    print('  name       : %s' % detail['name'])
+    print('  catalogue  : %s' % detail['scope'])
+    print('  category   : %s' % (detail['category'] or '(none)'))
+    print('  description: %s' % (detail['description'] or '(none)'))
+    print('  author     : %s' % (detail['author'] or '(none)'))
+    print('  file       : %s' % detail['path'])
+    if detail.get('variables_refusal'):
+        print('  REFUSAL — %s' % detail['variables_refusal'])
+    print('-')
+    print(detail['text'])
+    print('-')
+    answers = detail.get('values') or {}
+    if not answers:
+        print('  (this prompt opens no hole: it is asked as it stands)')
+    for name in sorted(answers):
+        one = answers[name]
+        print('  {%s} : %s' % (
+            name,
+            '%s — %s' % (one['value'], one['source']) if one['value']
+            else 'nothing answers it yet: a run will ask'))
+    _promptContext(detail.get('context'))
+    return True
+
+
+def _promptRun(session, words):
+    flags, bare = _parseFlagged(words, _PROMPT_FLAGS)
+    if not bare:
+        raise ValueError(
+            '/prompt run needs the id or the name of a prompt: /prompt '
+            'list names them.')
+    name = bare[0]
+    given = {}
+    for pair in bare[1:]:
+        if '=' not in pair:
+            raise ValueError(
+                '/prompt run %s is not a value: name it as hole=value (the '
+                'holes /prompt show lists), or leave it out and be asked '
+                'for it.' % pair)
+        key, value = pair.split('=', 1)
+        key = key.strip()
+        if not key:
+            raise ValueError(
+                '/prompt run %s names no hole before the =: write '
+                'shot=54924.' % pair)
+        given[key] = value
+    # The look first: `prompt_detail` answers what each hole would take
+    # today and remembers nothing, so asking what is still owed is not
+    # typing an answer in. What is owed is then asked on the line -- and a
+    # hole the caller already answered on the command is not owed: asking
+    # `{shot} ?` after the user typed `shot=54924` is a question whose
+    # answer they just wrote, and an empty answer there would throw the
+    # typed value away.
+    detail = session.core.prompt_detail(name, scope=flags.get('scope'))
+    owed = sorted(one for one, answer in detail['values'].items()
+                  if answer['value'] is None and one not in given)
+    for hole in owed:
+        try:
+            value = input('  {%s} ? ' % hole).strip()
+        except EOFError:
+            raise ValueError(
+                'the prompt %s still needs {%s}, and the line closed '
+                'before it was named: name it on the command '
+                '(/prompt run %s %s=…).'
+                % (detail['id'], hole, detail['id'], hole))
+        if value:
+            given[hole] = value
+    answer = session.core.fill_prompt(detail['id'], values=given,
+                                      scope=detail['scope'])
+    filled = sorted(one for one, value in answer['values'].items()
+                    if value['value'])
+    print('/prompt run %s — %s' % (
+        answer['name'],
+        '; '.join('{%s} from %s' % (one, answer['values'][one]['source'])
+                  for one in filled) or 'no hole to fill'), flush=True)
+    outcome = session.runPrompt(answer['text'])
+    if outcome and outcome.get('refusal'):
+        print('REFUSAL — the turn of %s: %s' % (answer['name'],
+                                                outcome['refusal']),
+              flush=True)
+    return True
+
+
+def _promptSave(session, words):
+    flags, bare = _parseFlagged(words, _PROMPT_FLAGS)
+    if not bare:
+        raise ValueError(
+            '/prompt save NAME TEXT: name the prompt and what it asks. '
+            'The holes it opens with braces are asked for on every run.')
+    name, text = bare[0], ' '.join(bare[1:]).strip()
+    if not text:
+        raise ValueError(
+            '/prompt save %s has no text to file: a catalogue line with '
+            'nothing to ask is not one this catalogue holds.' % name)
+    scope = flags.pop('scope', None) or 'personal'
+    if scope not in ('personal', 'shared'):
+        raise ValueError(
+            '/prompt save --scope %s -- name the catalogue as personal '
+            'or shared.' % scope)
+    args = {'name': name, 'text': text, 'scope': scope}
+    for field in ('category', 'description', 'variables'):
+        if field in flags:
+            args[field] = flags[field]
+    answer = session.core.save_prompt(**args)
+    named = _promptFlagWords(args)
+    print('  %s -> %s (%s)%s'
+          % (answer['id'], answer['path'], scope,
+             '  ' + named if named else ''), flush=True)
+    return True
+
+
+def _promptFlagWords(args):
+    """The fields the save named, in the --word value shape the help
+    carries."""
+    pairs = ['--%s %s' % (field, args[field])
+             for field in ('category', 'description', 'variables')
+             if args.get(field)]
+    return ' '.join(pairs)
+
+
+def _promptLimit(value):
+    try:
+        number = int(value)
+    except ValueError:
+        raise ValueError('--limit %s is not a number: name an integer.'
+                         % value)
+    if number < 1:
+        raise ValueError('--limit %s asks for no prompt: name 1 or up.'
+                         % value)
+    return number
