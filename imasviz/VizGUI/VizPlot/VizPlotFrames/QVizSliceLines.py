@@ -145,6 +145,7 @@ class QVizSliceLines:
         self._kept = {}
         self._keptCount = {}
         self._markers = {}
+        self._liveLegend = {}
         self._values = np.asarray([])
         self._columns = 1
 
@@ -296,8 +297,34 @@ class QVizSliceLines:
         return [tuple(curve.opts['pen'].color().getRgb()[:3])
                 for _, curve in self._kept.get(side, [])]
 
+    def _currentIndex(self, side):
+        """The element rank the line on one side stands on, nearest one."""
+        axis = self._axes[side]
+        return int(np.argmin(np.abs(axis.values - self._lines[side].value())))
+
+    def _labelWithIndex(self, side, index):
+        """Which element of which array the slice stands on, index and value:
+        the index names the element, the value (in the axis's own coordinate)
+        names the place it sits. Two slices of one array at neighbours' ranks
+        are not the same comparison, and a label that says only the values
+        leaves the user guessing which element the line stood on.
+        """
+        axis = self._axes[side]
+        name = axis.name or axis.spelling()
+        if 0 <= index < len(axis.values):
+            value = float(axis.values[index])
+            if axis.units:
+                return '%s[%d] (%g %s)' % (name, index, value, axis.units)
+            return '%s[%d] (%g)' % (name, index, value)
+        return '%s[%d]' % (name, index)
+
     def labelText(self, side):
-        return self._lines[side].label.toPlainText()
+        """The legend name for the slice the line currently stands on, index
+        and value: the line's own label shows only the value as it moves, and
+        the curves (live and kept) are the ones the user reads for which
+        element they came from.
+        """
+        return self._labelWithIndex(side, self._currentIndex(side))
 
     def axisLabel(self, side):
         """(name, units) of the abscissa the slice under this line runs along."""
@@ -359,11 +386,25 @@ class QVizSliceLines:
         self._kept = {}
         self._keptCount = {}
         self._markers = {}
+        self._liveLegend = {}
         self._axes = {}
         self._sides = []
 
     def _onMoved(self, line):
         self._draw(self._values)
+
+    def _updateLiveLegends(self):
+        """Move the live curve's legend text to where the line stands.
+
+        The index is a function of the line's position and not of the curve's:
+        two positions, two answers. A live curve left labelling the element it
+        was opened on is wrong from the first move on, and the kept curves
+        beside it make the gap visible -- so the text follows the line.
+        """
+        for side in self._sides:
+            legend = self._liveLegend.get(side)
+            if legend is not None:
+                legend.setText(self.labelText(side))
 
     def _draw(self, values):
         self._values = np.asarray(values)
@@ -376,11 +417,20 @@ class QVizSliceLines:
                 # The colour of the line that produced it -- the panels carry no
                 # other cue, and the pen before this one was 'k' on the black
                 # these figures paint, which is to say no answer at all.
-                curve = self._plots[side].plot(x, y)
+                panel = self._plots[side]
+                if panel.legend is None:
+                    panel.addLegend()
+                curve = panel.plot(x, y, name=self.labelText(side))
                 curve.setPen(pg.mkPen(self.liveColour(side)))
                 self._curves[side] = curve
+                # The legend entry just added is the last one: the index names
+                # the element the line stands on, and the curve the user is
+                # about to keep is the one it reads from.
+                if panel.legend is not None and panel.legend.items:
+                    self._liveLegend[side] = panel.legend.items[-1][1]
             else:
                 curve.setData(x, y)
+        self._updateLiveLegends()
 
     def _slice(self, side):
         """The curve under one line: one element of one axis, run along the other.

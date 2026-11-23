@@ -317,7 +317,7 @@ def test_the_line_says_which_axis_it_stands_on(figure):
     figure.plot(_static())
     figure.sliceLine('bottom').setPos(2.0)
 
-    assert figure.sliceLabelText('bottom') == 'rho_tor[m]=2'
+    assert figure.sliceLabelText('bottom') == 'rho_tor[2] (2 m)'
 
 
 @pytest.mark.ui
@@ -582,7 +582,7 @@ def test_a_kept_slice_says_where_it_was_taken(figure):
 
     figure.keepSlice('bottom')
 
-    assert figure.keptSlices('bottom')[0][0] == 'rho_tor[m]=1'
+    assert figure.keptSlices('bottom')[0][0] == 'rho_tor[1] (1 m)'
 
 
 @pytest.mark.ui
@@ -874,31 +874,36 @@ def test_one_panel_keeps_its_colours_when_the_other_one_keeps(figure):
 
 @pytest.mark.ui
 def test_the_panel_says_where_a_kept_slice_was_cut(figure):
-    # The label has been handed to pyqtgraph all along and never shown: no
-    # legend was ever posed on a slice panel. It is asked for with the first
-    # record, because an empty legend is a frame around nothing -- and before
-    # the curve is added, since PlotItem takes the entry from the item's name as
-    # it adds it (PlotItem.py:516-552).
+    # The live curve is named at the moment it is drawn, with the element the
+    # line stands on (index and value), and its text follows the line: the
+    # index is a function of the position. A kept slice is named with the
+    # element it was cut at, and the legend holds the live curve and the kept
+    # slices together, so two positions of the line are two answers and a
+    # family of slices is told apart by element.
     figure.plot(_static())
     figure.sliceLine('bottom').setPos(1.0)
     panel = figure.slicePlot('bottom')
-    assert panel.legend is None
 
-    figure.keepSlice('bottom')
-
+    # The live curve takes a legend entry with the element the line stands on:
+    # the index says which element and the value says where it sits.
     assert panel.legend is not None
-    assert len(panel.legend.items) == 1, (
-        'the live curve has no position to name and takes no entry')
-    # `LegendItem.items` holds (sample, LabelItem) -- and a LabelItem spells its
-    # text as an attribute: `toPlainText` is a TextItem's (LegendItem.py:215-221).
+    assert len(panel.legend.items) == 1
     _, label = panel.legend.items[0]
-    assert label.text == 'rho_tor[m]=1'
+    assert label.text == 'rho_tor[1] (1 m)'
 
     figure.keepSlice('bottom')
     assert len(panel.legend.items) == 2
 
+    # The kept slice is told apart from the live one by its own element, and
+    # a second keep gives a third entry: three answers to three positions.
+    figure.keepSlice('bottom')
+    assert len(panel.legend.items) == 3
+
+    # The kept slices leave the panel on request; the live curve and its entry
+    # stay, naming the element the line still stands on.
     figure.clearKeptSlices()
-    assert panel.legend.items == []
+    assert len(panel.legend.items) == 1
+    assert panel.legend.items[0][1].text == 'rho_tor[1] (1 m)'
 
 
 @pytest.mark.ui
@@ -907,5 +912,13 @@ def test_the_other_panel_gets_its_own_legend(figure):
     figure.sliceLine('bottom').setPos(1.0)
     figure.keepSlice('bottom')
 
-    assert figure.slicePlot('left').legend is None, (
-        'a legend on a panel holding no record is a frame around nothing')
+    # Each panel has its own legend: the live curve and its kept slices on one
+    # panel do not show up in the other panel's legend, even though both
+    # panels have a live curve (and therefore a legend).
+    left = figure.slicePlot('left')
+    bottom = figure.slicePlot('bottom')
+    # The left panel has a legend for its own live curve.
+    assert left.legend is not None
+    assert len(left.legend.items) == 1
+    # The bottom panel has a legend with the live curve and the kept slice.
+    assert len(bottom.legend.items) == 2
