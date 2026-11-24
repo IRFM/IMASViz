@@ -57,18 +57,20 @@ def test_the_tools_both_name_the_unified_schema(toolName):
 
 def test_the_tools_refuse_time_and_the_unified_schema_together():
     """`time` pins one slice; `along` / `indices` run along an axis. The
-    schema is the refusal the tool answers, and the system prompt names it
-    for the model, so the loop the user saw does not close on a second ask.
+    schema is the refusal the tool answers. The 2026-11-24 rewrite of the
+    in-app prompt names the half the user actually reaches for
+    (`indices={"psi": 50}`), and the tool descriptions of `plot_one` and
+    `get_signal` name both halves for the model -- `along` and `indices`
+    alike -- so the loop the user saw does not close on a second ask.
     """
     system = SYSTEM_INSTRUCTIONS
-    assert 'along' in system, 'the system prompt does not name `along`'
     assert 'indices' in system, 'the system prompt does not name `indices`'
-    # The refusal is named for `plot_one` and for `get_signal` alike, in the
-    # prompt and in the tool description.
+    # The unified schema is named for `plot_one` and for `get_signal`
+    # alike, in the tool description the model reads at the call.
     for toolName in ('plot_one', 'get_signal'):
         description = next((t.get('function', {}).get('description', '')
                             for t in TOOLS
                             if t.get('function', {}).get('name') == toolName),
                            '')
-        assert 'along' in description or 'indices' in description, \
+        assert 'along' in description and 'indices' in description, \
             (toolName, description)

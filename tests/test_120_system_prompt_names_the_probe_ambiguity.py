@@ -10,46 +10,35 @@
 # ****************************************************
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
-"""The system prompt keeps an occurrence apart from an element of an array
-of structures, and the probe ambiguity stays named instead of guessed.
+"""The system prompt keeps an occurrence, an index and a path apart, and
+the probe ambiguity stays a question to the user, not a pick.
 
-What this file answers: the in-app agent was asked what the magnetics IDS
-of WEST 54924 holds and answered ``bpol_probe (5 occurrences : 0 à 4)`` --
-five, where the case holds **130** `bpol_probe` **elements** (T38), and it
-later drew that many. The number did not come from a tool: it came from the
-system instructions themselves, which carried ``five bpol_probe
-occurrences ([0] to [4])``, and it called the members of an AOS
-*occurrences*, which is not what an occurrence is in this application: an
-**occurrence** is a version of an IDS the case holds
-(``list_idss`` / ``load_ids(occurrence=…)``), while a member of an array
-of structures (``magnetics.bpol_probe[3]``) is an **element** -- one probe,
-and the count of them is what ``search_nodes`` and ``list_quantities``
-answer of the case, never a number the prompt recalls.
+The 2026-11-24 rewrite of the instruction keeps the field rules in their
+own words:
 
-The instruction the in-app agent reads therefore says, in words:
-
-* the two words, kept apart: an occurrence is a version of one IDS the
-  case holds; an element is one member of an array of structures, and it
-  is not an occurrence -- the magnetics bpol-probes stay the standing
-  example, spelled as a member index;
-* a count the agent gives back is a count a tool answered in this
-  conversation, not one the prompt carries -- and no number may sit
-  before ``bpol_probe`` in the prompt (the shape that came in as ``five
-  bpol_probe``);
+* the three words, kept apart: an ``occurrence`` is a version of an IDS
+  (passed to ``load_ids``); ``indices`` is the 0-based index of a tensor
+  dimension or nested array; a ``path`` is a specific member of a
+  structure array;
+* a family member is picked by its OWN path, never by ``indices`` -- the
+  prompt says "never put ``flux_loop`` in ``indices``", the same
+  direction the old prompt spelled with ``magnetics.bpol_probe[3]``;
+* the answer stands on the tools: "only state facts returned by a tool
+  in this session" -- a count or a name the prompt itself carries is the
+  shape the field failure came in as (``five bpol_probe occurrences
+  ([0] to [4])`` in the old prompt, ``bpol_probe (5 occurrences : 0 à 4)``
+  on screen where the case holds 130 elements);
 * a loose ordinal over one array of structures is an ambiguity, not a
-  fact: name the options found and ask which one means, instead of
-  choosing one by feel -- a probe picked at random is a wrong curve
-  presented as the right one.
+  fact: "sonde 2" names the options ``search_nodes`` found and asks the
+  user to choose, instead of picking one by feel.
 
 Pinning the prompt text is the shape the surface contracts use elsewhere
 (``test_116`` pins the tool names, this one pins these words), because
-there is no behaviour to drive without the local model that is being asked
-to change.
+there is no behaviour to drive without the local model that is being
+asked to change.
 """
 
 import re
-
-import pytest
 
 from imasviz.VizAgent.tools import SYSTEM_INSTRUCTIONS
 
@@ -61,53 +50,52 @@ def _text():
     return ' '.join(SYSTEM_INSTRUCTIONS.split()).lower()
 
 
-def test_the_prompt_keeps_occurrence_apart_from_element():
-    """The two words the model mixes are defined, in the direction of the
-    application: an occurrence is the IDS version the case holds; a member
-    of an array of structures is an element, and an element is not an
-    occurrence."""
+def test_the_prompt_keeps_the_three_words_apart():
+    """The three words the model mixes are each defined, in the direction
+    of the application: an occurrence is a version of an IDS passed to
+    load_ids; indices is the 0-based index of a tensor dimension or nested
+    array; a path is a specific member of a structure array."""
     text = _text()
-    assert 'an occurrence is a version of one ids the case holds' in text
-    assert ('an element is one member of an array of structures, '
-            'and it is not an occurrence' in text)
+    assert '`occurrence`: version of an ids (passed to `load_ids`)' in text
+    assert '0-based index of a tensor dimension or nested array' in text
+    assert 'specific member of a structure array' in text
 
 
-def test_the_prompt_keeps_the_standing_example_without_a_count():
-    """The bpol probes of magnetics stay the standing example of the
-    ambiguity -- so a reader meets it in concrete terms -- but the prompt
-    spells one of them as an element index and carries **no** number of
-    them: a count before the name is the shape of the wrong ``five
-    bpol_probe`` that came back as ``5 occurrences`` on screen."""
+def test_a_family_member_is_its_own_path_not_an_index():
+    """The standing direction of the old ``bpol_probe[3]`` example, now
+    spelled on the flux loops: the second member is the other call's PATH
+    (``into_figure_key``), and the family name never sits in
+    ``indices``."""
     text = _text()
-    assert 'bpol_probe' in text
-    assert 'magnetics' in text
-    assert 'magnetics.bpol_probe[3]' in text
-    # No numeral -- digit or small word -- sitting before the name.
-    assert not re.search(r'\b\d+\s+bpol_probe\b', text)
+    assert 'magnetics.flux_loop[2].flux.data' in text
+    assert 'call `plot_one` twice using `into_figure_key`' in text
+    assert 'never put `flux_loop` in `indices`' in text
+    # No number of a family member as a count: an index in brackets is an
+    # index, a word or digit before the name is the count the old prompt
+    # carried ("five bpol_probe"), and that shape is what came back as
+    # "5 occurrences" on screen.
+    assert not re.search(r'\b\d+\s+(bpol_probe|flux_loop)\b', text)
     assert not re.search(
-        r'\b(?:two|three|four|five|six|seven|eight|nine|ten)\s+bpol_probe\b',
-        text)
+        r'\b(?:two|three|four|five|six|seven|eight|nine|ten)\s+'
+        r'(bpol_probe|flux_loop)\b', text)
 
 
-def test_the_prompt_anchors_counts_to_tools():
-    """The counts an answer carries come from the tools of the
-    conversation -- search_nodes names the leaves, list_quantities says how
-    many elements of their array the case holds -- and the prompt says it
-    does not carry a count itself."""
+def test_the_prompt_anchors_every_fact_to_the_tools():
+    """A name, a count or a value an answer carries stands only on a tool
+    call of the session -- the one sentence the rewritten rule keeps of the
+    old count-to-tool anchoring."""
     text = _text()
-    assert 'search_nodes' in text
-    assert 'list_quantities' in text
-    assert 'how many elements of their array the case holds' in text
-    assert 'not one this prompt carries' in text
+    assert 'only state facts returned by a tool in this session' in text
+    assert 'never invent ids names, paths, numbers, figure keys, or file paths' \
+        in text
 
 
-def test_the_prompt_keeps_the_ordinal_guardrail():
-    """The ambiguity stays a question to the user, not a pick: a loose
-    ordinal over one array of structures is named as an ambiguity, and the
-    rule ends asking which one means instead of choosing one by feel."""
+def test_the_prompt_keeps_the_probe_ambiguity_a_question():
+    """The ambiguity stays a question to the user, not a pick: "sonde 2"
+    with several probes standing is named as an ambiguity, and the rule
+    ends asking the user to choose among the exact paths search_nodes
+    found."""
     text = _text()
-    assert 'an ambiguity, not a fact' in text
-    assert 'name the options found and ask which one means' in text
-    assert 'instead of choosing one by feel' in text
-    assert ('a probe picked at random is a wrong curve '
-            'presented as the right one' in text)
+    assert '"sonde 2" when multiple probes exist' in text
+    assert 'list the exact paths found by `search_nodes`' in text
+    assert 'ask the user to choose' in text

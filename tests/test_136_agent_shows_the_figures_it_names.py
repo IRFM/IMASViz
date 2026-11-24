@@ -1,4 +1,4 @@
-# Copyright holders: Commissariat à l'Energie Atomique et aux Energies
+# Copyright holders : Commissariat à l'Energie Atomique et aux Energies
 # Alternatives (CEA), France; and Laboratory for Engineering Design - LECAD,
 # University of Ljubljana, Slovenia
 # CEA and LECAD authorize the use of the METIS software under the CeCILL-C
@@ -23,14 +23,15 @@ not one -- the figure is in the *Windows* menu, and the raise and the
 size are the user's own gestures there.
 
 So the guard stands as it is now: the instruction the model reads
-(``SYSTEM_INSTRUCTIONS``) and the tool description it calls on the
+(``SYSTEM_INSTRUCTIONS``, rewritten on 2026-11-24 with the WINDOWS &
+FOCUS rule in its own words) and the tool description it calls on the
 strength of the instruction (``focus_window``) both say the show is
-the user's command, keep the size the window holds, and refuse the
-standing-show vocabulary -- and this file keeps a revert honest the
-way the other surface contracts do (``test_120`` pins the
-probe-ambiguity words, ``test_125`` the unified schema). There is no
-behaviour to drive without the local model that is being asked to
-change, and the guard is what keeps the direction.
+the user's command, and refuse the standing-show vocabulary -- and this
+file keeps a revert honest the way the other surface contracts do
+(``test_120`` pins the occurrence/index/path words, ``test_125`` the
+unified schema). There is no behaviour to drive without the local
+model that is being asked to change, and the guard is what keeps the
+direction.
 """
 
 from imasviz.VizAgent.tools import SYSTEM_INSTRUCTIONS, TOOLS
@@ -53,23 +54,20 @@ def _focus_description():
 
 
 def test_showing_is_the_users_command_in_the_instruction():
-    """The direction the user calls: a show is the user's own command, a
-    draw is not one, and neither a draw nor a mention in the answer is a
-    reason to raise or size a window -- a window the user sized stays
-    the size it was given."""
+    """The direction the user calls: a show is the user's own command
+    ("ramène Plot1 devant"), and a draw or a mention in the answer is not
+    a reason to raise or size a window -- the instruction says neither
+    focus_window nor show_window is called automatically after a plot, and
+    only when the user explicitly asks to bring a window to the front."""
     text = _text()
-    assert 'showing a figure is the user\'s command' in text, \
-        'the instruction no longer says a show is the user\'s command'
-    assert 'a draw is not one' in text, \
-        'the instruction lost the "a draw is not one" refusal: a draw ' \
-        'is the show again'
-    assert 'call neither of them because a figure was drawn ' \
-           'or because your answer names one' in text, \
-        'the instruction lets the model focus a figure it drew or named: ' \
-        'the standing show is back'
-    assert 'a window they sized stays the size it was given' in text, \
-        'the instruction lost the size keep: a window the user sized ' \
-        'is resized by the model again'
+    assert 'do not call `focus_window` or `show_window` ' \
+           'automatically after plotting' in text, \
+        'the instruction no longer refuses the automatic show after a ' \
+        'plot: a draw is the show again'
+    assert 'only call them if the user explicitly asks ' \
+           'to bring a window to the front' in text, \
+        'the instruction lost the one legitimation: the explicit ask of ' \
+        'the user'
 
 
 def test_the_standing_show_vocabulary_is_gone():
@@ -89,25 +87,8 @@ def test_the_standing_show_vocabulary_is_gone():
     assert 'a figure you moved is a figure that stands' not in text, \
         'the item-9 rule is back: a figure the gesture moved must be ' \
         'focused again'
-
-
-def test_item9_a_gesture_is_not_an_ask_to_show():
-    """The tail of item 9: a gesture of the curve section moves what the
-    figure shows without redrawing it, and it is not an ask to show
-    anything -- the window keeps the place and the size the user gave
-    it."""
-    text = _text()
-    assert 'a gesture of this section changes what the figure shows ' \
-           'without redrawing it' in text, \
-        'the item-9 rule is missing: moving a curve is not work on a ' \
-        'figure'
-    assert 'it is not an ask to show anything' in text, \
-        'the item-9 refusal is missing: a gesture moved the figure and ' \
-        'the model shows it again'
-    assert 'the window keeps the place and the size the user gave it' \
-        in text, \
-        'the item-9 keep is missing: the place and the size the user ' \
-        'gave the window move again'
+    assert 'it is not an ask to show anything' not in text, \
+        'the item-9 refusal is back in the instruction'
 
 
 def test_focus_window_reads_itself_as_the_users_command():

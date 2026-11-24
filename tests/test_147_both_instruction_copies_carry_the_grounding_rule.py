@@ -20,22 +20,16 @@ working method: the in-app agent is policed by the loop's guards as well,
 but the external one is policed by the prompt alone -- a copy that loses
 the rule is a surface that claims without being checked.
 
-The rule the field failure needed, spelled so both copies can share it:
-
-* the state of a figure is what the calls of the exchange made, and a
-  read it answered -- not what was said of it; a curve said added, a
-  transform said applied, an axis said moved stands only if the call
-  that did it succeeded naming that figure, or a read of the figure
-  (``curve_stats``, ``export_curve``) answered that state;
-* a refused call changed nothing: the answer is the refusal it named,
-  with the reason it gave -- not the state it would have left;
-* a call that did not run, or had not returned when the answer was
-  given, is not a success: read the figure with ``curve_stats`` before
-  saying what it holds, or say it stands as you found it.
-
-The test pins the shared sentences in both copies: edit one and forget
-the other, and this file is the one that says so -- the same shape
-``test_120`` gives the words it pins.
+The 2026-11-24 rewrite dropped the shared sentence for sentence and
+spelled the rule in the in-app copy's own words -- NO HALLUCINATION
+(only the facts a tool returned in this session), NO FAKE ACTIONS
+(no plotted curve, written report or saved note unless the tool
+returned ``error: null`` in this turn) and the refusal reported with
+its exact reason -- so this file pins each copy in the words IT
+carries: the in-app rule in its strict-form words, the MCP rule in the
+shared sentences it still carries. What must never leave either copy
+is the direction: a claim of work stands only on the call that made
+it, a refusal is reported with its reason, and nothing is invented.
 """
 
 from imasviz.VizAgent.tools import SYSTEM_INSTRUCTIONS
@@ -49,40 +43,58 @@ def _text(instructions):
     return ' '.join(instructions.split()).lower()
 
 
-# The sentences both copies must carry, byte for byte: this is what makes
-# one an edit of the other.
-SHARED_RULE = (
-    'a curve you say was added, a transform you say was applied, '
-    'an axis you say moved',
-    'stands only if the call that did it succeeded naming that figure',
-    'or a read of the figure (curve_stats, export_curve) '
-    'answered that state',
-    'a refused call changed nothing',
-    'the answer is the refusal it named, with the reason it gave',
-    'not the state it would have left',
-    'a call that did not run, or that had not returned '
-    'when you answered, is not a success',
-    'read the figure with curve_stats before saying what it holds',
-    'or say it stands as you found it',
-)
+def test_the_in_app_copy_carries_the_grounding_rule():
+    """The in-app copy, in its own strict words: nothing invented, only the
+    facts a tool returned in this session; no action said done unless the
+    tool returned without an error; a refusal reported with its exact
+    reason."""
+    text = _text(SYSTEM_INSTRUCTIONS)
+    assert 'never invent ids names, paths, numbers, ' \
+           'figure keys, or file paths' in text, \
+        'the in-app copy lost the no-invention rule'
+    assert 'only state facts returned by a tool in this session' in text, \
+        'the in-app copy lost the grounding of every fact on a tool call'
+    assert 'never say you plotted a curve, wrote a report, or saved a note' \
+        in text, \
+        'the in-app copy lost the no-fake-actions rule'
+    assert ('unless the corresponding tool returned `error: null` '
+            'in this turn' in text), \
+        'the in-app copy lost the one legitimation of a claim: ' \
+        'the call that returned without an error'
+    assert 'report the exact refusal reason' in text, \
+        'the in-app copy lost the refusal-with-reason rule'
 
 
-def test_both_copies_carry_the_grounding_rule():
-    """Every shared sentence of the rule stands in both copies: an in-app
-    agent that reads the rule and an MCP client that does not (or the
-    reverse) is the drift the field failure is made of."""
-    texts = [_text(SYSTEM_INSTRUCTIONS), _text(INSTRUCTIONS)]
-    for text in texts:
-        for phrase in SHARED_RULE:
-            assert phrase in text, \
-                'missing from one copy: %r' % phrase
+def test_the_mcp_copy_carries_the_grounding_rule():
+    """The MCP copy, in the shared sentences it still carries: the state of
+    a figure is what the calls made and the reads answered -- not what
+    was said of it; a refused call changed nothing, and the answer is
+    the refusal with its reason; a call that had not returned is not
+    a success."""
+    text = _text(INSTRUCTIONS)
+    assert 'a curve you say was added, a transform you say was applied, ' \
+           'an axis you say moved' in text, \
+        'the mcp copy lost the work-claim rule'
+    assert 'stands only if the call that did it succeeded naming that figure' \
+        in text, \
+        'the mcp copy lost the grounding of a claim on the call'
+    assert 'a refused call changed nothing' in text, \
+        'the mcp copy lost the refused-call rule'
+    assert 'the answer is the refusal it named, with the reason it gave' \
+        in text, \
+        'the mcp copy lost the refusal-with-reason rule'
+    assert ('a call that did not run, or that had not returned '
+            'when you answered, is not a success' in text), \
+        'the mcp copy lost the not-returned-is-not-a-success rule'
 
 
-def test_the_in_app_rule_speaks_of_the_exchange():
-    """The in-app copy says *this exchange* -- one ask, one re-anchor
-    budget -- where the MCP copy says *this session*, because the one it
-    polices owns the history across the calls of a conversation. The two
-    words apart is the point, and it is the one thing the shared sentences
-    above cannot carry."""
-    assert 'the calls of this exchange made' in _text(SYSTEM_INSTRUCTIONS)
-    assert 'the calls of this session made' in _text(INSTRUCTIONS)
+def test_the_refusal_is_an_answer_in_both_copies():
+    """The one rule both copies must keep in whatever words they carry:
+    a refusal is not a failure, it is an answer with the reason the
+    application names -- the in-app copy says "report the exact refusal
+    reason", the MCP copy says the refusal IS an answer with the
+    reason."""
+    in_app = _text(SYSTEM_INSTRUCTIONS)
+    mcp = _text(INSTRUCTIONS)
+    assert 'report the exact refusal reason' in in_app
+    assert 'it is an answer, with the reason' in mcp
