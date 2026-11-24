@@ -254,6 +254,13 @@ class AgentLoop(QObject):
         tools_arg = None if tools_mode == 'off' else TOOLS
         messages = [{'role': 'system', 'content': system}]
         messages += list(self.history)
+        # The first message the loop adds itself: everything from here on
+        # is the turn, and the acceptance extends `self.history` with it --
+        # the tool traffic included. A history that cannot see the calls
+        # its own last turn made is the amnesia a follow-up confabulation
+        # stands on: the model reads its last answer and answers on that
+        # momentum, with no record that it had tools and used them.
+        turn_index = len(messages)
         messages.append({'role': 'user', 'content': user_prompt})
 
         # A final answer that names case identifiers on the strength of no
@@ -289,6 +296,12 @@ class AgentLoop(QObject):
         # the figure's existence, which this one does not.
         acted_on = set()
         read_from = set()
+        # The re-anchor messages the loop appends to pull a refused answer
+        # back on to the request, tracked by object identity: the
+        # acceptance keeps the turn in `self.history` without them -- a
+        # re-anchor is a loop-internal nudge, not a line of the
+        # conversation the next ask should read back.
+        anchor_ids = set()
 
         for turn in range(max_turns):
             if self._stop_requested:
@@ -343,8 +356,13 @@ class AgentLoop(QObject):
             # --- Tool calls -------------------------------------------------
             if response.tool_calls:
                 called_a_tool = True
+                # The step text the model wrote beside the call (the
+                # reasoning models say "I'll first check the available
+                # IDSs" on the same turn they call) is part of the
+                # exchange: dropping it cut the thread between the call
+                # and the result the model is about to read.
                 messages.append({
-                    'role': 'assistant', 'content': None,
+                    'role': 'assistant', 'content': response.content or None,
                     'tool_calls': [{'id': 'call_%d' % i,
                                     'type': 'function',
                                     'function': {
@@ -446,10 +464,10 @@ class AgentLoop(QObject):
                 if fab_refusal is not None and self._reanchors == 0:
                     self._reanchors += 1
                     self._emit('REFUSAL: %s' % fab_refusal)
-                    messages.append({
-                        'role': 'user',
-                        'content': self._artifactReanchor(user_prompt),
-                    })
+                    anchor = {'role': 'user',
+                              'content': self._artifactReanchor(user_prompt)}
+                    anchor_ids.add(id(anchor))
+                    messages.append(anchor)
                     continue
                 if fab_refusal is not None:
                     self._emit('REFUSAL: %s' % fab_refusal)
@@ -468,10 +486,10 @@ class AgentLoop(QObject):
                 if note_refusal is not None and self._reanchors == 0:
                     self._reanchors += 1
                     self._emit('REFUSAL: %s' % note_refusal)
-                    messages.append({
-                        'role': 'user',
-                        'content': self._noteReanchor(user_prompt),
-                    })
+                    anchor = {'role': 'user',
+                              'content': self._noteReanchor(user_prompt)}
+                    anchor_ids.add(id(anchor))
+                    messages.append(anchor)
                     continue
                 if note_refusal is not None:
                     self._emit('REFUSAL: %s' % note_refusal)
@@ -500,10 +518,10 @@ class AgentLoop(QObject):
                     # shape still falls to the named refusal below.
                     self._reanchors += 1
                     self._emit('REFUSAL: %s' % refusal)
-                    messages.append({
-                        'role': 'user',
-                        'content': self._groundReanchor(user_prompt),
-                    })
+                    anchor = {'role': 'user',
+                              'content': self._groundReanchor(user_prompt)}
+                    anchor_ids.add(id(anchor))
+                    messages.append(anchor)
                     continue
             else:
                 # The tools ran. An answer that says none of it happened and
@@ -520,10 +538,11 @@ class AgentLoop(QObject):
                     # back one turn instead of abandoning the work.
                     self._reanchors += 1
                     self._emit('REFUSAL: %s' % refusal)
-                    messages.append({
-                        'role': 'user',
-                        'content': self._reanchor(user_prompt, last_action),
-                    })
+                    anchor = {'role': 'user',
+                              'content': self._reanchor(
+                                  user_prompt, last_action)}
+                    anchor_ids.add(id(anchor))
+                    messages.append(anchor)
                     continue
             # The claim of work on a figure that **stands**: the guards
             # above passed it -- the key exists, and the answer does not
@@ -543,10 +562,10 @@ class AgentLoop(QObject):
                 if work_refusal is not None and self._reanchors == 0:
                     self._reanchors += 1
                     self._emit('REFUSAL: %s' % work_refusal)
-                    messages.append({
-                        'role': 'user',
-                        'content': self._workReanchor(user_prompt),
-                    })
+                    anchor = {'role': 'user',
+                              'content': self._workReanchor(user_prompt)}
+                    anchor_ids.add(id(anchor))
+                    messages.append(anchor)
                     continue
                 if work_refusal is not None:
                     self._emit('REFUSAL: %s' % work_refusal)
@@ -560,7 +579,14 @@ class AgentLoop(QObject):
                 self._emit('REFUSAL: %s' % refusal)
                 self.askFinished.emit(refusal)
                 return
-            self.history.append({'role': 'user', 'content': user_prompt})
+            # The whole turn stands in the history -- the user's ask, the
+            # assistant's tool calls with their step text, the tool
+            # results -- not just the ask and the final line: a follow-up
+            # that cannot see the calls its own last turn made cannot
+            # ground on them, and the re-anchors the loop threw in between
+            # are loop-internal, not conversation, so they stay out.
+            self.history.extend(
+                m for m in messages[turn_index:] if id(m) not in anchor_ids)
             self.history.append({
                 'role': 'assistant', 'content': response.content,
             })
@@ -666,13 +692,19 @@ class AgentLoop(QObject):
 
     def _reanchor(self, user_prompt, last_action):
         """The one message the loop appends to pull an answer back on to the
-        request it was given and the work it produced, after a deflection."""
+        request it was given and the work it produced, after a deflection.
+
+        Every re-anchor in this file wears the same shape: the
+        ``[SYSTEM FEEDBACK]`` prefix -- the loop is speaking, not the user
+        (a mid-turn ``system`` role is not one the ChatML template of the
+        model in use admits, so the prefix is what marks the voice) -- and
+        the bare minimum: the refusal the guard named, the work it owes,
+        the request it was given. Nothing else for the model to read."""
         return (
-            'You already ran the tools for this request: the last one was '
-            '"%s". The request was: "%s". Give your final answer now, '
-            'grounded in what those tools returned. Do not ask the user to '
-            'restate the request, and do not say nothing was done when it '
-            'was.' % (last_action, user_prompt))
+            '[SYSTEM FEEDBACK] The tools already ran for this request '
+            '(last: "%s"). Answer now from what they returned; do not '
+            'ask the user to restate. Request: "%s".'
+            % (last_action, user_prompt))
 
     def _groundReanchor(self, user_prompt):
         """The one message the loop appends when an answer presented a list,
@@ -686,16 +718,11 @@ class AgentLoop(QObject):
         the named refusal below finally turns away.
         """
         return (
-            'Your last answer presented a list, a figure, or a table of '
-            'values, but this request called no tool to ground any of it. '
-            'A figure or number you recite is not the truth of this '
-            'session, and answering again in the same shape will be '
-            'refused. Do the work instead: read the arrays with '
-            'get_signal(uri, path, ...) and, where a curve is owed, draw '
-            'it with plot_one(uri, path, ...) -- piling further slices of '
-            'the same quantity onto one figure with into_figure_key -- and '
-            'answer only from what those calls return. '
-            'The request was: "%s".' % user_prompt)
+            '[SYSTEM FEEDBACK] That answer named lists, figures, or '
+            'values this request never read. Do the work: read the arrays '
+            'with get_signal(uri, path, ...) and draw the owed curves '
+            'with plot_one(uri, path, ...), and answer only from what '
+            'those calls return. Request: "%s".' % user_prompt)
 
     def _heldFigureKeys(self):
         """The figure keys the session holds now, through the
@@ -766,16 +793,13 @@ class AgentLoop(QObject):
         do the work, and answer from the calls, not from the claim.
         """
         return (
-            'Your answer named a figure or a report that this '
-            'request did not produce: the figure is not in the '
-            'session and no report call succeeded. A figure that '
-            'does not stand and a report that was never written '
-            'are not what the user asked for. Do the work: draw '
-            'the figure with plot_one(uri, path, ...) and write '
-            'the report with plot_report(figure_key), '
-            'case_report(uri) or case_ids_report(uri) -- and '
-            'answer only from what those calls return. The '
-            'request was: "%s".' % user_prompt)
+            '[SYSTEM FEEDBACK] That figure or report does not stand: '
+            'no call of this request produced it. Do the work -- '
+            'plot_one(uri, path, ...) for the figure, or '
+            'plot_report(figure_key) / case_report(uri) / '
+            'case_ids_report(uri) for the report -- and answer '
+            'only from what those calls return. Request: "%s".'
+            % user_prompt)
 
     def _unperformedWorkRefusal(self, content, acted_on, read_from,
                                 closed_figures):
@@ -823,16 +847,12 @@ class AgentLoop(QObject):
         calls.
         """
         return (
-            'Your answer claimed work on a figure that no call of this '
-            'request performed and no read of the figure verified. '
-            'An add the tools did not draw, a transform they did not '
-            'apply, a state they did not read back: none of it is a '
-            'fact of this session. Do the work -- plot_one(uri, path, '
-            '...) with into_figure_key to add the curve, the curve '
-            'transforms for a scale or a shift, the axis tools for a '
-            'range or a log -- or read the figure back with '
-            'curve_stats(figure_key) and answer only from what those '
-            'calls return. The request was: "%s".' % user_prompt)
+            '[SYSTEM FEEDBACK] That work on the figure did not run, '
+            'and no read verified it. Do it -- plot_one(uri, path, '
+            '...) with into_figure_key, the curve transforms, the axis '
+            'tools -- or read it back with curve_stats(figure_key), '
+            'and answer only from what those calls return. '
+            'Request: "%s".' % user_prompt)
 
     def _unmadeNoteRefusal(self, content, journals_written):
         """A journal line claimed but not written this request, refused
@@ -875,15 +895,11 @@ class AgentLoop(QObject):
         write it or edit it, then answer from the call.
         """
         return (
-            'Your answer said a note was added or edited, but this '
-            'request called no journal gesture: the line is not in the '
-            'journal, and saying so is not the same as writing it. Do '
-            'the work -- add_note(scope, text, author=..., ...) for a '
-            'new line, edit_note(scope, note_id, ...) to change one -- '
-            'and answer only from what that call returns. If the user '
-            'asked for the shared journal, scope=\'shared\'; otherwise '
-            'it is the personal one. The request was: "%s".'
-            % user_prompt)
+            '[SYSTEM FEEDBACK] That line is not in the journal: no '
+            'call of this request wrote it. Write it -- add_note('
+            'scope, text, ...) or edit_note(scope, note_id, ...) -- '
+            'and answer only from what that call returns. '
+            'Request: "%s".' % user_prompt)
 
     def _destructiveRefusal(self, name, user_prompt):
         """The named refusal a destructive gesture receives on a request
