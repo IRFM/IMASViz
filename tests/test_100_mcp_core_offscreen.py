@@ -502,6 +502,12 @@ def test_a_call_naming_no_ids_root_is_answered_from_the_case(core):
     assert answer['ran']['ids'] == IDS_NAME, answer['ran']
     new = set(session.api.figureframes) - before
     assert len(new) == 1, 'the resolved entry drew %s' % sorted(new)
+    # The entry names the window it opened. `windows` answers the whole
+    # screen, which names nothing this call did -- and the agent's work
+    # guard reads the keys a call named, so an entry naming none of them
+    # leaves the turn to be re-anchored into drawing the same window a
+    # second time.
+    assert answer['drawn'] == sorted(new), answer['drawn']
 
 
 def test_an_entry_several_branches_earn_names_the_choice(core):
@@ -532,6 +538,7 @@ def test_entry_1_draws_the_instant_it_was_handed_and_asks_nothing(core,
     assert answer['ran']['time'] == 40.0, answer['ran']
     new = set(session.api.figureframes) - before
     assert new, 'the entry drew no window'
+    assert answer['drawn'] == sorted(new), answer['drawn']
     frame = session.api.figureframes[next(iter(new))]
     assert frame.pluginWindow.time == 40.0, \
         'the window does not carry the instant it was drawn on'

@@ -545,7 +545,10 @@ TOOLS = [
         'each answers the nearest slice the case holds, named back '
         '(time_requested vs time_slice_time). Use it when the user asks '
         'to compare the equilibrium at several instants, or to trace the '
-        'flux surfaces (surfaces de flux).',
+        'flux surfaces (surfaces de flux). It is what the '
+        '`equilibriumsurfaces` plugin entry 0 answers with: asking that '
+        'entry through `run_plugin` AND this tool opens two windows of '
+        'the same row, so ask one.',
         {'type': 'object', 'properties': {
             'uri': {'type': 'string'},
             'times': {'type': 'array', 'items': {'type': 'number'},
@@ -564,7 +567,9 @@ TOOLS = [
         'in seconds; it answers the nearest slice the case holds, named '
         'back as time_slice_time. Use it when the user names one instant '
         'of the equilibrium ("l\'équilibre à 44 s", "q et pression à '
-        'cet instant").',
+        'cet instant"). It is what the `equilibriumsurfaces` plugin entry '
+        '1 answers with: asking that entry through `run_plugin` AND this '
+        'tool opens two windows of the same instant, so ask one.',
         {'type': 'object', 'properties': {
             'uri': {'type': 'string'},
             'time': {'type': 'number',
@@ -1152,7 +1157,13 @@ TOOLS = [
         'name, not left to open a dialog. `ids_name` says which IDS branch the '
         'line is asked on; left out, the branch is resolved from the case, and '
         'several branches earning that entry is refused with them named. '
-        'Refused by name when the case does not offer that entry.',
+        'Refused by name when the case does not offer that entry. '
+        'The entry draws its own window: `drawn` names the ones it opened. '
+        'Ask it ONCE -- a second call opens another window of the same thing, '
+        'and so does asking the tool that entry answers with: the two '
+        '`equilibriumsurfaces` entries ARE `equilibrium_surfaces` (entry 0) '
+        'and `equilibrium_at_time` (entry 1), as the profiles entry is the '
+        'table and curve draws.',
         {'type': 'object', 'properties': {
             'uri': {'type': 'string'},
             'plugin': {'type': 'string'},

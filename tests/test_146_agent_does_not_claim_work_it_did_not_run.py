@@ -40,7 +40,7 @@ do the work or read it, refused again on a second ungrounded claim.
 import pytest
 
 from imasviz.VizAgent.agent import (
-    AgentLoop, unperformedWorkOn)
+    AgentLoop, _groundedFigureKeys, unperformedWorkOn)
 from imasviz.VizAgent.llm_client import LLMResponse
 
 from test_110_agent_loop import FakeDispatcher
@@ -60,8 +60,26 @@ class Core:
         self.refuse_scale = False
 
     def list_windows(self):
-        return [{'kind': 'Plot', 'label': 'Plot %s' % k[4:], 'key': k,
+        return [{'kind': 'Plot', 'label': k, 'key': k,
                  'visible': True, 'cases': []} for k in sorted(self._open)]
+
+    def run_plugin(self, uri=None, plugin=None, entry=None, **kwargs):
+        """One entry of a plugin, drawing a window of its own.
+
+        It answers `drawn` with the windows the entry registered and
+        `windows` with the whole screen: the first is what this request
+        drew, the second is what stands now. The guard reads the first --
+        a claim grounded on every open window would ground anything.
+        """
+        self.calls.append('run_plugin')
+        number = max([int(k[len('EquiSurfaces:'):])
+                      for k in self._open
+                      if k.startswith('EquiSurfaces:')] or [0]) + 1
+        key = 'EquiSurfaces:%d' % number
+        self._open.add(key)
+        return {'ran': {'plugin': plugin, 'entry': entry},
+                'drawn': [key],
+                'windows': self.list_windows()}
 
     def plot_one(self, uri=None, path=None, into_figure_key=None, **kwargs):
         self.calls.append('plot_one')
@@ -284,6 +302,53 @@ def test_a_self_correction_stands(qapp):
     assert 'REFUSAL' not in ' '.join(out['lines'])
 
 
+def test_a_window_a_plugin_entry_drew_grounds_the_draw_claimed_on_it(qapp):
+    """The user asked for the plugin, the entry ran, and the answer says the
+    surfaces are traced in the window it opened. That is the truth of the
+    turn, and until now it was refused: a plugin entry named no window it
+    drew, so the guard had seen no work on `EquiSurfaces:1` -- and its
+    re-anchor, "do the work: draw it", is what sent the model to
+    `equilibrium_surfaces`. The second, identical window the user reported
+    is that re-anchor arriving on the screen. The entry answers the keys it
+    opened as `drawn`, and the claim stands on them."""
+    core = Core()
+    out = runTurn(core, [
+        LLMResponse(tool_calls=[
+            {'name': 'run_plugin',
+             'args': {'uri': 'imas:hdf5?path=x',
+                      'plugin': 'equilibriumsurfaces', 'entry': 0}}],
+            content=''),
+        LLMResponse(content='J\'ai tracé les surfaces de flux sur '
+                            'EquiSurfaces:1.',
+                    tool_calls=None, finish_reason='stop'),
+    ], 'appelle le plugin equilibriumsurfaces')
+    assert out['finished'] == [None]
+    assert 'REFUSAL' not in ' '.join(out['lines'])
+    assert core.calls == ['run_plugin'], \
+        'the claim must not earn a second draw of the same window'
+
+
+def test_a_plugin_entry_grounds_nothing_on_a_window_it_did_not_draw(qapp):
+    """Non-vacuity of the answer above. `run_plugin` reports the whole
+    screen as `windows` and only its own openings as `drawn`; reading the
+    first would ground a claim on a figure that already stood. Plot1 stood
+    before the entry ran, and a draw claimed on it has nothing behind it."""
+    core = Core()
+    core._open = {'Plot1'}
+    claim = 'J\'ai tracé la pression sur Plot1.'
+    out = runTurn(core, [
+        LLMResponse(tool_calls=[
+            {'name': 'run_plugin',
+             'args': {'uri': 'imas:hdf5?path=x',
+                      'plugin': 'equilibriumsurfaces', 'entry': 0}}],
+            content=''),
+        LLMResponse(content=claim, tool_calls=None, finish_reason='stop'),
+        LLMResponse(content=claim, tool_calls=None, finish_reason='stop'),
+    ], 'trace la pression sur Plot1')
+    assert out['finished'][0] is not None
+    assert 'Plot1' in out['finished'][0], 'the refusal names the figure'
+
+
 # ------------------------------------------------------------ the detector
 
 def test_unperformedWorkOn_a_claims_shape():
@@ -322,3 +387,24 @@ def test_unperformedWorkOn_the_axis_shapes():
                              set()) == set()
     assert unperformedWorkOn('I set the y axis of Plot4 to log scale',
                              set()) == {'Plot4'}
+
+
+def test_unperformedWorkOn_the_entry_answers_the_window_it_drew():
+    """The reading of a plugin answer, both halves.
+
+    `drawn` is what the entry registered, `windows` is every window of the
+    session. Only the first grounds a claim: measuring on the real answer
+    of `run_plugin`, the key it drew stands and a key that merely stands
+    beside it is still an unperformed claim.
+    """
+    entry = {'ran': {'plugin': 'equilibriumsurfaces', 'entry': 0,
+                     'ids': 'equilibrium', 'occurrence': 0, 'time': None},
+             'drawn': ['EquiSurfaces:1'],
+             'windows': [{'key': 'EquiSurfaces:1'}, {'key': 'Plot1'}]}
+    ground = _groundedFigureKeys({'uri': 'imas:hdf5?path=x', 'plugin':
+                                  'equilibriumsurfaces', 'entry': 0}, entry)
+    assert ground == {'EquiSurfaces:1'}, ground
+    assert unperformedWorkOn('j\'ai tracé les surfaces de flux sur '
+                             'EquiSurfaces:1', ground) == set()
+    assert unperformedWorkOn('j\'ai tracé la pression sur Plot1',
+                             ground) == {'Plot1'}

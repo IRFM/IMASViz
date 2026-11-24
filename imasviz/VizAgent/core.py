@@ -3307,6 +3307,10 @@ class McpGuiCore:
         resolved by searching the case for the roots that earn that entry: one
         match is used, several or none is refused with them named. The first root
         of the case is not the one a plugin scoped to `equilibrium` lives on.
+
+        `drawn` names the windows the entry registered -- the ones this call
+        opened, not the whole screen -- so a claim about that window stands on
+        the call that drew it.
         """
         from imasviz.VizPlugins.VizPlugin import QVizPluginAnswers
 
@@ -3330,6 +3334,16 @@ class McpGuiCore:
                     % (uri, entry, plugin, ids_name))
         answers = QVizPluginAnswers(occurrence=occurrence, figureKey=None,
                                     time=time)
+        # What the entry drew, as its own answer. `windows` answers every
+        # window of the session: that is the screen, and it names nothing
+        # this call did. The loop grounds a claim of work on the keys a call
+        # named, and a plugin entry named none of them in the fields it reads
+        # (`figure` / `window` / `figures`). So the turn that ran `run_plugin`
+        # and answered « j'ai tracé les surfaces sur EquiSurfaces:1 » was
+        # refused by the work guard and re-anchored with "do the work: draw
+        # it" -- and the model drew it a second time. That is the duplicate
+        # window this reports.
+        before = set(self.api.figureframes)
         refusal = catalog.run(chosen, answers=answers)
         if refusal is not None:
             # The plugin wrote its reason in the log of the case, where nobody
@@ -3338,6 +3352,7 @@ class McpGuiCore:
             raise ValueError(refusal)
         return {'ran': {'plugin': plugin, 'entry': entry, 'ids': ids_name,
                         'occurrence': occurrence, 'time': time},
+                'drawn': sorted(set(self.api.figureframes) - before),
                 'windows': self.list_windows()}
 
     # --------------------------------------------------------------- session

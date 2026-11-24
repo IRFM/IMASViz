@@ -238,7 +238,12 @@ the same descriptions. The tools, in the order the faces group them:
        with them named rather than settled on the first branch of the tree. An
        entry that refuses is a refusal for the loop, not an answer saying it ran:
        the plugin's own words come back, and a window that was not drawn is not
-       reported.
+       reported. What the entry did open comes back under its own key
+       (``drawn``), apart from the windows that already stood -- a claim about
+       that window stands on the entry that drew it. One call per window: an
+       entry asked twice opens a second one, and so does asking the entry and
+       the tool it answers with, since ``equilibriumsurfaces`` entry 0 *is*
+       ``equilibrium_surfaces`` and entry 1 *is* ``equilibrium_at_time``.
    * - sessions and configurations
      - ``save_session``, ``restore_session``, ``new_session``,
        ``list_sessions``, ``list_configurations``,
