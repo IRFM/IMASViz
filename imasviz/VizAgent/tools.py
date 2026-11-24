@@ -546,9 +546,9 @@ TOOLS = [
         '(time_requested vs time_slice_time). Use it when the user asks '
         'to compare the equilibrium at several instants, or to trace the '
         'flux surfaces (surfaces de flux). It is what the '
-        '`equilibriumsurfaces` plugin entry 0 answers with: asking that '
-        'entry through `run_plugin` AND this tool opens two windows of '
-        'the same row, so ask one.',
+        '`equilibriumsurfaces` plugin entry 0 answers with: this tool opens '
+        'a window of its own every time, so asking it AND that entry leaves '
+        'two windows of the same row. Ask one.',
         {'type': 'object', 'properties': {
             'uri': {'type': 'string'},
             'times': {'type': 'array', 'items': {'type': 'number'},
@@ -1158,12 +1158,14 @@ TOOLS = [
         'line is asked on; left out, the branch is resolved from the case, and '
         'several branches earning that entry is refused with them named. '
         'Refused by name when the case does not offer that entry. '
-        'The entry draws its own window: `drawn` names the ones it opened. '
-        'Ask it ONCE -- a second call opens another window of the same thing, '
-        'and so does asking the tool that entry answers with: the two '
+        'The entry draws its own window: `drawn` names the ones it opened or '
+        'redrew and `reused` the one it drew again. Asking the same entry '
+        'again with the same answers draws into the window that already '
+        'stands instead of opening another over it. What does double is '
+        'asking the entry AND the tool that entry answers with: the two '
         '`equilibriumsurfaces` entries ARE `equilibrium_surfaces` (entry 0) '
         'and `equilibrium_at_time` (entry 1), as the profiles entry is the '
-        'table and curve draws.',
+        'table and curve draws. Ask one per window.',
         {'type': 'object', 'properties': {
             'uri': {'type': 'string'},
             'plugin': {'type': 'string'},

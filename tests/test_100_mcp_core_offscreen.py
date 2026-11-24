@@ -510,6 +510,72 @@ def test_a_call_naming_no_ids_root_is_answered_from_the_case(core):
     assert answer['drawn'] == sorted(new), answer['drawn']
 
 
+def test_an_entry_asked_again_draws_into_the_window_that_stands(core):
+    """The report: one line of the transcript, two windows on the screen.
+
+    Measured on the reference case: a second `run_plugin` of
+    `equilibriumsurfaces` entry 0 registered a second `EquiSurfaces:` key and
+    embedded a second copy of the same three instants. One call of the agent
+    after a session had put that window back was therefore enough to leave two
+    identical windows, with one gesture in the transcript. The window an entry
+    drew carries that entry's stamp, so the second call is drawn *into* it: one
+    key, one row of frames, and the curves of that row not doubled.
+
+    The window that stands here was opened by the id before this one -- that is
+    the state a session leaves, and the reason the first call below is already
+    a repeat of an entry whose window is on the screen.
+    """
+    session, _home = core
+    first = session.run_plugin(CASE_URI, 'equilibriumsurfaces', 0)
+    key = first['drawn'][0]
+    frame = session.api.figureframes[key]
+    standing = sorted(k for k in session.api.figureframes
+                      if k.startswith('EquiSurfaces:'))
+    row, curves = frame.surfaceFrames(), frame.curveCount()
+    assert row == 3 and curves > 0, 'the entry drew no row to redraw'
+
+    second = session.run_plugin(CASE_URI, 'equilibriumsurfaces', 0)
+    assert second['reused'] == key, second
+    # The redraw is work this call did, so it names the window it drew again:
+    # the agent's work guard reads these keys, and a claim about a window it
+    # does not name is refused.
+    assert second['drawn'] == [key], second
+    assert sorted(k for k in session.api.figureframes
+                  if k.startswith('EquiSurfaces:')) == standing, \
+        'the second call opened a window of its own'
+    assert session.api.figureframes[key] is frame
+    assert frame.surfaceFrames() == row, 'the row was laid under the first one'
+    assert frame.curveCount() == curves, 'the curves of the row were doubled'
+
+
+def test_a_panel_asked_again_from_a_tool_call_is_the_panel_that_stands(core):
+    """The Profiles half of the same rule, and a window taken off the screen.
+
+    The entry answers a second *click* by bringing the standing panel forward;
+    through a tool call it built a second panel of one IDS, with its own tabs
+    and its own occurrence choice for one answer. And the window found by the
+    stamp may be one the user had hidden -- a hidden window keeps its key -- so
+    drawing it again puts it back where it was.
+    """
+    session, _home = core
+    first = session.run_plugin(CASE_URI, 'VizProfiles_plugin', 0,
+                               occurrence=0, ids_name=IDS_NAME)
+    key = first['drawn'][0]
+    panel = session.api.figureframes[key]
+
+    assert session.hide_window(key)['visible'] is False
+    second = session.run_plugin(CASE_URI, 'VizProfiles_plugin', 0,
+                                occurrence=0, ids_name=IDS_NAME)
+    assert second['reused'] == key, second
+    assert second['drawn'] == [key], second
+    panels = sorted(k for k, frame in session.api.figureframes.items()
+                    if type(frame).__name__ == 'QVizProfilePanel')
+    assert panels == [key], 'one IDS, one panel: got %s' % panels
+    assert session.api.figureframes[key] is panel
+    assert not panel.isHidden(), \
+        'the redraw left off the screen the window it was asked to draw'
+
+
 def test_an_entry_several_branches_earn_names_the_choice(core):
     """A plugin offered on any IDS is a question, not a guess.
 

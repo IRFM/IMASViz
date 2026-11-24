@@ -1319,8 +1319,8 @@ class McpGuiCore:
             QVizEquilibriumRead
         return view, QVizEquilibriumRead(view.dataSource, occurrence)
 
-    def _newEquilibriumFigure(self, view, figure_key=None):
-        """The next `EquiSurfaces:` frame, registered like every other figure.
+    def _newEquilibriumFigure(self, view, figure_key=None, reuse=False):
+        """The `EquiSurfaces:` frame this read is drawn into.
 
         Allocated through `QVizPlotOneNode.newFigure` because that is the
         one place a key is handed out against the api's own bookkeeping
@@ -1329,6 +1329,16 @@ class McpGuiCore:
         key a session replay names: `newFigure` honours it through
         `FigureKeyFor` (refusing a key a live window already holds), so the
         window comes back under the name the file said rather than a new one.
+
+        `reuse=True` says that key names a window that already stands and is
+        to be drawn *again*: `FigureKeyFor` refuses a held key on purpose (two
+        windows under one name is how a *Windows* menu line comes to reach
+        nothing), so the redraw goes around it -- the key, the place on screen
+        and the menu line stay put, which is what "the same figure" means to
+        whoever is looking. What the window holds is taken back by the caller
+        just before the new row goes down, never here: a read that answers
+        nothing must leave the window it was asked to redraw exactly as it was.
+        A key naming a window of another kind is refused rather than painted over.
         """
         from imasviz.VizUtils import FigureTypes
         from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotOneNode \
@@ -1337,8 +1347,22 @@ class McpGuiCore:
             import QVizEquilibriumFigure
         command = QVizPlotOneNode(view, view.IDSRoots['equilibrium'],
                                   figureKey=figure_key)
-        frame = command.newFigure(FigureTypes.EQUISURFACES,
-                                  QVizEquilibriumFigure)
+        if not reuse:
+            frame = command.newFigure(FigureTypes.EQUISURFACES,
+                                      QVizEquilibriumFigure)
+            return command, frame
+        if figure_key is None:
+            raise ValueError('equilibrium: redrawing into a window needs the '
+                             'key of the window to redraw into.')
+        frame = self.api.figureframes.get(figure_key)
+        if frame is None:
+            raise ValueError('equilibrium: no open window named "%s" to draw '
+                             'into.' % figure_key)
+        if not isinstance(frame, QVizEquilibriumFigure):
+            raise ValueError(
+                'equilibrium: the window named "%s" is a %s, not the '
+                'flux-surface window this read draws: ask a new window instead '
+                'of drawing over it.' % (figure_key, type(frame).__name__))
         return command, frame
 
     def _equilibriumFrameDrawn(self, command, frame, what):
@@ -1351,7 +1375,8 @@ class McpGuiCore:
             'curve at all: the refusal above is the reason it is closed.'
             % what)
 
-    def equilibrium_surfaces(self, uri, times, occurrence=0, figure_key=None):
+    def equilibrium_surfaces(self, uri, times, occurrence=0, figure_key=None,
+                             reuse=False):
         """The flux surfaces of `equilibrium`, one frame per named instant.
 
         `times` is the list of instants asked (a single number is read as a
@@ -1363,6 +1388,10 @@ class McpGuiCore:
         same bounds, so the instants are compared at equal measure: the same
         levels, the same scale, the same marks (boundary, axis, O-point,
         limiter) at the instants named.
+
+        `figure_key` names the window to draw into; `reuse=True` says that key
+        is a window already on the screen, so its row is taken back and laid
+        down again instead of a second window being opened beside it.
         """
         if times is None:
             raise ValueError(
@@ -1378,7 +1407,7 @@ class McpGuiCore:
                 '(seconds in the case clock), was %r.' % (times,))
 
         view, reader = self._equilibriumRead(uri, occurrence)
-        command, frame = self._newEquilibriumFigure(view, figure_key)
+        command, frame = self._newEquilibriumFigure(view, figure_key, reuse)
         try:
             surfaces = []
             frames = []
@@ -1395,6 +1424,10 @@ class McpGuiCore:
                     'b0_T': surface['b0'],
                     'r0_m': surface['r0'],
                 })
+            # Only now, with every read in hand: a window redrawn into must not
+            # lose what it held before a read that answers nothing.
+            if reuse:
+                frame.clearDrawings()
             frame.drawRow(surfaces, wall=reader.wall())
         except ValueError:
             command.discardIfEmpty(frame)
@@ -1409,7 +1442,8 @@ class McpGuiCore:
             'wall': reader.wall() is not None,
         }
 
-    def equilibrium_at_time(self, uri, time, occurrence=0, figure_key=None):
+    def equilibrium_at_time(self, uri, time, occurrence=0, figure_key=None,
+                            reuse=False):
         """One instant of the equilibrium: its flux surface, its radial
         profiles under it, and its global quantities in the answer.
 
@@ -1441,8 +1475,10 @@ class McpGuiCore:
         surface['time_slice_time'] = sliceTime
         profiles = reader.profilesAt(index)
 
-        command, frame = self._newEquilibriumFigure(view, figure_key)
+        command, frame = self._newEquilibriumFigure(view, figure_key, reuse)
         try:
+            if reuse:
+                frame.clearDrawings()
             frame.drawRow([surface], wall=reader.wall())
             frame.drawProfiles(profiles['x'], profiles['x_label'], '',
                                profiles['profiles'])
@@ -3308,8 +3344,17 @@ class McpGuiCore:
         match is used, several or none is refused with them named. The first root
         of the case is not the one a plugin scoped to `equilibrium` lives on.
 
-        `drawn` names the windows the entry registered -- the ones this call
-        opened, not the whole screen -- so a claim about that window stands on
+        An entry whose window already stands is drawn into that window rather
+        than opening a second one over it -- the stamp the entry left when it
+        drew it (`openWindowOfPluginEntry`) says which window that is, and the
+        entry is handed its key with `reuse`. The user asking the same line
+        twice wants the same window showing the answer, not two of them:
+        measured before this, one call of `equilibriumsurfaces` after a session
+        had put that window back left two `EquiSurfaces:` windows on the screen,
+        and the transcript of the ask named one gesture.
+
+        `drawn` names the windows the entry drew -- the ones this call opened or
+        redrew, not the whole screen -- so a claim about that window stands on
         the call that drew it.
         """
         from imasviz.VizPlugins.VizPlugin import QVizPluginAnswers
@@ -3332,8 +3377,11 @@ class McpGuiCore:
                     'The case %s does not offer entry %s of plugin "%s" on its '
                     '%s branch: list_plugins names what it does.'
                     % (uri, entry, plugin, ids_name))
-        answers = QVizPluginAnswers(occurrence=occurrence, figureKey=None,
-                                    time=time)
+        standing = self.api.openWindowOfPluginEntry(uri, plugin, entry,
+                                                    occurrence, time,
+                                                    ids_name=ids_name)
+        answers = QVizPluginAnswers(occurrence=occurrence, figureKey=standing,
+                                    time=time, reuse=standing is not None)
         # What the entry drew, as its own answer. `windows` answers every
         # window of the session: that is the screen, and it names nothing
         # this call did. The loop grounds a claim of work on the keys a call
@@ -3350,9 +3398,17 @@ class McpGuiCore:
             # driving a tool is looking. An answer of `ran` there is a wrong
             # answer: it reports a window that was never drawn.
             raise ValueError(refusal)
+        drawn = sorted(key for key in self.api.figureframes
+                       if key not in before or key == standing)
+        if standing is not None and standing in self.api.figureframes:
+            # A window the close box only hides keeps its key, so a reused
+            # window can be one that is off the screen: showing it is what
+            # makes the redraw something the user sees.
+            self.api.setWindowVisible(self.api.figureframes[standing], True)
         return {'ran': {'plugin': plugin, 'entry': entry, 'ids': ids_name,
                         'occurrence': occurrence, 'time': time},
-                'drawn': sorted(set(self.api.figureframes) - before),
+                'reused': standing,
+                'drawn': drawn,
                 'windows': self.list_windows()}
 
     # --------------------------------------------------------------- session

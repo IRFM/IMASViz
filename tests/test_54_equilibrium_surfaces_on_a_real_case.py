@@ -333,6 +333,69 @@ def test_the_entry_is_offered_on_equilibrium_and_no_other(session):
 
 
 # --------------------------------------------------------------------------
+# The same entry asked twice: one window, drawn again
+# --------------------------------------------------------------------------
+
+def test_an_entry_asked_a_second_time_redraws_the_window_that_stands(session):
+    """« l'appel au plugin equilibriumsurfaces cree 2 fois la meme figure ».
+
+    Measured before the rule: the second call registered a third
+    `EquiSurfaces:` key, a second copy of the same instant of the same
+    occurrence, and the *Windows* menu listed both. The window the entry drew
+    carries that entry's stamp, so the same entry handed the same answers draws
+    *into* it: one key, one row of frames, the eight profiles of the stack not
+    doubled -- and the window keeps its place on the screen and its line in the
+    menu, which is what "the same figure" means to whoever is looking at it.
+
+    Entry 1 is asked here rather than entry 0 because its window is the harder
+    one to take back: a row of frames in the graphics layout *and* a stack of
+    eight panels in the window's own layout.
+    """
+    entry = session.pluginEntry(1)
+    key = session.keys[1]
+    frame = session.api.figureframes[key]
+    surfaces, panels, curves = (frame.surfaceFrames(), frame.profilePanels(),
+                                frame.curveCount())
+    standing = sorted(session.api.GetFiguresKeys(figureType=KIND))
+    assert surfaces == 1 and panels == 8 and curves > panels
+
+    refusal = session.catalog.run(
+        entry, answers=QVizPluginAnswers(occurrence=0, figureKey=key,
+                                        time=MIDDLE_TIME, reuse=True))
+    session.qapp.processEvents()
+
+    assert refusal is None, refusal
+    assert sorted(session.api.GetFiguresKeys(figureType=KIND)) == standing, \
+        'the second call opened a window of its own'
+    assert session.api.figureframes[key] is frame, \
+        'the redraw answered another window than the one that stood'
+    assert (frame.surfaceFrames(), frame.profilePanels()) == (surfaces, panels), \
+        'the drawings were laid under the ones already there'
+    assert frame.curveCount() == curves, 'the curves of the window were doubled'
+    assert nonEmptyGrab(frame), 'the redraw emptied the window it was asked to fill'
+
+
+def test_a_replay_is_not_a_redraw_and_still_refuses_a_held_key(session):
+    """Two windows back from a file, because the file names two windows.
+
+    The reuse rule answers one entry asked twice; a session that saved two
+    plugin windows must get two back, each under the key the file holds. So the
+    answers record a restore builds carries `reuse` false, and the key claim is
+    as strict as it was: a key a live window already holds is refused by name,
+    because two windows under one name is how a *Windows* menu line comes to
+    reach nothing.
+    """
+    replay = QVizPluginAnswers(occurrence=0, figureKey=session.keys[1],
+                               time=MIDDLE_TIME)
+    assert replay.reuse is False, 'a restore is not a redraw'
+
+    held = session.catalog.run(session.pluginEntry(1), answers=replay)
+    assert held is not None and 'already open' in held, held
+    assert sorted(session.api.GetFiguresKeys(figureType=KIND)) == \
+           [KIND + '1', KIND + '2'], 'a refusal opened a window anyway'
+
+
+# --------------------------------------------------------------------------
 # The session: the same window, under the same key and the same instant
 # --------------------------------------------------------------------------
 

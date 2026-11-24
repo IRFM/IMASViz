@@ -18,7 +18,10 @@ drawn through the tensor read went unnoticed before their prefix joined the list
 So what is pinned here is that the menu covers every kind of figure the commands
 actually draw, that deleting one kind leaves the others alone, and what closing a
 window costs the key it was addressed by -- which since T52 is not the same thing
-as deleting it.
+as deleting it. The registry answers one question besides the menu's: which window
+a given plugin entry already drew, asked of the stamp that entry left on the frame
+(``openWindowOfPluginEntry``), because the key says the kind and nothing else says
+the entry.
 
 The frames themselves are stand-ins: this is about the registry and the menu built
 from it, not about what a frame draws. The two real frame classes are covered by
@@ -116,6 +119,112 @@ def windowsMenu(view):
     menu = QMenu()
     QVizWindowMenu(menu, view.imas_viz_api).show()
     return menu
+
+
+def stampedFrame(uri, plugin, entry, occurrence, time=None, idsName='equilibrium'):
+    """A stand-in frame carrying the stamp one plugin entry leaves on it."""
+    from imasviz.VizPlugins.VizPlugin import QVizPluginWindow
+    frame = QWidget()
+    frame.pluginWindow = QVizPluginWindow(uri=uri, plugin=plugin, entry=entry,
+                                          ids=idsName,
+                                          occurrence=occurrence, time=time)
+    return frame
+
+
+def test_the_stamp_answers_which_entry_drew_which_window(qapp, view):
+    """The stamp is the only place saying *which* entry drew a window.
+
+    The key says the kind and the registry says the case; neither says the entry.
+    So the only way a second call of one entry can be drawn into the window that
+    stands instead of opening a second over it is to ask the stamp the entry left
+    when it drew that window -- which is what `openWindowOfPluginEntry` does, and
+    what it refuses for anything the entry did not draw.
+    """
+    api = view.imas_viz_api
+    api.figureframes['EquiSurfaces:1'] = stampedFrame(view.uri, 'equilibriumsurfaces',
+                                                      0, 0)
+
+    assert api.openWindowOfPluginEntry(view.uri, 'equilibriumsurfaces', 0,
+                                       0) == 'EquiSurfaces:1'
+    # Another entry of the same plugin is another window, and so is another
+    # occurrence of the same entry, or the same entry of another case.
+    assert api.openWindowOfPluginEntry(view.uri, 'equilibriumsurfaces', 1,
+                                       0) is None
+    assert api.openWindowOfPluginEntry(view.uri, 'equilibriumsurfaces', 0,
+                                       1) is None
+    assert api.openWindowOfPluginEntry('imas:hdf5?case=2', 'equilibriumsurfaces',
+                                       0, 0) is None
+    # A window no plugin drew is not a window to draw into, whatever its key.
+    api.figureframes['Plot1'] = QWidget()
+    assert api.openWindowOfPluginEntry(view.uri, 'VizProfiles_plugin', 0,
+                                       0) is None
+
+
+def test_one_entry_asked_on_several_ids_answers_the_window_of_the_one_asked(qapp,
+                                                                            view):
+    """The Profiles line is one entry, offered on every branch of the case.
+
+    Two panels of one case then carry the same plugin, the same entry and the
+    same occurrence: only the branch the entry ran on tells them apart. So the
+    ask has to name it, or a call after the `equilibrium` panel would be
+    answered with the `magnetics` window -- the same gesture drawn into the
+    wrong window, which no count of windows would notice.
+    """
+    api = view.imas_viz_api
+    for key, idsName in (('PlotView:1', 'equilibrium'),
+                         ('PlotView:2', 'magnetics')):
+        api.figureframes[key] = stampedFrame(view.uri, 'VizProfiles_plugin', 0,
+                                             0, idsName=idsName)
+
+    assert api.openWindowOfPluginEntry(view.uri, 'VizProfiles_plugin', 0, 0,
+                                       ids_name='equilibrium') == 'PlotView:1'
+    assert api.openWindowOfPluginEntry(view.uri, 'VizProfiles_plugin', 0, 0,
+                                       ids_name='magnetics') == 'PlotView:2'
+    assert api.openWindowOfPluginEntry(view.uri, 'VizProfiles_plugin', 0, 0,
+                                       ids_name='wall') is None
+
+
+def test_a_window_the_close_box_only_hid_is_still_the_one_that_stands(qapp, view):
+    """Hiding is not closing: the key, the stamp and the window all stay.
+
+    A window closed with its own box is hidden and keeps its key, so a second
+    call of its entry has to find it -- and put it back on the screen -- rather
+    than open a second one the *Windows* menu lists beside a ghost.
+    """
+    api = view.imas_viz_api
+    frame = stampedFrame(view.uri, 'equilibriumsurfaces', 0, 0)
+    api.figureframes['EquiSurfaces:1'] = frame
+    api.addPlotWidgetToMDI(frame)
+    window = api.mdiWindowOf(frame)
+    api.setWindowVisible(frame, False)
+    assert window.isHidden()
+
+    key = api.openWindowOfPluginEntry(view.uri, 'equilibriumsurfaces', 0, 0)
+    assert key == 'EquiSurfaces:1'
+    api.setWindowVisible(api.figureframes[key], True)
+    assert not window.isHidden()
+
+
+def test_the_instant_an_entry_answered_names_the_window_it_drew(qapp, view):
+    """An entry that draws one window per instant answers one window per ask.
+
+    Asked for 40 s, the window drawn at 40 s; asked for 44 s, a window of its
+    own. Asked with no instant at all, any window of that entry answers, because
+    the entries that ask no instant stamp `time=None` and have one window only.
+    """
+    api = view.imas_viz_api
+    for key, time in (('EquiSurfaces:1', 40.0), ('EquiSurfaces:2', 44.0)):
+        api.figureframes[key] = stampedFrame(view.uri, 'equilibriumsurfaces', 1,
+                                             0, time=time)
+
+    assert api.openWindowOfPluginEntry(view.uri, 'equilibriumsurfaces', 1, 0,
+                                       40.0) == 'EquiSurfaces:1'
+    assert api.openWindowOfPluginEntry(view.uri, 'equilibriumsurfaces', 1, 0,
+                                       44.0) == 'EquiSurfaces:2'
+    assert api.openWindowOfPluginEntry(view.uri, 'equilibriumsurfaces', 1, 0,
+                                       48.0) is None
+    assert api.openWindowOfPluginEntry(view.uri, 'equilibriumsurfaces', 1,
+                                       0) in ('EquiSurfaces:1', 'EquiSurfaces:2')
 
 
 def test_a_figure_drawn_through_the_tensor_read_can_be_deleted(qapp, view):

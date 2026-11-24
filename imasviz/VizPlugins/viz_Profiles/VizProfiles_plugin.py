@@ -101,10 +101,14 @@ class VizProfiles_plugin(VizPlugin):
         # One window per IDS. A click on the menu already opened a panel for
         # this IDS -- bring it to the front instead of opening a second one,
         # which would ask the same case its questions again and hold two
-        # occurrence choices for one answer. A session restore (answers) is
-        # let through: it has named the key its file gave the window, and the
-        # panel it finds or builds must answer to that key.
-        if context.answers is None:
+        # occurrence choices for one answer. A tool call asking for the panel
+        # that already stands is answered the same way (`answers.reuse`: the
+        # caller found the window by the stamp this entry left on it and handed
+        # its key back), because a second panel of one IDS says the same thing
+        # twice on the screen. A session restore is let through: it has named
+        # the key its file gave the window, and the panel it finds or builds
+        # must answer to that key.
+        if context.answers is None or context.answers.reuse:
             existing = QVizProfilePanel.findOpen(vizAPI, view, idsName)
             if existing is not None:
                 self.profilesPanel = existing

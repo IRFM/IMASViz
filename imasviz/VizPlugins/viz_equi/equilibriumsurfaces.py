@@ -117,6 +117,11 @@ class equilibriumsurfaces(VizPlugin):
         `equilibriumcharts` reads occurrence 0 of `equilibrium` and refuses a
         file naming another one; the same boundary here keeps the stamp the
         session writes and the occurrence the read uses telling one story.
+
+        The key and the `reuse` word come from the answers handed to the entry:
+        a session names the key of the window it is putting back, and a tool
+        call asked for a line whose window already stands names that window so
+        its row is drawn again rather than a second window opened beside it.
         """
         view = context.view
         uri = view.dataSource.uri
@@ -130,7 +135,8 @@ class equilibriumsurfaces(VizPlugin):
         from imasviz.VizDataAccess.QVizEquilibriumRead import QVizEquilibriumRead
         reader = QVizEquilibriumRead(view.dataSource, occurrence)
         figureKey = None if answers is None else answers.figureKey
-        return uri, occurrence, reader, figureKey
+        reuse = bool(answers is not None and answers.reuse)
+        return uri, occurrence, reader, figureKey, reuse
 
     def _register(self, context, key, uri, occurrence, time_answer, entry):
         """Register the drawn figure under its case and stamp it for a session.
@@ -153,11 +159,12 @@ class equilibriumsurfaces(VizPlugin):
 
     def _drawSurfaces(self, context):
         """Entry 0 — the flux surfaces of the first, middle and last instant."""
-        uri, occurrence, reader, figureKey = self._case(context)
+        uri, occurrence, reader, figureKey, reuse = self._case(context)
         from imasviz.VizAgent.core import McpGuiCore
         instants = self._threeInstants(reader.timeValues())
         result = McpGuiCore(api=context.api).equilibrium_surfaces(
-            uri, instants, occurrence=occurrence, figure_key=figureKey)
+            uri, instants, occurrence=occurrence, figure_key=figureKey,
+            reuse=reuse)
         return self._register(context, result['figure'], uri, occurrence,
                               time_answer=None, entry=0)
 
@@ -171,7 +178,7 @@ class equilibriumsurfaces(VizPlugin):
         than left to open a dialog nobody is there for. Only a click on the menu
         line (`answers` is None) earns the question, bounded to the case's clock.
         """
-        uri, occurrence, reader, figureKey = self._case(context)
+        uri, occurrence, reader, figureKey, reuse = self._case(context)
         from imasviz.VizAgent.core import McpGuiCore
         if context.answers is not None:
             if context.answers.time is None:
@@ -185,6 +192,7 @@ class equilibriumsurfaces(VizPlugin):
         else:
             time_answer = self._askTime(reader.timeValues())
         result = McpGuiCore(api=context.api).equilibrium_at_time(
-            uri, time_answer, occurrence=occurrence, figure_key=figureKey)
+            uri, time_answer, occurrence=occurrence, figure_key=figureKey,
+            reuse=reuse)
         return self._register(context, result['figure'], uri, occurrence,
                               time_answer=time_answer, entry=1)
