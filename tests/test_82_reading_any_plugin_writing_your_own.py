@@ -45,7 +45,7 @@ import types
 import pytest
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QMenu, QTreeWidget
+from PySide6.QtWidgets import QHeaderView, QMenu, QTreeWidget
 
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizPluginMenu \
     import QVizPluginMenu
@@ -428,6 +428,63 @@ def test_the_check_box_and_the_state_word_each_keep_their_own_column(qtbot, view
     # as for a row that is on: neither answer hides the other.
     assert manager.table.item(mine, STATE).text()
     assert manager.table.item(shipped, STATE).text() == 'not asked yet'
+
+
+def test_every_column_of_the_table_can_be_widened_by_hand(qtbot, view):
+    """`Interactive` is Qt's word for "a hand may drag this edge", and a
+    section in `Fixed` or `ResizeToContents` mode answers nothing at all to a
+    drag. The table used to put its last column in `Stretch` mode, which fills
+    the window but takes that edge away with it -- so the one column that does
+    hold a long path, `Where it lives`, was the one that could not be widened.
+    The filler is `stretchLastSection` now: the window's business, not the
+    section's."""
+    aUserPlugin('MyAnalysisPlugin')
+    manager = aManager(view)
+    qtbot.addWidget(manager)
+    header = manager.table.horizontalHeader()
+
+    for column, title in enumerate(COLUMNS):
+        assert header.sectionResizeMode(column) == QHeaderView.Interactive, \
+            '%s cannot be dragged' % title
+    assert header.stretchLastSection(), \
+        'the last column fills the window, and keeps its edge for the hand'
+
+
+def test_the_columns_open_as_wide_as_what_the_rows_hold(qtbot, view):
+    """The refusal sentence is the reason. Every column used to open at the
+    header default of 100 pixels, so `refused: SyntaxError: invalid syntax
+    (MyAnalysisPlugin.py, line 12)` read as `refused: SyntaxE`: the table
+    looked fine while saying nothing. The fit is asked of the rows, so a short
+    answer and a long one stop sharing one width."""
+    aUserPlugin('MyAnalysisPlugin')
+    manager = aManager(view)
+    qtbot.addWidget(manager)
+    header = manager.table.horizontalHeader()
+    default = header.defaultSectionSize()
+    fitted = [header.sectionSize(column) for column in range(WHERE)]
+
+    assert set(fitted) != {default}, \
+        'the columns still open at the header default: %r' % fitted
+    assert header.sectionSize(WHOSE) < header.sectionSize(STATE), \
+        'a column of one word and a column of a sentence answer one width'
+
+
+def test_a_width_the_user_dragged_survives_the_next_refresh(qtbot, view):
+    """A refresh follows a delete, a reload, a checkbox. Re-fitting the widths
+    on that pass would take back a width chosen two seconds ago, so the first
+    drag ends the fit -- and the fit's own calls do not count as a drag, nor
+    does the filler column, whose width moves when the window does."""
+    aUserPlugin('MyAnalysisPlugin')
+    manager = aManager(view)
+    qtbot.addWidget(manager)
+    header = manager.table.horizontalHeader()
+    fitted = header.sectionSize(STATE)
+    assert manager._handOnWidths is False, 'the fit itself counted as a drag'
+
+    header.resizeSection(STATE, fitted + 120)
+    assert manager._handOnWidths is True
+    manager.refresh()
+    assert header.sectionSize(STATE) == fitted + 120
 
 
 def test_the_manager_offers_edit_only_for_a_plugin_of_the_user_s_own(qtbot,

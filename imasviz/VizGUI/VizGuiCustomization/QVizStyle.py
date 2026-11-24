@@ -356,8 +356,18 @@ QListView::item:selected { background: %(selection)s; color: %(onSelection)s; }
    meant to set a colour -- a colour the tree already had, since the rule said
    `surface`, which is the ground of the view itself. */
 QHeaderView { background: %(surfaceAlt)s; border: 0; }
+/* The separator between two column names is drawn here, and `border: 0` on
+   both axes erased it: once a style sheet names `QHeaderView::section`, Qt
+   draws the section from the sheet alone, so the boundary the hand aims at
+   for a resize is whatever this rule declares. Measured on the plugins
+   table, walking a horizontal line across a column edge of the header: 0
+   colour changes with `border: 0` -- the two names run into each other, no
+   line to see and nothing to grab -- against 3 with the sheet off, where
+   Fusion draws its own separator. A right border of the `line` token puts
+   it back at the thickness of every other line on screen. */
 QHeaderView::section { background: %(surfaceAlt)s; color: %(inkSoft)s;
-                       border: 0; border-bottom: 1px solid %(line)s;
+                       border: 0; border-right: 1px solid %(line)s;
+                       border-bottom: 1px solid %(line)s;
                        padding: 8px 8px; }
 
 /* -- what the user types into ----------------------------------------- */

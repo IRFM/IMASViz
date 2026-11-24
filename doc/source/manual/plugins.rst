@@ -76,6 +76,10 @@ both:
    third is an answer and not a gap: a case view nobody has right-clicked has
    asked its plugins nothing yet.
 
+   The columns open as wide as what the rows hold, and every edge between two of
+   them can be dragged. Once a width is moved by hand, the table stops re-fitting
+   them, so the choice survives the reloads and deletions that rebuild the rows.
+
 .. _plugins_active_state:
 
 Switching a plugin off

@@ -84,6 +84,10 @@ class QVizPluginManager(QDialog):
         self._watcher = weakref.ref(watcher) if watcher is not None else None
         self._sources = {}
         self._refreshing = False
+        # A width the user dragged is an answer they gave: the fit below is
+        # asked while nobody has given one, and stops being asked after.
+        self._handOnWidths = False
+        self._fitting = False
         self.setWindowTitle('Plugins')
         self.resize(980, 460)
         self._buildUI()
@@ -106,8 +110,18 @@ class QVizPluginManager(QDialog):
         self.table.setSelectionMode(QAbstractItemView.SingleSelection)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.verticalHeader().setVisible(False)
-        self.table.horizontalHeader().setSectionResizeMode(
-            WHERE, QHeaderView.Stretch)
+        header = self.table.horizontalHeader()
+        # Every column answers `Interactive`, which is Qt's word for "a hand
+        # may drag its edge". A section in `Fixed` or `ResizeToContents` mode
+        # cannot be dragged at all, so fitting the widths has to stay a
+        # one-shot ask (`fitColumns`) and never become a mode -- and the last
+        # column fills the window through `stretchLastSection` rather than by
+        # being stretched itself, which would take its edge away from the
+        # hand too.
+        for column in range(len(COLUMNS)):
+            header.setSectionResizeMode(column, QHeaderView.Interactive)
+        header.setStretchLastSection(True)
+        header.sectionResized.connect(self._onWidthMoved)
         self.table.itemDoubleClicked.connect(lambda item: self._open())
         layout.addWidget(self.table, 1)
 
@@ -168,8 +182,43 @@ class QVizPluginManager(QDialog):
             self.table.setItem(row, ACTIVE, check)
         self._sources = {row: source for row, source in enumerate(sources)}
         self._refreshing = False
+        self.fitColumns()
         self._enableForRow()
         return len(sources)
+
+    def fitColumns(self):
+        """Widths that fit what the rows actually hold.
+
+        Every column used to open at the header's default 100 pixels, which
+        is where the refusal sentence went unread: `refused: SyntaxError:
+        invalid syntax (MyAnalysisPlugin.py, line 12)` in a 100 pixel column
+        reads as `refused: SyntaxE`, and the one column that does hold a long
+        path was the only one the hand could not move.
+
+        The fit is an ask, not a mode -- a section in `ResizeToContents` mode
+        cannot be dragged -- and it is asked only while nobody has dragged an
+        edge: a refresh follows a delete, a reload, a checkbox, and it would
+        otherwise take back a width the user chose two seconds ago.
+        """
+        if self._handOnWidths:
+            return
+        self._fitting = True
+        try:
+            self.table.horizontalHeader().resizeSections(
+                QHeaderView.ResizeToContents)
+        finally:
+            self._fitting = False
+
+    def _onWidthMoved(self, column, before, after):
+        """A width became the user's own, so no later fit touches it.
+
+        `sectionResized` answers for more than a hand: it fires for the fit
+        asked above, and for the last column, whose width moves whenever the
+        window does. Only an edge that is dragged counts.
+        """
+        if self._fitting or column == WHERE:
+            return
+        self._handOnWidths = True
 
     def selected(self):
         row = self.table.currentRow()

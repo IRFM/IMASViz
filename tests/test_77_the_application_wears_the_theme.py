@@ -77,9 +77,10 @@ from test_76_the_manual_wears_the_house_style import contrast, rgbOf, tokenBlock
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QFontInfo, QPalette
-from PySide6.QtWidgets import (QLabel, QLineEdit, QMdiArea, QMdiSubWindow,
-                               QPlainTextEdit, QPushButton, QScrollBar,
-                               QSplitter, QStyle, QTreeWidget, QTreeWidgetItem)
+from PySide6.QtWidgets import (QHeaderView, QLabel, QLineEdit, QMdiArea,
+                               QMdiSubWindow, QPlainTextEdit, QPushButton,
+                               QScrollBar, QSplitter, QStyle, QTableWidget,
+                               QTreeWidget, QTreeWidgetItem)
 
 import pyqtgraph as pg
 
@@ -593,6 +594,40 @@ def test_the_tree_still_draws_the_arrows_that_open_a_node(dressed, qapp):
         set(xs))
 
 
+@pytest.mark.ui
+def test_a_table_header_still_draws_the_edge_a_hand_widens(dressed, qapp):
+    """The separator between two column names, drawn.
+
+    The same class of defect as the branch arrows: a sheet that names
+    ``QHeaderView::section`` draws the section from the sheet alone, and the
+    rule said ``border: 0`` on both axes. What that costs is not a colour but
+    an affordance -- the boundary a hand aims at to widen a column was
+    neither seen nor grabbable, which is the report "je n'ai pas pu élargir
+    les colonnes". Measured on the plugins header, walking a horizontal line
+    across a column edge: **0** colour changes with ``border: 0``, **2** with
+    the right border this sheet declares now, and 3 with the sheet off, where
+    Fusion draws its own separator.
+    """
+    table = QTableWidget(0, 3)
+    table.setHorizontalHeaderLabels(('Plugin', 'Whose', 'State'))
+    table.resize(700, 200)
+    table.show()
+    qapp.processEvents()
+
+    header = table.horizontalHeader()
+    image = pixels(header)
+    y = image.height() // 2
+    for column in range(2):
+        x = header.sectionViewportPosition(column) + header.sectionSize(column)
+        seen = [image.pixelColor(x + step, y).name()
+                for step in range(-6, 7) if 0 <= x + step < image.width()]
+        assert len(seen) >= 8, 'the header was never laid out to walk'
+        changes = sum(1 for a, b in zip(seen, seen[1:]) if a != b)
+        assert changes >= 1, \
+            'nothing is drawn at the edge of column %d: the two names run ' \
+            'into each other and there is no separator to grab' % column
+
+
 def test_the_sheet_never_claims_a_subcontrol_it_cannot_finish(dressed):
     """The two rules that deleted a control, refused by their shape.
 
@@ -612,12 +647,26 @@ def test_the_sheet_never_claims_a_subcontrol_it_cannot_finish(dressed):
     assert declarationsOf('QMdiSubWindow::title', sheet) == [], \
         'naming the title subcontrol stops Fusion drawing its buttons'
 
+    # The third of the three, in the same class: a section rule without a
+    # declared border draws no separator between two column names, so the
+    # edge a hand aims at to widen a column is neither seen nor grabbable.
+    # Measured on the plugins header, walking a line across a column edge:
+    # 0 colour changes with `border: 0`, 2 with the border this asks for.
+    for body in declarationsOf('QHeaderView::section', sheet):
+        assert 'border-right' in body, \
+            'a QHeaderView::section rule with no right border draws no '\
+            'separator for a hand to grab when it widens a column'
+
     assert declarationsOf('QTreeView::branch',
                           'QTreeView::branch { background: #f7f9fa; border: 0; }'), \
         'this reader no longer sees the rule that deletes the arrows'
     assert declarationsOf('QMdiSubWindow::title',
                           '/* QMdiSubWindow::title is refused */') == [], \
         'a sentence about a subcontrol is not a rule for it'
+    assert declarationsOf(
+        'QHeaderView::section',
+        'QHeaderView::section { background: #f7f9fa; border: 0; }'), \
+        'this reader no longer sees the rule that erases the column separator'
 
 
 @pytest.mark.ui
