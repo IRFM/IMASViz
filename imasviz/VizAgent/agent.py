@@ -76,13 +76,17 @@ SHARED_JOURNAL_GESTURES = ('add_note', 'edit_note', 'delete_note',
 # or a reset, in either language. Kept narrow on purpose: a gesture
 # that erases a figure is refused by a prompt that does not name it,
 # and a word that is a normal request word ("fresh data", "remove the
-# noise") is not what this gate is for.
+# noise") is not what this gate is for. The French close verb is the
+# one word of the list that is not a substring but a whole word -- the
+# stem "ferm" also matched inside other words the request could
+# carry, and only the close verbs themselves open the gate.
 _CLOSURE_WORDS = (
-    'close', 'ferm', 'suppr', 'delete',
+    'close', 'suppr', 'delete',
     'new session', 'nouvelle session',
     'reset', 'réinitialis', 'reinitialis',
     'restart', 'recommenc', 'nettoy', 'wipe', 'purge',
 )
+_CLOSURE_RE = re.compile(r'\bferm(e|er|ez)\b')
 
 # The same shape, for a write to the shared journal: the word the user
 # would give before the journal it wants a line in ("publier au
@@ -103,9 +107,14 @@ def _userAskedForAClosure(user_prompt):
     Asked is carried by the user's words, not by the model's intent:
     the same call the model reaches for on a "trace la pression" is
     the ask for the "ferme Plot2" that names the figure it erases.
+    The French close verb is matched on the whole word (ferme, fermer,
+    fermez), not on its stem: the stem also sat inside other words the
+    request could carry, and that is the false positive the gate must
+    not give the model.
     """
     text = (user_prompt or '').lower()
-    return any(word in text for word in _CLOSURE_WORDS)
+    return _CLOSURE_RE.search(text) is not None \
+        or any(word in text for word in _CLOSURE_WORDS)
 
 
 def _userAskedForAPublish(user_prompt):
@@ -1306,7 +1315,10 @@ _WORK_GESTURES = frozenset((
     'equilibrium_at_time', 'scale_curve', 'shift_curve',
     'normalize_curve', 'reset_curve', 'remove_curve', 'set_axis_range',
     'set_log_scale', 'invert_axis'))
-_READ_GESTURES = frozenset(('curve_stats', 'export_curve'))
+# `list_windows` is a read of the session's own figures: the answer is
+# the standing windows, and a claim of a state on one of them that the
+# read answered for stands the way a `curve_stats` read does.
+_READ_GESTURES = frozenset(('curve_stats', 'export_curve', 'list_windows'))
 
 
 def _groundedFigureKeys(args, result):
@@ -1331,6 +1343,13 @@ def _groundedFigureKeys(args, result):
         for value in result.get('figures') or ():
             if isinstance(value, str):
                 keys.append(value)
+    # A list result is the window list `list_windows` answers: each entry
+    # carries the key of the window it is, and a claim on one of them
+    # stands on that read the way a `curve_stats` read does.
+    if isinstance(result, list):
+        for entry in result:
+            if isinstance(entry, dict) and isinstance(entry.get('key'), str):
+                keys.append(entry['key'])
     return set(keys)
 
 
