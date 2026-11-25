@@ -54,7 +54,10 @@ EXPECTED_TOOLS = {
     # IDS name above, which is a value of an `ids_name` parameter.
     'equilibrium',
     'manage_window',
-    'list_plugins', 'run_plugin',
+    # The two asks about the plugins of a case answer one name, with `action`
+    # saying which: "list" names the plugin and numbers the entry that "run"
+    # then takes.
+    'plugin',
     'manage_session',
     'generate_report',
     'export_to_ids',

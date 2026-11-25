@@ -634,6 +634,61 @@ def test_an_entry_the_case_does_not_offer_is_refused_by_name(core):
                            occurrence=0, ids_name=IDS_NAME)
 
 
+def test_the_plugin_calls_a_turn_types_answer_the_two_gestures(core):
+    """The two asks about the plugins of a case answer one name, and its
+    `action` says which. The two answer each other: "list" is what names the
+    plugin and numbers the entry that "run" then takes back, so the seam is
+    where a word of one ask meets the refusal of the other.
+
+    Nothing here asks a gesture of the session -- `session.list_plugins` and
+    `session.run_plugin` are the core methods, asked in process above. What is
+    pinned is the word a turn types, the gesture it reaches, and the refusal
+    a wrong word meets: an `entry` beside "list" is a word of the run ask, a
+    "run" that names no entry is incomplete, and the old names come back
+    refused naming the call that replaced them.
+    """
+    session, _home = core
+    for action, member in (('list', 'list_plugins'), ('run', 'run_plugin')):
+        assert gestureOf('plugin', {'action': action}) == member
+        name, spelled = resolveCall('plugin', {'action': action,
+                                               'uri': CASE_URI})
+        assert name == member
+        assert 'action' not in spelled, \
+            'the discriminant would reach %s as a stray parameter' % member
+
+    # Both asks take a case, so `uri` is the group's own requirement. What the
+    # rows answer is the rest: "list" asks the IDS root and no entry, "run"
+    # asks the entry and may do without the root -- the branch is resolved
+    # from the case.
+    stray = unknownParameters('list_plugins', {'uri': CASE_URI,
+                                               'ids_name': IDS_NAME,
+                                               'entry': 0})
+    assert stray == ['entry'], stray
+    text = unknownParameterRefusal('list_plugins', stray)
+    assert 'plugin(action="list")' in text, text
+    assert 'plugin(action="run")' in text, text
+
+    gaps = missingParameters('run_plugin', {'uri': CASE_URI,
+                                            'ids_name': IDS_NAME})
+    assert 'entry' in gaps and 'plugin' in gaps, gaps
+    refusal = missingParameterRefusal('run_plugin', gaps)
+    assert 'plugin(action="run", uri, plugin, entry)' in refusal, refusal
+
+    for member, action in (('list_plugins', 'list'),
+                           ('run_plugin', 'run')):
+        with pytest.raises(ValueError) as refused:
+            resolveCall(member, {'uri': CASE_URI})
+        assert 'plugin(action="%s"' % action in str(refused.value), \
+            str(refused.value)
+
+    # The seam asked none of the session: the case it was handed is still the
+    # one it was, with its plugins offered as they were.
+    assert [entry['uri'] for entry in session.list_cases()] == [CASE_URI]
+    assert 'VizProfiles_plugin' in {one['plugin'] for one in
+                                    session.list_plugins(CASE_URI,
+                                                         IDS_NAME)['entries']}
+
+
 def _noQuestionAsked(monkeypatch):
     """No modal question may be reached from a tool call.
 

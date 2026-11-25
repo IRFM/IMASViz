@@ -346,8 +346,9 @@ with the slice's global quantities (``ip`` in kA, ``q_95``, ``q_axis``,
    open that dialog a second time.
 
 .. note::
-   A tool call is not a click. The ``run_plugin`` tool hands the instant as its
-   ``time`` rather than asking for it, and an entry that asks one and is handed
+   A tool call is not a click. The ``plugin(action="run")`` call hands the
+   instant as its ``time`` rather than asking for it, and an entry that asks
+   one and is handed
    none is **refused by name** -- naming the parameter and the
    ``equilibrium(action="at_time")`` call that draws the same window --
    because a dialog opened where nobody is there to answer it is a session

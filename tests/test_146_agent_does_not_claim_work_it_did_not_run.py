@@ -323,8 +323,8 @@ def test_a_window_a_plugin_entry_drew_grounds_the_draw_claimed_on_it(qapp):
     core = Core()
     out = runTurn(core, [
         LLMResponse(tool_calls=[
-            {'name': 'run_plugin',
-             'args': {'uri': 'imas:hdf5?path=x',
+            {'name': 'plugin',
+             'args': {'action': 'run', 'uri': 'imas:hdf5?path=x',
                       'plugin': 'equilibriumsurfaces', 'entry': 0}}],
             content=''),
         LLMResponse(content='J\'ai tracé les surfaces de flux sur '
@@ -347,8 +347,8 @@ def test_a_plugin_entry_grounds_nothing_on_a_window_it_did_not_draw(qapp):
     claim = 'J\'ai tracé la pression sur Plot1.'
     out = runTurn(core, [
         LLMResponse(tool_calls=[
-            {'name': 'run_plugin',
-             'args': {'uri': 'imas:hdf5?path=x',
+            {'name': 'plugin',
+             'args': {'action': 'run', 'uri': 'imas:hdf5?path=x',
                       'plugin': 'equilibriumsurfaces', 'entry': 0}}],
             content=''),
         LLMResponse(content=claim, tool_calls=None, finish_reason='stop'),

@@ -185,8 +185,9 @@ class equilibriumsurfaces(VizPlugin):
             if context.answers.time is None:
                 raise ValueError(
                     'equilibriumsurfaces entry 1 draws one instant and none '
-                    'was answered: hand it as the "time" of run_plugin, or '
-                    'ask equilibrium(action="at_time") directly. Nothing is '
+                    'was answered: hand it as the "time" of '
+                    'plugin(action="run"), or ask '
+                    'equilibrium(action="at_time") directly. Nothing is '
                     'drawn on an instant nobody asked for, and no dialog is '
                     'opened where nobody is there to answer it.')
             time_answer = float(context.answers.time)

@@ -328,7 +328,8 @@ window, like the one this tutorial draws) is not in the session at all, and the
 :guilabel:`Windows` menu does not reach it either.
 
 That same stamp answers a second question, and the answer is what keeps a window
-from being drawn twice. The agent's ``run_plugin`` asks the api which open window
+from being drawn twice. The agent's ``plugin(action="run")`` call asks the api
+which open window
 carries the stamp of the entry it is about to run (``Viz_API.openWindowOfPluginEntry``,
 named for the case, the entry, the occurrence, the branch it was asked on and --
 for an entry that draws one window per instant -- the instant). When it finds

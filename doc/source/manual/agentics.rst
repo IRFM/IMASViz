@@ -262,11 +262,13 @@ the same descriptions. The tools, in the order the faces group them:
        after a draw: the figure is in the *Windows*
        menu, and that is where the raise lives.
    * - the plugins
-     - ``list_plugins``, ``run_plugin``
-     - the entries an IDS root earns, in registration order, with the refusals
-       of the plugins the case cannot offer **named alongside**; and one entry
-       run with the answers the entry would have asked the user -- the
-       ``occurrence``, and the ``time`` of an entry that asks an instant. Which
+     - ``plugin``
+     - one tool, and ``action`` says which of the two is meant: ``list``
+       answers the entries an IDS root earns, in registration order, with the
+       refusals of the plugins the case cannot offer **named alongside**;
+       ``run`` runs one of those entries with the answers the entry would have
+       asked the user -- the ``occurrence``, and the ``time`` of an entry that
+       asks an instant. Which
        branch the line is asked on is a parameter too: left out, it is
        **resolved** by searching the case for the branches that earn that entry,
        and several branches earning it (a plugin offered on any IDS) is refused

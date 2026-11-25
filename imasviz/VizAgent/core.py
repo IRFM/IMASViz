@@ -3323,8 +3323,8 @@ class McpGuiCore:
             self._refuseUnknownEntry(uri, plugin, entry, offered)
         raise ValueError(
             'The case %s offers no entry of plugin "%s" on any of its %d IDS '
-            'roots: list_plugins names what a branch earns, and the log of the '
-            'case names the plugins it cannot offer at all.'
+            'roots: plugin(action="list") names what a branch earns, and the '
+            'log of the case names the plugins it cannot offer at all.'
             % (uri, plugin, len(view.IDSRoots)))
 
     def _refuseUnknownEntry(self, uri, plugin, entry, offered):
@@ -3334,8 +3334,8 @@ class McpGuiCore:
             byRoot.setdefault(root, []).append(one)
         raise ValueError(
             'The case %s does not offer entry %s of plugin "%s": that plugin is '
-            'offered on %s, whose entries are %s. list_plugins names the label of '
-            'each.'
+            'offered on %s, whose entries are %s. plugin(action="list") names '
+            'the label of each.'
             % (uri, entry, plugin, ', '.join(sorted(byRoot)),
                '; '.join('%s: %s' % (root, ', '.join('%s (%s)'
                                                      % (one.number, one.label)
@@ -3388,7 +3388,7 @@ class McpGuiCore:
             if chosen is None:
                 raise ValueError(
                     'The case %s does not offer entry %s of plugin "%s" on its '
-                    '%s branch: list_plugins names what it does.'
+                    '%s branch: plugin(action="list") names what it does.'
                     % (uri, entry, plugin, ids_name))
         standing = self.api.openWindowOfPluginEntry(uri, plugin, entry,
                                                     occurrence, time,

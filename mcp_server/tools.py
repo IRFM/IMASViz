@@ -832,36 +832,42 @@ def buildServer(core, dispatcher, name='imasviz'):
 
     # -------------------------------------------------------------- plugins
 
-    @server.tool(name='list_plugins')
-    def list_plugins(uri: str, ids_name: str):
-        """The entries an IDS root earns, in registration order.
+    @server.tool(name='plugin')
+    def plugin(action: Literal['list', 'run'],
+               uri: str,
+               ids_name: Optional[str] = None,
+               plugin: Optional[str] = None,
+               entry: Optional[int] = None,
+               occurrence: Optional[int] = None,
+               time: Optional[float] = None):
+        """The plugins a case offers, and `action` picks the ask.
 
-        The feature number, its label, its description for each -- and
-        with the answer, the refusals of the plugins the case cannot
-        offer, named.
+        "list": the entries an IDS root earns, in registration order -- the
+        feature number, its label, its description for each -- and beside
+        them the refusals of the plugins the case cannot offer. "run": one
+        entry of one plugin, with the answers the entry would have asked the
+        user -- which is what keeps a modal question off the path of an
+        agent: an entry that asks an instant (`equilibriumsurfaces` entry 1)
+        and is handed none is refused by name, not left to open a dialog.
+
+        `ids_name`, `plugin` and `entry` are Optional because "list" names no
+        plugin and no entry; a word the asked action does not take is refused
+        by name instead of travelling to the core. The defaults of the run --
+        occurrence 0, the branch resolved from the case -- stay the core's.
         """
-        return _run(partial(core.list_plugins, uri, ids_name))
-
-    @server.tool(name='run_plugin')
-    def run_plugin(uri: str, plugin: str, entry: int, occurrence: int = 0,
-                   ids_name: Optional[str] = None,
-                   time: Optional[float] = None):
-        """Run one entry of a plugin, with the answers the entry would
-        have asked the user.
-
-        `occurrence` and `time` are handed instead of being asked -- which
-        is what keeps a modal question off the path of an agent: an entry
-        that asks an instant (`equilibriumsurfaces` entry 1) and is handed
-        none is refused by name, not left to open a dialog.
-
-        `ids_name` says which IDS branch the line is asked on. Left out,
-        the branch is resolved by searching the case for the branches that
-        earn that entry: one is used, several or none is refused with them
-        named. Refused by name when the case does not offer that entry.
-        """
-        return _run(partial(core.run_plugin, uri, plugin, entry,
-                            occurrence=occurrence, ids_name=ids_name,
-                            time=time))
+        gesture = gestureOf('plugin', {'action': action})
+        args = {field: value for field, value in (
+            ('uri', uri), ('ids_name', ids_name), ('plugin', plugin),
+            ('entry', entry), ('occurrence', occurrence), ('time', time))
+            if value is not None}
+        unknown = unknownParameters(gesture, args)
+        if unknown:
+            raise ValueError(unknownParameterRefusal(gesture, unknown))
+        missing = missingParameters(gesture, args)
+        if missing:
+            raise ValueError(missingParameterRefusal(gesture, missing))
+        spelled = argumentsForMember(gesture, args)
+        return _run(partial(getattr(core, gesture), **spelled))
 
     # --------------------------------------------------------------- session
 

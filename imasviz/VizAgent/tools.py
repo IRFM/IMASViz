@@ -846,42 +846,55 @@ TOOLS = [
                                       'the size the window holds'},
         }, 'required': ['action'], 'additionalProperties': False},
     ),
+    # Two asks about the plugins of a case, and they answer each other: "list"
+    # names the plugin and numbers the entry that "run" then takes back. Both
+    # ask a case, so the group requires `uri` beside its discriminant. What the
+    # rows of `ACTION_PARAMETERS` answer is the other half: a "run" without its
+    # `entry` is an incomplete call, and a `plugin` beside "list" is a word
+    # that went to the wrong ask.
     _tool(
-        'list_plugins',
-        'The entries an IDS root earns, in registration order. '
-        'The feature number, its label, its description for each.',
-        {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-            'ids_name': {'type': 'string'},
-        }, 'required': ['uri', 'ids_name'], 'additionalProperties': False},
-    ),
-    _tool(
-        'run_plugin',
-        'Run one entry of a plugin, with the answers the entry would have '
-        'asked the user. `occurrence` and `time` are handed instead of being '
-        'asked: an entry that asks an instant and is handed none is refused by '
-        'name, not left to open a dialog. `ids_name` says which IDS branch the '
-        'line is asked on; left out, the branch is resolved from the case, and '
+        'plugin',
+        'The plugins a case offers, and `action` says which ask. "list": the '
+        'entries an IDS root earns, in registration order -- the feature '
+        'number, its label, its description for each -- and beside them the '
+        'refusals of the plugins the case cannot offer. "run": one entry of '
+        'one plugin, with the answers the entry would have asked the user: '
+        '`occurrence` and `time` are handed instead of being asked, so an '
+        'entry that asks an instant and is handed none is refused by name, '
+        'not left to open a dialog. `ids_name` says which IDS branch the line '
+        'is asked on; left out, the branch is resolved from the case, and '
         'several branches earning that entry is refused with them named. '
-        'Refused by name when the case does not offer that entry. '
-        'The entry draws its own window: `drawn` names the ones it opened or '
-        'redrew and `reused` the one it drew again. Asking the same entry '
-        'again with the same answers draws into the window that already '
-        'stands instead of opening another over it. What does double is '
-        'asking the entry AND the tool that entry answers with: the two '
-        '`equilibriumsurfaces` entries ARE '
-        '`equilibrium(action="surfaces")` (entry 0) and '
-        '`equilibrium(action="at_time")` (entry 1), as the profiles entry '
-        'is the table and curve draws. Ask one per window.',
+        'Refused by name when the case does not offer that entry. The entry '
+        'draws its own window: `drawn` names the ones it opened or redrew and '
+        '`reused` the one it drew again. Asking the same entry again with the '
+        'same answers draws into the window that already stands instead of '
+        'opening another over it. What does double is asking the entry AND '
+        'the tool that entry answers with: the two `equilibriumsurfaces` '
+        'entries ARE `equilibrium(action="surfaces")` (entry 0) and '
+        '`equilibrium(action="at_time")` (entry 1), as the profiles entry is '
+        'the table and curve draws. Ask one per window.',
         {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-            'plugin': {'type': 'string'},
-            'entry': {'type': 'integer'},
-            'occurrence': {'type': 'integer', 'default': 0},
-            'ids_name': {'type': ['string', 'null']},
-            'time': {'type': ['number', 'null']},
-        }, 'required': ['uri', 'plugin', 'entry'],
-         'additionalProperties': False},
+            'action': {'type': 'string', 'enum': ['list', 'run']},
+            'uri': {'type': 'string',
+                    'description': 'the case whose plugins are asked'},
+            'ids_name': {'type': ['string', 'null'],
+                         'description': '"list": the IDS root whose entries '
+                                        'are asked, and it is asked of that '
+                                        'action. "run": which IDS branch the '
+                                        'line stands on; left out, it is '
+                                        'resolved from the case'},
+            'plugin': {'type': ['string', 'null'],
+                       'description': '"run": the plugin, as "list" named it'},
+            'entry': {'type': ['integer', 'null'],
+                      'description': '"run": the entry number, as "list" '
+                                     'numbered it'},
+            'occurrence': {'type': ['integer', 'null'],
+                           'description': '"run": which occurrence to draw; 0 '
+                                          'when left out'},
+            'time': {'type': ['number', 'null'],
+                     'description': '"run": the instant the entry would have '
+                                    'asked the user for'},
+        }, 'required': ['action', 'uri'], 'additionalProperties': False},
     ),
     # One name for the run as a thing kept: written, put back, cleared, and
     # the files beside it that a run is made of. The discriminant is
@@ -1781,6 +1794,23 @@ ACTION_PARAMETERS = {
         'width': {'type': ['integer', 'null']},
         'height': {'type': ['integer', 'null']},
     }, ()),
+    # The two asks about the plugins of a case. The group requires `uri`
+    # because both ask a case, but "list" asks the IDS root whose entries it
+    # wants and "run" asks the entry itself: these rows are what say that a
+    # "run" that names no `entry` is an incomplete call, and that an
+    # `ids_name` alone is not an answer for either of them.
+    'list_plugins': ({
+        'uri': {'type': 'string'},
+        'ids_name': {'type': 'string'},
+    }, ('uri', 'ids_name')),
+    'run_plugin': ({
+        'uri': {'type': 'string'},
+        'plugin': {'type': 'string'},
+        'entry': {'type': 'integer'},
+        'occurrence': {'type': 'integer', 'default': 0},
+        'ids_name': {'type': ['string', 'null']},
+        'time': {'type': ['number', 'null']},
+    }, ('uri', 'plugin', 'entry')),
     'plot_report': ({
         'figure_key': {'type': 'string'},
         'name': {'type': ['string', 'null']},
