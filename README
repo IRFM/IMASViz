@@ -225,7 +225,7 @@ them for the user.
 | plugins | `list_plugins`, `run_plugin` |
 | session | `save_session`, `restore_session`, `export_to_ids`, `list_sessions`, `list_configurations`, `save_selection` |
 | inspection | `get_screenshot` (PNG of a window — a figure key it does not hold is refused by name), `get_logs` (the case log panel) |
-| reports | `plot_report` (one window of curves as self-contained HTML with stats), `case_report` (the whole loaded tree as HTML with stats) |
+| reports | `generate_report` — one tool, and `scope` says which report: `plot` (a window of curves as self-contained HTML with stats), `case_loaded` (the whole loaded tree as HTML with stats), `case_ids` (the case itself: the IDSs it holds, the occurrences of each, what the session loaded) |
 
 Stylage and cursors are kept in the hands of the user; they are not offered
 as tools. The suite drives this layer in `tests/test_100_mcp_core_offscreen.py`

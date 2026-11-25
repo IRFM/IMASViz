@@ -600,8 +600,8 @@ TOOLS = [
         'The numbers of a figure\'s drawn curve(s): sample count, finite '
         'min/max/mean/std of the values, the nan/inf counts, and the peak '
         'value with its abscissa. The read of a figure before or after a '
-        'scale/shift/normalize; plot_report is the same read with an HTML '
-        'file on disk.',
+        'scale/shift/normalize; generate_report(scope="plot") is the same '
+        'read with an HTML file on disk.',
         {'type': 'object', 'properties': {
             'figure_key': {'type': 'string'},
             'curve': {'type': ['string', 'integer', 'null']},
@@ -1059,53 +1059,41 @@ TOOLS = [
          'additionalProperties': False},
     ),
     _tool(
-        'plot_report',
-        'A window of curves as a self-contained HTML report on disk: the '
+        'generate_report',
+        'A self-contained HTML report on disk under `~/.imasviz/reports`; '
+        '`scope` says which report. "plot" -- a window of curves: the '
         'image of the window, and one row per trace it drew -- the '
         'quantity, the number of samples, the finite minimum and maximum, '
         'and the nan/inf counts. This is the "rapport"/"report" the user '
         'asks for. For a report of more than one plot, call it once per '
         'plot -- a report is one window, and the page lists the ones a '
-        'request wrote together. The file lands in `~/.imasviz/reports`; '
-        '`name` is the report name (a place, not a report, is refused). '
-        'A window that draws no curve it could stat is refused by name.',
-        {'type': 'object', 'properties': {
-            'figure_key': {'type': 'string'},
-            'name': {'type': ['string', 'null']},
-        }, 'required': ['figure_key'], 'additionalProperties': False},
-    ),
-    _tool(
-        'case_report',
-        'The loaded tree of a case as a self-contained HTML report on '
-        'disk: one row per curve the tree holds -- the numeric arrays its '
+        'request wrote together. A window that draws no curve it could '
+        'stat is refused by name. "case_loaded" -- the loaded tree of a '
+        'case: one row per curve the tree holds -- the numeric arrays its '
         'leaves read, in tree order -- with the statistics of each. An IDS '
         'not yet loaded is not a curve, so the answer says how many curves '
         'it gave and list_idss names what the case still holds. A case '
-        'whose loaded tree has no curve is refused by name.',
+        'whose loaded tree has no curve is refused by name. "case_ids" -- '
+        'the case itself: every IDS the case\'s data dictionary holds and '
+        'the occurrences each one holds, which of those the session '
+        'loaded, and for each loaded occurrence the header of its '
+        '`ids_properties` values and available signals -- the signals the '
+        'tree holds for it, kept to the ones the tree carries as available '
+        '(the same test its own colouring applies), a 0-D scalar held by '
+        'the dynamic array among them. The "inventaire du cas" / "what '
+        'does this case hold" report. A property the case leaves empty is '
+        'named empty, an occurrence without an available signal is named '
+        'as such, and a case that holds no data at all is refused by name. '
+        '`scope="plot"` takes the `figure_key` of the window, the other '
+        'two the `uri` of the case; `name` is the report name (a place, '
+        'not a report, is refused).',
         {'type': 'object', 'properties': {
+            'scope': {'type': 'string',
+                      'enum': ['plot', 'case_loaded', 'case_ids']},
+            'figure_key': {'type': 'string'},
             'uri': {'type': 'string'},
             'name': {'type': ['string', 'null']},
-        }, 'required': ['uri'], 'additionalProperties': False},
-    ),
-    _tool(
-        'case_ids_report',
-        'The case itself as a self-contained HTML report on disk: every '
-        'IDS the case\'s data dictionary holds and the occurrences each '
-        'one holds, which of those the session loaded, and for each loaded '
-        'occurrence the header of its `ids_properties` values and '
-        'available signals -- the signals the tree holds for it, kept to '
-        'the ones the tree carries as available (the same test its own '
-        'colouring applies), a 0-D scalar held by the dynamic array '
-        'among them. The "inventaire du cas" / "what does this case '
-        'hold" report. A property the case leaves empty is named empty, '
-        'an occurrence without an available signal is named as such, and '
-        'a case that holds no data at all is refused by name. `name` is '
-        'the report name under '
-        '`~/.imasviz/reports` (a place, not a report, is refused).',
-        {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-            'name': {'type': ['string', 'null']},
-        }, 'required': ['uri'], 'additionalProperties': False},
+        }, 'required': ['scope'], 'additionalProperties': False},
     ),
     _tool(
         'export_to_ids',
@@ -1548,74 +1536,351 @@ TOOL_PARAMETERS = {
 # drift without a word: test_174 refuses a group naming a tool that is not
 # offered, a tool left out of every group, and a tool in two of them.
 #
-# A group is NOT a name the loop is offered: every tool is still offered by
-# its own name, and a group answers one question the flat schemas cannot --
-# which of the neighbouring tools a stray parameter belongs to. The 84
-# schemas repeat the same parameter words (``along`` 12 times, ``scope``
-# 13, ``figure_key`` 18), so a parameter the model put on the wrong tool of
-# a group is a far likelier mistake than a parameter it invented, and the
-# refusal that only lists what is *not* there leaves the model guessing.
+# A group answers a question the flat schemas cannot: the 84 schemas repeat
+# the same parameter words (``along`` 12 times, ``scope`` 13, ``figure_key``
+# 18), so a parameter the model put on the wrong tool of a group is a far
+# likelier mistake than a parameter it invented, and a refusal that only
+# lists what is *not* there leaves the model guessing -- ``siblingTaking``
+# and ``unknownParameterRefusal`` are that answer.
 #
-# The day a group is offered under one name instead of its members, this is
-# the table that says which member answers which call, and the loop's guards
-# (``DESTRUCTIVE_GESTURES``, ``SHARED_JOURNAL_GESTURES``, ``_WORK_GESTURES``)
-# must keep being asked about the member's name, not the group's: a
-# ``manage_window(action='close')`` that reaches the guard as
-# ``manage_window`` is a closed window nobody asked for.
+# Each entry is ``(label, members, offers)``, and an offer is
+# ``(offeredName, discriminator, ((action, member), ...))``:
+#
+#   * no offers -- the group is offered member by member, under its own name;
+#   * one offer -- the group answers one name, and the ``discriminator``
+#     parameter says which member the call means;
+#   * two offers -- the group is kept together for the refusal (its tools
+#     answer each other's parameters) but is not one tool: "the drawing" is
+#     ``plot(mode=...)`` and ``get_signal``, "the curves already drawn" is
+#     ``transform_curve(operation=...)`` and ``read_figure(action=...)``.
+#
+# The seam that makes this safe is one rule, and it is the whole reason the
+# table lives beside the schemas instead of inside the loop:
+#
+#     a call reaches the core, the guards and the loop's own account as its
+#     MEMBER, never as its group.
+#
+# ``manage_window(action='close')`` is the case that pays for the rule: the
+# guard at ``DESTRUCTIVE_GESTURES`` is asked about ``close_window``, so a
+# window is only taken away when the user asked for it -- a guard that read
+# the call as ``manage_window`` would not recognise it and would close a
+# figure nobody named. The same holds for what a turn keeps of itself: the
+# set of reports that wrote a file, the figures a close took away, the notes
+# a journal line stands on, the figures a turn worked on for a capture --
+# all keyed by the member, because that is the vocabulary the guards and
+# ``mcp_server.agent_mode.FIGURE_MUTATIONS`` were written in.
+#
+# What a MODEL reads is the other vocabulary, and it stays the OFFERED one:
+# the transcript lines, ``last_action``, the ``name`` of the tool message
+# handed back. A model that reads "plot_report: saved to ..." in its own
+# transcript calls ``plot_report`` on the next turn and is refused for a name
+# it was never offered, so the merge would leak into the very place that can
+# not act on it. Prose that INSTRUCTS a call -- what a re-anchor asks the
+# model to answer with -- is spelled from the offer for the same reason:
+# ``callSpelling`` says it, and test_175 refuses any instruction naming a
+# name that is not on offer.
+#
+# A group whose offer is in ``TOOLS`` no longer offers its members: the coup
+# is clean, and ``resolveCall`` refuses a member name that was merged away
+# while naming the offer that took its place.
 FAMILIES = (
-    ('cases', ('open_case', 'list_cases', 'close_case')),
-    ('the IDSs', ('list_idss', 'list_case_idss', 'load_ids')),
+    ('cases', ('open_case', 'list_cases', 'close_case'), (
+        ('manage_case', 'action', (
+            ('open', 'open_case'),
+            ('list', 'list_cases'),
+            ('close', 'close_case'))),
+    )),
+    ('the IDSs', ('list_idss', 'list_case_idss', 'load_ids'), (
+        ('manage_idss', 'action', (
+            ('declared', 'list_idss'),
+            ('filled', 'list_case_idss'),
+            ('load', 'load_ids'))),
+    )),
     ('the tree', ('search_nodes', 'describe_node', 'describe_ids',
-                  'list_quantities')),
-    ('the selection', ('select_signals', 'unselect_all', 'list_selection')),
+                  'list_quantities'), (
+        ('inspect_tree', 'action', (
+            ('search', 'search_nodes'),
+            ('node', 'describe_node'),
+            ('ids', 'describe_ids'),
+            ('quantities', 'list_quantities'))),
+    )),
+    ('the selection', ('select_signals', 'unselect_all', 'list_selection'), (
+        ('manage_selection', 'action', (
+            ('select', 'select_signals'),
+            ('clear', 'unselect_all'),
+            ('list', 'list_selection'))),
+    )),
     ('the drawing', ('plot_one', 'plot_slice', 'plot_selection',
-                     'plot_table', 'plot_stacked', 'get_signal')),
-    ('the equilibrium', ('equilibrium_surfaces', 'equilibrium_at_time')),
+                     'plot_table', 'plot_stacked', 'get_signal'), (
+        ('plot', 'mode', (
+            ('single', 'plot_one'),
+            ('slice', 'plot_slice'),
+            ('selection', 'plot_selection'),
+            ('table', 'plot_table'),
+            ('stacked', 'plot_stacked'))),
+        ('get_signal', None, ()),
+    )),
+    ('the equilibrium', ('equilibrium_surfaces', 'equilibrium_at_time'), (
+        ('equilibrium', 'action', (
+            ('surfaces', 'equilibrium_surfaces'),
+            ('at_time', 'equilibrium_at_time'))),
+    )),
     ('the curves already drawn', ('scale_curve', 'shift_curve',
                                   'normalize_curve', 'reset_curve',
                                   'remove_curve', 'curve_stats',
-                                  'export_curve')),
+                                  'export_curve'), (
+        ('transform_curve', 'operation', (
+            ('scale', 'scale_curve'),
+            ('shift', 'shift_curve'),
+            ('normalize', 'normalize_curve'),
+            ('reset', 'reset_curve'),
+            ('remove', 'remove_curve'))),
+        ('read_figure', 'action', (
+            ('stats', 'curve_stats'),
+            ('export', 'export_curve'))),
+    )),
     ('the axes and the slices of a window',
      ('set_axis_range', 'set_image_window', 'set_slice_index',
-      'set_log_scale', 'invert_axis')),
+      'set_log_scale', 'invert_axis'), (
+        ('configure_axes', 'operation', (
+            ('range', 'set_axis_range'),
+            ('image_window', 'set_image_window'),
+            ('slice_index', 'set_slice_index'),
+            ('log', 'set_log_scale'),
+            ('invert', 'invert_axis'))),
+    )),
     ('the physics of a signal', ('detect_events', 'clear_event_marks',
                                  'events_report', 'spectrum',
-                                 'cross_correlation', 'spectrum_report')),
-    ('what a case says', ('greenwald', 'beta_normal', 'total_pressure')),
-    ('a campaign of shots', ('campaign', 'campaign_report')),
+                                 'cross_correlation', 'spectrum_report'), (
+        ('analyze_signal', 'action', (
+            ('events', 'detect_events'),
+            ('clear_events', 'clear_event_marks'),
+            ('events_report', 'events_report'),
+            ('spectrum', 'spectrum'),
+            ('correlate', 'cross_correlation'),
+            ('spectrum_report', 'spectrum_report'))),
+    )),
+    ('what a case says', ('greenwald', 'beta_normal', 'total_pressure'), (
+        ('derived_quantity', 'quantity', (
+            ('greenwald', 'greenwald'),
+            ('beta_normal', 'beta_normal'),
+            ('total_pressure', 'total_pressure'))),
+    )),
+    ('a campaign of shots', ('campaign', 'campaign_report'), (
+        # Not `campaign`: the group holds a tool of that name, and one name
+        # answering two things is the confusion this table exists to end.
+        ('trend_campaign', 'action', (
+            ('values', 'campaign'),
+            ('report', 'campaign_report'))),
+    )),
+    # `focus_window` stands with the windows it moves, not with the capture
+    # it used to share a group with: one name for everything a window answers.
     ('the windows', ('list_windows', 'show_window', 'hide_window',
-                     'close_window')),
-    ('the plugins', ('list_plugins', 'run_plugin')),
+                     'close_window', 'focus_window'), (
+        ('manage_window', 'action', (
+            ('list', 'list_windows'),
+            ('show', 'show_window'),
+            ('hide', 'hide_window'),
+            ('close', 'close_window'),
+            ('focus', 'focus_window'))),
+    )),
+    ('the plugins', ('list_plugins', 'run_plugin'), (
+        ('plugin', 'action', (
+            ('list', 'list_plugins'),
+            ('run', 'run_plugin'))),
+    )),
     ('sessions and configurations', ('save_session', 'restore_session',
                                      'new_session', 'list_sessions',
                                      'list_configurations',
                                      'select_from_configuration',
                                      'save_selection',
-                                     'save_plot_configuration')),
-    ('the reports', ('plot_report', 'case_report', 'case_ids_report')),
-    ('the export', ('export_to_ids',)),
-    ('the screen', ('get_screenshot', 'focus_window')),
-    ('the log', ('get_logs',)),
+                                     'save_plot_configuration'), (
+        ('manage_session', 'action', (
+            ('save', 'save_session'),
+            ('restore', 'restore_session'),
+            ('new', 'new_session'),
+            ('list', 'list_sessions'),
+            ('configurations', 'list_configurations'),
+            ('apply', 'select_from_configuration'),
+            ('save_selection', 'save_selection'),
+            ('save_plot_configuration', 'save_plot_configuration'))),
+    )),
+    # Offered under one name since this pass: the three reports answer the
+    # same question about three different things, and `scope` is that
+    # question -- no member of the group takes a `scope` of its own, which
+    # is what test_175 refuses for every group (the journals group cannot
+    # use it: `add_note(scope, ...)` already does).
+    ('the reports', ('plot_report', 'case_report', 'case_ids_report'), (
+        ('generate_report', 'scope', (
+            ('plot', 'plot_report'),
+            ('case_loaded', 'case_report'),
+            ('case_ids', 'case_ids_report'))),
+    )),
+    ('the export', ('export_to_ids',), (
+        ('export_to_ids', None, ()),
+    )),
+    ('the screen', ('get_screenshot',), (
+        ('get_screenshot', None, ()),
+    )),
+    ('the log', ('get_logs',), (
+        ('get_logs', None, ()),
+    )),
     ('the journals', ('search_journals', 'list_notes', 'read_note',
                       'add_note', 'edit_note', 'delete_note',
-                      'journal_stats', 'reindex_journals')),
+                      'journal_stats', 'reindex_journals'), (
+        ('manage_note', 'action', (
+            ('search', 'search_journals'),
+            ('list', 'list_notes'),
+            ('read', 'read_note'),
+            ('add', 'add_note'),
+            ('edit', 'edit_note'),
+            ('delete', 'delete_note'),
+            ('stats', 'journal_stats'),
+            ('reindex', 'reindex_journals'))),
+    )),
     ('the documents corpus', ('list_documents', 'search_documents',
                               'read_document', 'reindex_documents',
-                              'documents_stats')),
+                              'documents_stats'), (
+        ('manage_documents', 'action', (
+            ('list', 'list_documents'),
+            ('search', 'search_documents'),
+            ('read', 'read_document'),
+            ('reindex', 'reindex_documents'),
+            ('stats', 'documents_stats'))),
+    )),
     ('the prompts', ('list_prompts', 'prompt_detail', 'fill_prompt',
-                     'save_prompt', 'edit_prompt', 'delete_prompt')),
+                     'save_prompt', 'edit_prompt', 'delete_prompt'), (
+        ('manage_prompt', 'action', (
+            ('list', 'list_prompts'),
+            ('detail', 'prompt_detail'),
+            ('fill', 'fill_prompt'),
+            ('save', 'save_prompt'),
+            ('edit', 'edit_prompt'),
+            ('delete', 'delete_prompt'))),
+    )),
 )
 
+# An offer whose discriminator is None is a member spelled under its own
+# name: the group is not merged, and nothing is resolved.
+_OFFERS = {}
+for _label, _members, _offers in FAMILIES:
+    for _offer in (_offers or [(name, None, ()) for name in _members]):
+        _OFFERS[_offer[0]] = (_label, _offer[1], dict(_offer[2]),
+                              tuple(action for action, _ in _offer[2]))
+
+_OFFER_OF_MEMBER = {}
+for _name, (_label, _discriminator, _actions, _order) in _OFFERS.items():
+    for _action, _member in _actions.items():
+        _OFFER_OF_MEMBER[_member] = (_name, _action, _label)
+
+# The parameters each MERGED member takes -- the schema it had while it was
+# offered on its own, kept because it is what a call of that action must be
+# checked against. An offered schema can only declare what every action of
+# the group needs (`generate_report` lists `scope`, `figure_key`, `uri` and
+# `name`; only `scope` is required of every one of them), so without this,
+# `generate_report(scope="plot")` would reach the core missing a `figure_key`
+# and Python would answer with a TypeError about a positional argument.
+#
+# A member of a group that is not merged appears in no row: its own schema,
+# spelled in its `_tool` definition, is both what is offered and what is
+# checked. test_175 refuses the drift between a row here and the offered
+# schema of its group: an action taking a parameter the group's schema does
+# not declare is a call the model is never told it may make.
+ACTION_PARAMETERS = {
+    'plot_report': ({
+        'figure_key': {'type': 'string'},
+        'name': {'type': ['string', 'null']},
+    }, ('figure_key',)),
+    'case_report': ({
+        'uri': {'type': 'string'},
+        'name': {'type': ['string', 'null']},
+    }, ('uri',)),
+    'case_ids_report': ({
+        'uri': {'type': 'string'},
+        'name': {'type': ['string', 'null']},
+    }, ('uri',)),
+}
+
+
+def parametersOf(name):
+    """The parameters a gesture takes: its own row when its group is merged,
+    its own schema while it is offered on its own. Empty for a name that is
+    neither."""
+    row = ACTION_PARAMETERS.get(name)
+    if row is not None:
+        return {'properties': row[0], 'required': list(row[1])}
+    return TOOL_PARAMETERS.get(name, {})
+
+
 _FAMILY_OF_TOOL = {name: label
-                   for label, members in FAMILIES
+                   for label, members, _offers in FAMILIES
                    for name in members}
 
-_FAMILY_MEMBERS = dict(FAMILIES)
+_FAMILY_MEMBERS = {label: members
+                   for label, members, _offers in FAMILIES}
+
+
+def offeredNames():
+    """Every name the groups answer: merged groups one, the rest member by
+    member. ``TOOLS`` is still what the loop is offered; this is what it
+    would be offered once every group is spelled under one name."""
+    return tuple(name for name in _OFFERS)
+
+
+def memberNames():
+    """Every gesture, merged or not -- the vocabulary the guards and the
+    loop's own account speak, and the one a journal line or a saved prompt
+    may still quote after its group is merged."""
+    return tuple(name for _label, members, _offers in FAMILIES
+                 for name in members)
+
+
+def isOfferName(name):
+    """Whether ``name`` is a group answering one name, rather than a tool."""
+    return name in _OFFERS and _OFFERS[name][1] is not None
+
+
+def actionsOf(name):
+    """The actions a group's name answers, in the order the table spells
+    them. Empty for a tool and for a name that is not a group's."""
+    offer = _OFFERS.get(name)
+    return () if offer is None else offer[3]
+
+
+def discriminatorOf(name):
+    """The parameter that says which gesture a group's name is asked for
+    (``mode`` for ``plot``, ``scope`` for ``generate_report``), and None for
+    a name that answers itself.
+
+    Two things hinge on it. A model told "``scope`` is missing" has to be
+    told the name of the thing missing, and a group whose discriminant
+    shares a name with a parameter one of its own members takes is a group
+    where one word answers two questions -- which is why the journals group
+    is merged under ``action`` and never under ``scope``, that group's
+    ``add_note`` already taking a ``scope`` of its own."""
+    offer = _OFFERS.get(name)
+    return None if offer is None else offer[1]
 
 
 def familyOf(name):
     """The group a tool belongs to, and None for a name that is not one."""
     return _FAMILY_OF_TOOL.get(name)
+
+
+def membersOf(label):
+    """The gestures of the group spelled ``label``, in the order the table
+    holds them."""
+    return _FAMILY_MEMBERS[label]
+
+
+def callSpellings(label):
+    """The spelled calls of a whole group, in its order -- the shape the
+    loop's re-anchor text wears when it tells the model what to answer with
+    (``plot_report(figure_key) / case_report(uri)`` before the merge,
+    ``generate_report(scope="plot", figure_key) / ...`` after it). Spelled
+    from the table so a merge cannot leave an instruction naming a name the
+    model is no longer offered."""
+    return ' / '.join(callSpelling(member) for member in membersOf(label))
 
 
 def siblingTaking(name, parameter):
@@ -1630,11 +1895,11 @@ def siblingTaking(name, parameter):
     label = _FAMILY_OF_TOOL.get(name)
     if label is None:
         return []
-    if parameter in TOOL_PARAMETERS[name].get('properties', {}):
+    if parameter in parametersOf(name).get('properties', {}):
         return []
     return [other for other in _FAMILY_MEMBERS[label]
             if other != name
-            and parameter in TOOL_PARAMETERS[other].get('properties', {})]
+            and parameter in parametersOf(other).get('properties', {})]
 
 
 def unknownParameterRefusal(name, unknown):
@@ -1648,7 +1913,7 @@ def unknownParameterRefusal(name, unknown):
     ``columns`` on ``plot_one`` is a table asked with a single quantity's
     call, and the short way back is the tool that takes it.
     """
-    schema = TOOL_PARAMETERS.get(name, {})
+    schema = parametersOf(name)
     allowed = sorted(schema.get('properties', {}))
     if allowed:
         text = ('"%s" is not a parameter of the %s tool: it takes %s. '
@@ -1681,11 +1946,147 @@ def unknownParameters(name, args):
     that are, instead of letting Python's ``TypeError`` (``unexpected
     keyword argument``) speak for it. An unknown tool name, or a tool that
     admits extra parameters, answers an empty list.
+
+    Asked with a MERGED member, it is that member's row that decides, not
+    the group's offered schema: the group has to declare every action's
+    names, so ``uri`` is a legal name for ``generate_report`` and a stray
+    for ``scope="plot"``.
     """
-    schema = TOOL_PARAMETERS.get(name)
-    if schema is None:
+    if name not in TOOL_PARAMETERS and name not in ACTION_PARAMETERS:
         return []
+    schema = parametersOf(name)
     if schema.get('additionalProperties', False):
         return []
     allowed = set(schema.get('properties', {}))
     return sorted(set(args or {}) - allowed)
+
+
+_OFFERED_NAMES = frozenset(tool['function']['name'] for tool in TOOLS)
+
+
+def callSpelling(member):
+    """How a call that answers ``member`` is spelled to a model.
+
+    Two vocabularies live in this application now, and only one of them is
+    in front of the model: a guard decides on the member's name, a model can
+    only act on a name it was offered. So the prose that INSTRUCTS -- what a
+    re-anchor asks the model to answer with -- is spelled from the table:
+    the member's own name while its group is offered member by member
+    (``plot_report(figure_key)``, exactly what this file's refusals said by
+    hand before the table existed), and the group's name with the action
+    that means this member once it is merged
+    (``generate_report(scope="plot", figure_key)``). Required parameters
+    follow, in the order the schema spells them.
+    """
+    schema = parametersOf(member)
+    params = list(schema.get('required', ()))
+    offer = _OFFER_OF_MEMBER.get(member)
+    if (offer is not None and offer[0] in _OFFERED_NAMES
+            and _OFFERS[offer[0]][1] is not None):
+        name, action, _label = offer
+        params.insert(0, '%s="%s"' % (_OFFERS[name][1], action))
+        return '%s(%s)' % (name, ', '.join(params))
+    return '%s(%s)' % (member, ', '.join(params))
+
+
+def _actionRefusal(name, discriminator, order, value):
+    choices = ', '.join('"%s"' % action for action in order)
+    if value is None:
+        return ('the %s tool answers no gesture without a %s: answer with %s '
+                'among %s.' % (name, discriminator, discriminator, choices))
+    spelled = {member: action
+               for action, member in _OFFERS[name][2].items()}
+    if value in spelled:
+        return ('"%s" is the gesture the %s tool answers, not a %s it takes: '
+                'answer with %s="%s".'
+                % (value, name, discriminator, discriminator, spelled[value]))
+    return ('"%s" is not a %s the %s tool answers: it answers %s. Answer with '
+            'one of those.' % (value, discriminator, name, choices))
+
+
+def resolveCall(name, args):
+    """The gesture a call answers, and the arguments that gesture takes.
+
+    The one seam between what the model is offered and what the session
+    runs. A tool name answers itself; a merged group's name answers the
+    member its discriminator names, and the discriminator is taken out of
+    the arguments on the way -- so everything that DECIDES is asked about
+    the MEMBER: the core lookup, the parameter check, the destructive and
+    journal guards, the sets a turn keeps of what it did. What the model
+    READS back (the transcript, ``last_action``, the tool message) is left
+    at the offered spelling by the caller, which is the other half of the
+    same rule: see the header of ``FAMILIES``.
+
+    A member whose group is offered under one name is refused rather than
+    run: the coup is clean, and the refusal names the call that took its
+    place. A name that is neither a tool nor a group answers itself, so the
+    loop's own "not a gesture of this session" keeps speaking for it.
+
+    The action is refused by naming the actions and, when the model put a
+    member's name where the action belongs, by naming the action that means
+    it: ``generate_report(scope="plot_report")`` is one word from standing.
+    """
+    args = dict(args or {})
+    offer = _OFFERS.get(name)
+    if (offer is not None and offer[1] is not None
+            and name in _OFFERED_NAMES):
+        _label, discriminator, actions, order = offer
+        value = args.get(discriminator)
+        if value not in actions:
+            raise ValueError(_actionRefusal(name, discriminator, order, value))
+        args.pop(discriminator)
+        return actions[value], args
+    if name in _OFFERED_NAMES:
+        return name, args
+    merged = _OFFER_OF_MEMBER.get(name)
+    if merged is not None and merged[0] in _OFFERED_NAMES:
+        raise ValueError('the %s tool is no longer offered on its own: ask '
+                         '%s.' % (name, callSpelling(name)))
+    return name, args
+
+
+def gestureOf(name, args):
+    """Which gesture a call answers, without checking anything.
+
+    The pure sibling of ``resolveCall``, for the bookkeeping a turn keeps
+    *after* the call ran -- which report wrote a file, which figure a close
+    took away, which note a journal line stands on, which figure a turn
+    worked on. Those are asked about gestures, and a merged group's name is
+    not a gesture: ``generate_report(scope="plot")`` grounded a
+    ``plot_report``, and a guard that read the call as ``generate_report``
+    would refuse an honest answer about a file that stands on disk.
+
+    Nothing is refused here, and no argument is touched: a bad action
+    answers its own name, because ``resolveCall`` already refused the call
+    before this could be asked of it.
+    """
+    offer = _OFFERS.get(name)
+    if offer is None or offer[1] is None:
+        return name
+    member = offer[2].get((args or {}).get(offer[1]))
+    return member or name
+
+
+def missingParameters(name, args):
+    """The parameters the tool requires and the call left out.
+
+    The mirror of ``unknownParameters``, and the one the merge makes
+    necessary: a merged schema can only list what every action needs, so
+    ``generate_report(uri)`` is a legal-looking call that would reach
+    Python as a ``TypeError`` about a missing positional argument. It is
+    refused naming the call that is missing what.
+
+    A MERGED member is measured against its own row for the same reason:
+    the group's schema requires only what every action needs, so the
+    group's ``required`` list can never say that ``scope="plot"`` without
+    a ``figure_key`` is an incomplete call.
+    """
+    if name not in TOOL_PARAMETERS and name not in ACTION_PARAMETERS:
+        return []
+    schema = parametersOf(name)
+    return sorted(set(schema.get('required', ())) - set(args or {}))
+
+
+def missingParameterRefusal(name, missing):
+    return ('the %s tool needs %s and the call did not give it: answer with '
+            '%s.' % (name, ' and '.join(missing), callSpelling(name)))

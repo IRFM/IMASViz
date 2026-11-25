@@ -18,22 +18,27 @@ copies the group rows of the manual's tool table
 (``doc/source/manual/agentics.rst``, "The one core and the one tool set").
 A group that drifts from its row -- a tool renamed on one side, a new tool
 offered and grouped nowhere, a tool claimed by two groups -- is a table
-nobody can read, so the doc itself is parsed and asked. The catalogue of
+nobody can read, so the doc itself is parsed and asked. A row names what a
+reader can call, which since the first merge is not always the group's
+member list: the reports row says ``generate_report``, because the three
+report tools it merged are off the wire. The catalogue of
 prompts is the one group the manual documents in its own section rather
 than in that table: it is grouped here (its six tools answer each other's
 parameters) and owes that row to the pass that redraws the table.
 
 **The grouping answers a question the flat schemas cannot.** The loop
-offers 84 tools and their 86 parameter names repeat (``figure_key`` in 18
-schemas, ``uri`` in 37, ``along`` in 12), so the likelier mistake is a real
-parameter put on the wrong neighbour, not a parameter invented out of
+offers over eighty tools and their 86 parameter names repeat (``figure_key``
+in 18 schemas, ``uri`` in 37, ``along`` in 12), so the likelier mistake is a
+real parameter put on the wrong neighbour, not a parameter invented out of
 nothing. The refusal that only lists what is *not* there -- what
 ``test_117_dispatch_refuses_unknown_parameters.py`` pins -- leaves the
 model guessing which neighbour wanted it. ``time_index`` on ``plot_one``
 is the measured case: ``get_signal`` takes it, and said so.
 
-Nothing here changes what the loop is offered: each tool is still offered
-by its own name, and each is still validated against its own schema.
+What the grouping does NOT do is decide what a call runs: the merge of a
+group into one name is ``test_175``'s subject, and until a group is merged
+each of its tools is still offered by its own name and validated against
+its own schema.
 """
 
 import importlib.util
@@ -100,18 +105,58 @@ def _names(cell):
 
 # --- the grouping -------------------------------------------------------
 
+def _row(label):
+    """The table's row for one group label."""
+    for familyLabel, members, offers in FAMILIES:
+        if familyLabel == label:
+            return members, offers
+    raise KeyError(label)
+
+
+def _onTheWire(label):
+    """The names of one group that the loop is offered today.
+
+    A group offered member by one answers all of them; a group merged
+    under one name answers that name and no longer offers the members it
+    merged -- so the wire list is neither the member list nor the offer
+    list, and the manual has to say what a reader can actually call."""
+    members, offers = _row(label)
+    offered = set(members) & set(TOOL_NAMES)
+    offered |= {offer[0] for offer in offers if offer[0] in TOOL_NAMES}
+    return offered
+
+
 def test_the_groups_partition_the_tools_on_offer():
-    """Every tool offered is in one group, and in only one. A tool added to
-    ``TOOLS`` and grouped nowhere is a tool whose stray parameters answer
-    nothing; a tool in two groups is a refusal that can point at either."""
-    members = [name for _, group in FAMILIES for name in group]
+    """Every tool of the vocabulary is in one group, and in only one; every
+    name on the wire is claimed by exactly one group; and a member that is
+    no longer on the wire is a member merged under an offer that is.
+
+    A tool added to ``TOOLS`` and grouped nowhere is a tool whose stray
+    parameters answer nothing; a tool in two groups is a refusal that can
+    point at either; and a member that left the wire without its group
+    coming onto it is a tool the model is no longer offered and nobody
+    replaced."""
+    members = [name for _, group, _offers in FAMILIES for name in group]
     assert len(members) == len(set(members)), \
         'a tool is claimed by two groups'
-    assert set(members) == set(TOOL_NAMES), \
-        ('the groups and the tools on offer are not the same list: %s'
-         % ', '.join(sorted(set(members) ^ set(TOOL_NAMES))))
-    labels = [label for label, _ in FAMILIES]
+    labels = [label for label, _, _ in FAMILIES]
     assert len(labels) == len(set(labels)), 'two groups share a label'
+
+    claimed = {}
+    for label, group, offers in FAMILIES:
+        for name in list(group) + [offer[0] for offer in offers]:
+            claimed.setdefault(name, set()).add(label)
+    for name in TOOL_NAMES:
+        assert len(claimed.get(name, [])) == 1, \
+            ('%s is claimed by %s' % (name, sorted(claimed.get(name, []))
+                                      or 'no group'))
+    for name in members:
+        if name in TOOL_NAMES:
+            continue
+        _members, offers = _row(sorted(claimed[name])[0])
+        assert any(offer[0] in TOOL_NAMES for offer in offers), \
+            ('%s is off the wire and its group offers nothing that is on it'
+             % name)
 
 
 def test_the_groups_are_the_manual_s():
@@ -119,7 +164,7 @@ def test_the_groups_are_the_manual_s():
     tools. This is what keeps the table in ``tools.py`` from becoming a
     second, quieter account of the surface."""
     manual = _manualGroups()
-    spelled = {label: set(group) for label, group in FAMILIES}
+    spelled = {label: _onTheWire(label) for label, _, _ in FAMILIES}
     missing = sorted(set(manual) - set(spelled))
     assert not missing, \
         'the manual groups tools the table does not: %s' % ', '.join(missing)
@@ -141,7 +186,7 @@ def test_the_groups_are_in_the_manual_s_order():
     the one group the page documents in its own section rather than in that
     table, so it is left out of the comparison."""
     manual = _manualGroups()
-    spelled = [label for label, _ in FAMILIES if label in manual]
+    spelled = [label for label, _, _ in FAMILIES if label in manual]
     assert spelled == list(manual), \
         ('the groups are not in the order the manual draws them: %s'
          % ' / '.join(spelled))
@@ -205,19 +250,20 @@ def test_a_name_that_is_not_a_tool_is_answered_as_such():
 
 
 def test_the_advice_stays_inside_the_group():
-    """``show_window`` takes ``key`` while the two tools of the *screen*
-    group take ``window`` -- one of the spellings the merge of the windows
-    will have to settle. Until it does, a ``window`` put on ``show_window``
-    is answered by the parameter that is (``key``) and by nothing else:
-    pointing across groups at a tool that raises a window instead of
-    showing it is a guess about what the caller meant, and a guess is what
-    a refusal exists to avoid."""
+    """``show_window`` takes ``key`` while its neighbour of the same group,
+    ``focus_window``, takes ``window`` -- the two spellings the merge of the
+    windows will have to settle. A ``window`` put on ``show_window`` is
+    answered by the neighbour that takes it and never by a tool outside the
+    group: the capture names a window the same way, but pointing at it is a
+    guess about what the caller meant, and a guess is what a refusal exists
+    to avoid."""
     text = unknownParameterRefusal('show_window', ['window'])
     assert 'it takes key' in text
-    assert siblingTaking('show_window', 'window') == []
-    for other in ('focus_window', 'get_screenshot'):
-        assert other not in text, \
-            'the advice left the group and reached %s' % other
+    assert siblingTaking('show_window', 'window') == ['focus_window']
+    assert 'focus_window' in text, \
+        'the neighbour that takes the stray must be named'
+    assert 'get_screenshot' not in text, \
+        'the advice left the group and reached %s' % 'the capture'
 
 
 # --- the loop, end to end ----------------------------------------------

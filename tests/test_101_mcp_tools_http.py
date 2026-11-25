@@ -50,7 +50,7 @@ EXPECTED_TOOLS = {
     'save_session', 'restore_session',
     'list_sessions', 'list_configurations', 'select_from_configuration',
     'save_selection', 'save_plot_configuration',
-    'plot_report', 'case_report',
+    'generate_report',
     'export_to_ids',
     'get_screenshot', 'get_logs',
 }

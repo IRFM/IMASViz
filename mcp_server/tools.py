@@ -22,10 +22,20 @@ touch the widgets -- the rule the dispatcher exists for.
 
 import base64
 from functools import partial
-from typing import Optional
+from typing import Literal, Optional
 
 from mcp.server.fastmcp import FastMCP
 from mcp import types as mcp_types
+
+# The tool vocabulary is one table, not two: the group name, the action
+# inside it and the parameters that action takes are read from the same
+# declaration the in-app agent is offered, so a merged group cannot end up
+# spelled one way on the page and another on this endpoint.
+from imasviz.VizAgent.tools import (
+    gestureOf,
+    missingParameterRefusal,
+    missingParameters,
+)
 
 INSTRUCTIONS = """IMASViz, the ITER/CEA visualization front-end for IMAS plasma-fusion
 cases, driven by name and answered by name.
@@ -52,11 +62,13 @@ How to work with it:
    version), and list_quantities (the filled tensors of one occurrence,
    grouped by array of structures) -- answers, not guesses, and empty is
    an answer too;
-7. a report is self-contained HTML on disk: plot_report names one window
-   of curves (its image, one row per curve it drew, with the statistics
-   of each), case_report names the whole loaded tree of a case (one row
-   per curve it holds, in tree order), and case_ids_report names the
-   case itself -- every IDS the case holds and the occurrences each
+7. a report is self-contained HTML on disk, and it is one entry asked with
+   `scope`: generate_report(scope='plot') names one window of curves (its
+   image, one row per curve it drew, with the statistics of each),
+   generate_report(scope='case_loaded') names the whole loaded tree of a
+   case (one row per curve it holds, in tree order), and
+   generate_report(scope='case_ids') names the case itself -- every IDS
+   the case holds and the occurrences each
    holds, the ones the user loaded, a header of the `ids_properties`
    values per loaded occurrence, and the signals the tree holds for each
    (the ones it carries as available, a 0-D scalar held by the dynamic
@@ -557,7 +569,8 @@ def buildServer(core, dispatcher, name='imasviz'):
         finite min/max/mean/std of the values, the nan/inf counts, and the
         peak value with its abscissa. The read of a figure's curves in a
         place the reader can act on, before or after a scale/shift/
-        normalize; a `plot_report` is the same read with an HTML file.
+        normalize; a generate_report(scope='plot') is the same read with
+        an HTML file.
         """
         return _run(partial(core.curve_stats, figure_key, curve=curve))
 
@@ -884,46 +897,49 @@ def buildServer(core, dispatcher, name='imasviz'):
 
     # --------------------------------------------------------------- reports
 
-    @server.tool(name='plot_report')
-    def plot_report(figure_key: str, name: Optional[str] = None):
-        """A window of curves as a self-contained HTML report on disk.
+    @server.tool(name='generate_report')
+    def generate_report(scope: Literal['plot', 'case_loaded', 'case_ids'],
+                        figure_key: Optional[str] = None,
+                        uri: Optional[str] = None,
+                        name: Optional[str] = None):
+        """A self-contained HTML report on disk; `scope` says which report.
 
-        The image of the window, and one row per trace it drew -- the
-        quantity, the number of samples, the finite minimum and maximum,
-        and the nan/inf counts. The file lands in `~/.imasviz/reports`;
-        `name` is the report name (a place, not a report, is refused).
-        A window that draws no curve it could stat is refused by name.
-        """
-        return _run(partial(core.plot_report, figure_key, name=name))
-
-    @server.tool(name='case_report')
-    def case_report(uri: str, name: Optional[str] = None):
-        """The loaded tree of a case as a self-contained HTML report on disk.
-
-        One row per curve the tree holds -- the numeric arrays its leaves
-        read, in tree order -- with the statistics of each. `name` is the
-        report name (a place, not a report, is refused). A case whose
-        loaded tree has no curve is refused by name.
-        """
-        return _run(partial(core.case_report, uri, name=name))
-
-    @server.tool(name='case_ids_report')
-    def case_ids_report(uri: str, name: Optional[str] = None):
-        """The case itself as a self-contained HTML report on disk.
-
-        The inventory of the case under one page: every IDS the case's
-        data dictionary holds and the occurrences each one holds (read
-        through DBEntry.list_all_occurrences, not listed from memory),
-        which of those the session loaded, and for each loaded occurrence
-        a header of the `ids_properties` values of that occurrence plus
-        its available signals -- the signals the tree holds for it, kept
-        to the ones the tree carries as available (the same test its own
-        colouring applies), a 0-D scalar held by the dynamic array among
+        "plot" -- a window of curves: the image of the window, and one row
+        per trace it drew (the quantity, the number of samples, the finite
+        minimum and maximum, the nan/inf counts). The window is named by
+        `figure_key`; a window that draws no curve it could stat is refused
+        by name. "case_loaded" -- the loaded tree of a case, named by `uri`:
+        one row per curve the tree holds, the numeric arrays its leaves
+        read, in tree order, with the statistics of each. An IDS not yet
+        loaded is not a curve, so the answer says how many curves it gave
+        and list_idss names what the case still holds; a case whose loaded
+        tree has no curve is refused by name. "case_ids" -- the case itself
+        under one page: every IDS its data dictionary holds and the
+        occurrences each one holds (read through
+        DBEntry.list_all_occurrences, not listed from memory), which of
+        those the session loaded, and for each loaded occurrence a header
+        of its `ids_properties` values plus its available signals -- kept
+        to the ones the tree carries as available, the same test its own
+        colouring applies, a 0-D scalar held by the dynamic array among
         them. A property the case leaves empty is named empty, an
-        occurrence without an available signal is named as such, and a
-        case that holds no data at all is refused by name. `name` is the
-        report name (a place, not a report, is refused).
+        occurrence without an available signal is named as such, and a case
+        that holds no data at all is refused by name. The file lands in
+        `~/.imasviz/reports`; `name` is the report name (a place, not a
+        report, is refused).
         """
+        # The parameters an action needs are the table's, not this
+        # signature's: the signature has to hold every action's names, so
+        # `scope="plot"` without a `figure_key` is legal to FastMCP and
+        # would reach the core as a call missing its subject.
+        gesture = gestureOf('generate_report', {'scope': scope})
+        missing = missingParameters(gesture, {'figure_key': figure_key,
+                                              'uri': uri})
+        if missing:
+            raise ValueError(missingParameterRefusal(gesture, missing))
+        if gesture == 'plot_report':
+            return _run(partial(core.plot_report, figure_key, name=name))
+        if gesture == 'case_report':
+            return _run(partial(core.case_report, uri, name=name))
         return _run(partial(core.case_ids_report, uri, name=name))
 
     # ---------------------------------------------------------------- export

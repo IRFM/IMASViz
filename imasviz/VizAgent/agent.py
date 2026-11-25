@@ -32,6 +32,13 @@ from imasviz.VizAgent.tools import (
     SYSTEM_INSTRUCTIONS,
     CHAT_INSTRUCTIONS,
     TOOLS,
+    callSpellings,
+    gestureOf,
+    memberNames,
+    missingParameterRefusal,
+    missingParameters,
+    offeredNames,
+    resolveCall,
     unknownParameterRefusal,
     unknownParameters,
 )
@@ -133,7 +140,19 @@ def _userAskedForAPublish(user_prompt):
 # are the agent's own vocabulary, not names it recites from the case.
 # `_unfoundedIdsRefusal` keeps them out of its count for exactly that
 # reason: a "how do I do it later" answer is not a list.
-_TOOL_NAMES = frozenset(t['function']['name'] for t in TOOLS)
+#
+# Three spellings belong in that stop-list, and the seam is why. The names
+# on offer, the names the groups answer, and every gesture name the table
+# holds -- a gesture whose group is merged away is no longer something the
+# model may CALL, but a saved prompt (`~/.imasviz/agent_prompts`), a journal
+# line from before the merge, or a "how did I do it last time" answer may
+# still name it in words. Counting such a name as one the model invented
+# would refuse an honest answer for a spelling this application wrote itself.
+_TOOL_NAMES = frozenset(
+    [tool['function']['name'] for tool in TOOLS]
+    + list(offeredNames())
+    + list(memberNames())
+)
 
 
 def _serialisable(value):
@@ -384,6 +403,23 @@ class AgentLoop(QObject):
                 for i, tc in enumerate(response.tool_calls):
                     name = tc['name']
                     args = tc['args']
+                    # Two vocabularies, and the line between them is which
+                    # reader is on the other side. Everything the MODEL
+                    # reads back -- these two transcript lines, `last_action`
+                    # in the max-turns message, the `name` of the tool result
+                    # -- is spelled as the call was made: a model that is
+                    # answered in a vocabulary it was never offered answers
+                    # in that vocabulary next turn, and the next turn's call
+                    # is refused. Everything the loop's own guards ask --
+                    # which report wrote a file, which close took a figure
+                    # away, which note a journal line stands on, which figure
+                    # a turn worked on -- is asked about the GESTURE, because
+                    # that is what ran: `generate_report(scope="plot")`
+                    # grounded a `plot_report`, and a guard reading the group
+                    # name would refuse an honest answer about a file that
+                    # stands on disk. The guards' vocabulary is unchanged by
+                    # this; only how a call reaches them is.
+                    gesture = gestureOf(name, args)
                     # The call and its result are the traffic a `hide` run
                     # runs and hides: they stay in the artifact (the
                     # `fullLine`), they are cut from the live view. In
@@ -406,12 +442,12 @@ class AgentLoop(QObject):
                         # that earned them: a report path the answer may
                         # name, a figure the close ran. Grounded by a
                         # success -- a refused call is not a deliverable.
-                        if (name in ('plot_report', 'case_report',
-                                    'case_ids_report')
+                        if (gesture in ('plot_report', 'case_report',
+                                        'case_ids_report')
                                 and isinstance(result, dict)
                                 and result.get('saved_to')):
                             reports_written.add(result['saved_to'])
-                        if name == 'close_window':
+                        if gesture == 'close_window':
                             key = (args or {}).get('key')
                             if key:
                                 closed_figures.add(key)
@@ -776,10 +812,9 @@ class AgentLoop(QObject):
             return (
                 'the answer says a report was written, but no '
                 'report call succeeded this request -- the file it '
-                'names was never produced. Write it: call '
-                'plot_report(figure_key), case_report(uri) or '
-                'case_ids_report(uri) and answer with the path that '
-                'call returns.')
+                'names was never produced. Write it: call %s and '
+                'answer with the path that call returns.'
+                % callSpellings('the reports'))
         # Only when the core can say which figures stand: with no ground
         # truth to answer against, a figure claim cannot be accused. A
         # core that can list but holds none (a fresh session) still does
@@ -804,11 +839,10 @@ class AgentLoop(QObject):
         return (
             '[SYSTEM FEEDBACK] That figure or report does not stand: '
             'no call of this request produced it. Do the work -- '
-            'plot_one(uri, path, ...) for the figure, or '
-            'plot_report(figure_key) / case_report(uri) / '
-            'case_ids_report(uri) for the report -- and answer '
-            'only from what those calls return. Request: "%s".'
-            % user_prompt)
+            'plot_one(uri, path, ...) for the figure, or %s for the '
+            'report -- and answer only from what those calls return. '
+            'Request: "%s".'
+            % (callSpellings('the reports'), user_prompt))
 
     def _unperformedWorkRefusal(self, content, acted_on, read_from,
                                 closed_figures):
@@ -999,13 +1033,17 @@ class AgentLoop(QObject):
         turn -- and it names the gesture and the rule, in the shape the
         rest of this file's refusals wear.
         """
+        name, args = resolveCall(name, args or {})
         method = getattr(self.core, name, None)
         if method is None:
             raise ValueError(
                 'the tool "%s" is not a gesture of this session' % name)
-        unknown = unknownParameters(name, args or {})
+        unknown = unknownParameters(name, args)
         if unknown:
             raise ValueError(unknownParameterRefusal(name, unknown))
+        missing = missingParameters(name, args)
+        if missing:
+            raise ValueError(missingParameterRefusal(name, missing))
         if (name in DESTRUCTIVE_GESTURES
                 and requested_by == 'model'
                 and not _userAskedForAClosure(user_prompt)):

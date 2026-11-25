@@ -314,8 +314,9 @@ def test_agent_turn_that_writes_a_report_names_it_in_the_done_event(
     history read back, `GET /api/turns/<n>`, the key the record holds."""
     monkeypatch.setenv('HOME', str(tmp_path / 'home'))
     llm = ScriptedLLM([
-        LLMResponse(tool_calls=[{'name': 'plot_report',
-                                 'args': {'figure_key': 'SlicesPlot1',
+        LLMResponse(tool_calls=[{'name': 'generate_report',
+                                 'args': {'scope': 'plot',
+                                          'figure_key': 'SlicesPlot1',
                                           'name': 'agent_report'}}],
                      content=''),
         LLMResponse(content='Le rapport est écrit.', finish_reason='stop'),

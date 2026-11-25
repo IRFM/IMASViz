@@ -347,16 +347,23 @@ def test_a_turn_captures_what_it_drew_or_asked_and_only_that(qapp, tmp_path):
 
 
 def test_a_turn_that_writes_a_report_names_it_in_the_record(qapp, tmp_path, monkeypatch):
-    """The self-contained HTML the turn's `plot_report` writes is named
+    """The self-contained HTML the turn's report call writes is named
     in the record -- the `done` event the page reads, and what the
     Reports section fills from -- not a file the user has to find on
     disk themselves. The folder the core's `_namedReport` resolves is
     under $HOME, so pointing HOME at the test's own tree points it there
-    too (the pattern `test_39` applies to the configuration files)."""
+    too (the pattern `test_39` applies to the configuration files).
+
+    The page spells the call the model is offered (`generate_report` with
+    a `scope`); the record keys on the gesture that ran, because that is
+    what the loop's account of the turn holds. A report that reaches the
+    disk and never the record is a Reports section that stays empty over a
+    file that exists."""
     monkeypatch.setenv('HOME', str(tmp_path / 'home'))
     llm = FakeLLMClient([
-        LLMResponse(tool_calls=[{'name': 'plot_report',
-                                 'args': {'figure_key': 'SlicesPlot1',
+        LLMResponse(tool_calls=[{'name': 'generate_report',
+                                 'args': {'scope': 'plot',
+                                          'figure_key': 'SlicesPlot1',
                                           'name': 'tour_report'}}],
                      content=''),
         LLMResponse(content='Le rapport est écrit.', finish_reason='stop'),

@@ -29,7 +29,9 @@ tool to an *explicit* core call (tool ``get_screenshot`` -> ``core.screenshot``
 pinned here.
 
 This test pins the one invariant that matters: every name in the loop's
-``TOOLS`` must be a callable on the core the loop dispatches against.
+``TOOLS`` is answered by the core the loop dispatches against -- a method
+of that name, or, for a group merged under one name, a method for every
+action its discriminant answers.
 """
 
 import pytest
@@ -45,24 +47,45 @@ def core_class(qapp):
 
 
 def test_every_toolname_in_tools_resolves_on_the_core(core_class):
-    """A tool the LLM may call must be a method the core can answer.
+    """A tool the LLM may call must be a gesture the core can answer.
 
     ``AgentLoop._dispatch`` refuses by name a tool whose name no core
     method carries; this test is the guard that such a name is not in the
     tool list in the first place, so the refusal is never the answer the
     LLM gets.
+
+    A name answered by the core directly is one case. The other is a group
+    merged under one name: ``generate_report`` is no core method, and it is
+    not meant to be -- what the core answers is the MEMBER its discriminant
+    names, because that is the name the destructive and journal guards and
+    the loop's own account of the turn speak. So such a name resolves when
+    EVERY action the table spells for it lands on a core method: a group
+    missing one is a call the model is offered with a legal parameter value
+    that can never be answered.
     """
-    from imasviz.VizAgent.tools import TOOLS
+    from imasviz.VizAgent.tools import (
+        TOOLS, actionsOf, discriminatorOf, resolveCall)
     unresolved = []
     for tool in TOOLS:
         name = tool['function']['name']
         method = getattr(core_class, name, None)
-        if method is None or not callable(method):
+        if method is not None and callable(method):
+            continue
+        discriminant = discriminatorOf(name)
+        actions = actionsOf(name)
+        if discriminant is None or not actions:
             unresolved.append(name)
+            continue
+        for action in actions:
+            member, _args = resolveCall(name, {discriminant: action})
+            answer = getattr(core_class, member, None)
+            if answer is None or not callable(answer):
+                unresolved.append('%s(%s="%s")'
+                                  % (name, discriminant, action))
     assert not unresolved, (
         'TOOLS offers tools the core cannot answer: %s. Either add the '
-        'method to McpGuiCore, or remove the entry from TOOLS.'
-        % unresolved)
+        'method to McpGuiCore, or take the entry out of TOOLS.'
+        % ', '.join(unresolved))
 
 
 def test_get_screenshot_delegates_to_screenshot(qapp):

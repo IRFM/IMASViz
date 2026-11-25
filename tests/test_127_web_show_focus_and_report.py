@@ -137,18 +137,26 @@ def test_focus_and_screenshot_one_figure_is_one_capture(qapp, tmp_path):
 def test_a_report_the_turn_writes_is_on_disk_and_in_the_record(qapp,
                                                                 tmp_path,
                                                                 monkeypatch):
-    """The half the web can check on a report, pinned: the `plot_report`
-    the turn writes is **on disk** in the reports folder and named in the
+    """The half the web can check on a report, pinned: the report the turn
+    writes is **on disk** in the reports folder and named in the
     record -- the two places the page's Reports section reads (the folder
     via `/api/reports`, the turn via its `reports`). A report that is
     neither on disk nor in the turn is one no tool wrote; that is a model
-    decision this suite does not make."""
+    decision this suite does not make.
+
+    The page's turn spells the call the model is offered,
+    `generate_report(scope="plot")`; what the record's `reports` keys on is
+    the gesture that ran. Both ends of that seam are pinned by this one
+    assertion: a report that reaches the disk and not the record is a page
+    that lost the file the turn wrote."""
     monkeypatch.setenv('HOME', str(tmp_path / 'home'))
     session, core = build(qapp, tmp_path, core=CoreWithFocus())
     _draw(qapp, session)
 
     session.agent.llm = FakeLLM([
-        ('plot_report', {'figure_key': 'SlicesPlot1', 'name': 'le-rapport'}),
+        ('generate_report', {'scope': 'plot',
+                             'figure_key': 'SlicesPlot1',
+                             'name': 'le-rapport'}),
         ('say', 'Le rapport est écrit.'),
     ])
     record = inWorker(lambda: session.runTurn('rapport de la figure'), qapp)

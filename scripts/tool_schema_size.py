@@ -160,33 +160,68 @@ def measure(loopSource=LOOP_SOURCE, mcpSource=MCP_SOURCE):
     parameterChars = sum(max(lengths) for lengths in blocks.values()) \
         + repeated
 
-    # The projection: every group of `FAMILIES` offered under one name.
-    # The members' descriptions are kept verbatim (a merge that drops what
-    # a tool answers is not a merge, it is a loss), and one block per
-    # parameter name -- the longest, which is the one worth keeping. So the
-    # saving is the plumbing and the duplicated blocks, and nothing else:
-    # the prose is untouched, which is the point of printing it separately.
+    # The projection: the vocabulary spelled as the table's OFFERS, which
+    # is what a merged group is actually offered as -- "the drawing" is
+    # `plot(mode=...)` AND `get_signal`, not one name. The members'
+    # descriptions are kept verbatim (a merge that drops what a tool
+    # answers is not a merge, it is a loss), and one block per parameter
+    # name -- the longest, which is the one worth keeping -- plus the
+    # discriminant's own block, which a merge ADDS: `mode` is a parameter
+    # no member had. So the saving is the plumbing and the duplicated
+    # blocks and nothing else: the prose is untouched, which is the point
+    # of printing it separately.
     plumbing = _plumbing()
+    schemaOf = {t['function']['name']: t['function']['parameters']
+                for t in tools}
     merged = 0
-    for _, members in families:
-        props = {}
-        required = set()
-        for member in members:
-            schema = next(t['function']['parameters']
-                          for t in tools if t['function']['name'] == member)
-            for name, block in schema.get('properties', {}).items():
-                if len(_json(block)) > len(_json(props.get(name, {}))):
-                    props[name] = block
-            required.update(schema.get('required', []))
-        merged += plumbing
-        merged += len(_json(descriptions.get(members[0], ''))) - 2
-        merged += sum(len(_json(descriptions[m])) - 2 for m in members[1:])
-        merged += sum(len(_json(b)) for b in props.values())
-        merged += len(_json(sorted(required)))
+    offered = 0
+    for _label, members, offers in families:
+        spelled = list(offers) if offers else [
+            (name, None, ()) for name in members]
+        for offerName, discriminator, actions in spelled:
+            offered += 1
+            names = [member for _action, member in actions] or [offerName]
+            # An offer already on the wire carries its own schema and its
+            # own prose; an offer still to come is the union of its
+            # members' schemas and keeps their prose verbatim.
+            if offerName in schemaOf:
+                sources = [schemaOf[offerName]]
+                prose = [descriptions[offerName]]
+            else:
+                sources = [schemaOf[m] for m in names if m in schemaOf]
+                prose = [descriptions[m] for m in names if m in descriptions]
+            props = {}
+            required = set()
+            for schema in sources:
+                for name, block in schema.get('properties', {}).items():
+                    if len(_json(block)) > len(_json(props.get(name, {}))):
+                        props[name] = block
+                required.update(schema.get('required', []))
+            if discriminator:
+                props[discriminator] = {
+                    'type': 'string',
+                    'enum': [action for action, _member in actions]}
+                required.add(discriminator)
+            merged += plumbing
+            merged += sum(len(_json(text)) - 2 for text in prose)
+            merged += sum(len(_json(b)) for b in props.values())
+            merged += len(_json(sorted(required)))
+
+    # What a group costs TODAY is the sum of the schemas it has on the wire
+    # today: its members while they are still offered one by one, or its
+    # offer once the merge is done. A merged member is in no schema any
+    # more, so it counts for nothing here -- which is the point: the
+    # reports group's cost moved from three tools to one.
+    def offeredToday(members, offers):
+        names = [name for name in members if name in sizes]
+        names += [offer[0] for offer in (offers or ()) if offer[0] in sizes]
+        return names
 
     groups = [{'label': label, 'members': list(members),
-               'currentChars': sum(sizes[m] for m in members)}
-              for label, members in families]
+               'offers': len(offers) if offers else len(members),
+               'currentChars': sum(sizes[name]
+                                   for name in offeredToday(members, offers))}
+              for label, members, offers in families]
 
     mcp = _mcpFace(mcpSource)
     loopNames = {t['function']['name'] for t in tools}
@@ -204,7 +239,7 @@ def measure(loopSource=LOOP_SOURCE, mcpSource=MCP_SOURCE):
         'plumbingCharsPerTool': plumbing,
         'systemInstructionsChars': len(instructions),
         'groups': len(families),
-        'projectedTools': len(families),
+        'projectedTools': offered,
         'projectedPayloadChars': merged,
         'projectedPayloadTokens': int(merged / CHARS_PER_TOKEN),
         'asciiEscapeChars': len(_json(tools)) - len(
@@ -262,9 +297,11 @@ def report(m):
                              ('loop only', m['loopOnly'])):
             if names:
                 print('    %s: %s' % (label, ', '.join(names)))
-    print('  projected on %d groups (one name each, descriptions kept, one '
-          'block per parameter): %d tools, %s chars (~%d tokens, %+.1f%%)'
-          % (m['groups'], m['projectedTools'],
+    print('  projected on the %d offers of those %d groups (a merged group '
+          'answers one name with a discriminant, the rest answer themselves;'
+          ' descriptions kept, one block per parameter): %d tools, %s chars '
+          '(~%d tokens, %+.1f%%)'
+          % (m['projectedTools'], m['groups'], m['projectedTools'],
              format(m['projectedPayloadChars'], ','),
              m['projectedPayloadTokens'],
              100.0 * (m['projectedPayloadChars'] - m['payloadChars'])
@@ -275,8 +312,8 @@ def report(m):
     print('\nthe groups, by what they cost today')
     for group in sorted(m['groupBreakdown'],
                         key=lambda g: -g['currentChars']):
-        print('  %-38s %2d tools  %6d chars'
-              % (group['label'], len(group['members']),
+        print('  %-38s %2d tools -> %2d offered  %6d chars'
+              % (group['label'], len(group['members']), group['offers'],
                  group['currentChars']))
 
 

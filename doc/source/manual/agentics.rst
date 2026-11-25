@@ -222,10 +222,15 @@ the same descriptions. The tools, in the order the faces group them:
        all-equal values refuses in words. The report is the same answer as a
        page under :file:`~/.imasviz/reports`.
    * - the windows
-     - ``list_windows``, ``show_window``, ``hide_window``, ``close_window``
+     - ``list_windows``, ``show_window``, ``hide_window``, ``close_window``,
+       ``focus_window``
      - the session's windows in the order the menus draw them (kind, label,
        key, on screen), put one back, take one off without deleting it, delete
-       one for good.
+       one for good, and the "show me this" gesture: a window brought forward
+       (shown when off screen, raised when not), at the size it holds, and the
+       pixels only when they are named. Showing is the user's command, not
+       something the loop does after a draw: the figure is in the *Windows*
+       menu, and that is where the raise lives.
    * - the plugins
      - ``list_plugins``, ``run_plugin``
      - the entries an IDS root earns, in registration order, with the refusals
@@ -264,28 +269,31 @@ the same descriptions. The tools, in the order the faces group them:
        how many windows it closed. Like the *Windows* menu's close, it is a
        gesture the loop names out loud before it runs it.
    * - the reports
-     - ``plot_report``, ``case_report``, ``case_ids_report``
-     - a window of curves as a self-contained HTML file on disk (the image of
-       the window and one row per curve, with its statistics), the loaded tree
-       of a case the same way, and the case itself: every IDS the case holds
+     - ``generate_report``
+     - a self-contained HTML file on disk, and ``scope`` says which one is
+       meant: ``plot`` is a window of curves (the image of the window and one
+       row per curve, with its statistics), ``case_loaded`` is the loaded tree
+       of a case the same way, and ``case_ids`` is the case itself: every IDS
+       the case holds
        and the occurrences each holds, the ones the session loaded, the
        header of each loaded occurrence's ``ids_properties`` values, and
        the signals the tree holds for each occurrence -- the ones the
        tree carries as available (the same test its own colouring
        applies), a 0-D scalar held by the dynamic array among them
-       (``global_quantities.ip`` on the reference case).
+       (``global_quantities.ip`` on the reference case). A scope asked
+       without the subject it needs (a ``figure_key`` for ``plot``, a
+       ``uri`` for the two others) is refused by naming what the call is
+       missing.
    * - the export
      - ``export_to_ids``
      - the opened IDSs of a case into the target case, under the data
        dictionary the case was read at.
    * - the screen
-     - ``get_screenshot``, ``focus_window``
+     - ``get_screenshot``
      - a window as it stands, in PNG -- the application, one figure, or the
-       shot view of a case -- and the "show me this" gesture: a window
-       brought forward (shown when off screen, raised when not), at the
-       size it holds, and the pixels only when they are named. Showing is
-       the user's command, not something the loop does after a draw: the
-       figure is in the *Windows* menu, and that is where the raise lives.
+       shot view of a case. The pixels are asked for, never handed out after a
+       draw; the window that brings itself forward is ``focus_window``, in the
+       group of the windows it moves.
    * - the log
      - ``get_logs``
      - the log panel of one case, or of every case: the last lines the gestures
