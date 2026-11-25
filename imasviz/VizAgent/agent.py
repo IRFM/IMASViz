@@ -604,7 +604,8 @@ class AgentLoop(QObject):
             # wear the shape of a recited inventory -- yet no call of this
             # request did the work the answer reports, and no read of the
             # figure checked it: the state of a figure is what the call
-            # that changed it, or curve_stats, answers, not what was said.
+            # that changed it, or read_figure(action="stats"), answers,
+            # not what was said.
             # It runs after them, so a fabricated figure with its value
             # table is met by the guard whose re-anchor sends the model to
             # the read that would ground it first, and the claim of a
@@ -894,13 +895,14 @@ class AgentLoop(QObject):
             'transform applied, an axis moved -- but no call of this '
             'request did that work on that figure, and no read of the '
             'figure checked it: the state of a figure is what the call '
-            'that changed it, or curve_stats, answers -- not what was '
-            'said. If the call ran and was refused, report the refusal '
-            'it named; otherwise do the work -- %s '
+            'that changed it, or read_figure(action="stats"), answers -- '
+            'not what was said. If the call ran and was refused, report '
+            'the refusal it named; otherwise do the work -- %s '
             'with into_figure_key to add the curve, '
             'transform_curve(operation=...) for a transform, '
             'configure_axes(operation=...) '
-            'for the axes -- or read it back with curve_stats, and '
+            'for the axes -- or read it back with '
+            'read_figure(action="stats"), and '
             'answer only from what those calls return.'
             % (keys, callSpelling('plot_one')))
 
@@ -913,7 +915,8 @@ class AgentLoop(QObject):
             '[SYSTEM FEEDBACK] That work on the figure did not run, '
             'and no read verified it. Do it -- %s with into_figure_key '
             'to add a curve, the curve transforms, the axis '
-            'tools -- or read it back with curve_stats(figure_key), '
+            'tools -- or read it back with '
+            'read_figure(action="stats", figure_key), '
             'and answer only from what those calls return. '
             'Request: "%s".' % (callSpelling('plot_one'), user_prompt))
 

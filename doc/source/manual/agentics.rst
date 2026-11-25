@@ -175,17 +175,17 @@ the same descriptions. The tools, in the order the faces group them:
        case holds**, and the answer keeps ``time_requested`` and
        ``time_slice_time`` apart -- see :ref:`IMASViz_plugins`.
    * - the curves already drawn
-     - ``transform_curve``, ``curve_stats``, ``export_curve``
+     - ``transform_curve``, ``read_figure``
      - one tool, and ``operation`` says what is done to the curve: ``scale``
        multiplies it, ``shift`` offsets it, ``normalize`` divides it by a
        reference of its own (``reference``: ``max``, ``first``, ``mean``),
        ``reset`` puts it back to the values it was drawn with, ``remove``
-       takes it off. All
-       reversible, all read back by ``curve_stats`` -- the sample count, the
-       finite min/max/mean/std, the nan/inf counts and the peak with its
-       abscissa -- and by ``export_curve``, which writes the values **as they
-       stand** to :file:`~/.imasviz/exports`. The tree, the leaf and the case
-       are unchanged by every one of them.
+       takes it off. All reversible, all read back by one tool of its own --
+       ``read_figure``, whose ``action`` says which read: ``stats`` answers
+       the sample count, the finite min/max/mean/std, the nan/inf counts and
+       the peak with its abscissa, ``export`` writes the values **as they
+       stand** to :file:`~/.imasviz/exports`. The tree, the leaf and the
+       case are unchanged by every one of them.
    * - the axes and the slices of a window
      - ``configure_axes``
      - one tool, and ``operation`` says which of the five moves is meant:

@@ -83,7 +83,8 @@ How to work with it:
    and of the curve: transform_curve does one thing to a drawn curve, and
    its `operation` says which -- 'scale' multiplies its value by a
    constant, 'shift' adds one, 'normalize' divides by its own peak/first/
-   mean; curve_stats and export_curve read the numbers as they stand, so a
+   mean; read_figure reads the numbers as they stand -- action='stats' for
+   the answer, action='export' for those same values in a file -- so a
    transform a hand put on is the value it returns, and operation='reset'
    takes that transform off, operation='remove' takes the curve off. The
    axes are moved by one tool of their own, configure_axes, whose
@@ -101,12 +102,12 @@ The state of a figure is what the calls of this session made, and a read
 this session answered -- not what was said of it. A curve you say was
 added, a transform you say was applied, an axis you say moved: each of
 those stands only if the call that did it succeeded naming that figure,
-or a read of the figure (curve_stats, export_curve) answered that state.
-A refused call changed nothing: it added no curve, applied no transform
-and moved no axis, so the answer is the refusal it named, with the
-reason it gave -- not the state it would have left. A call that did not
-run, or that had not returned when you answered, is not a success: read
-the figure with curve_stats before saying what it holds, or say it
+or a read_figure of it answered that state. A refused call changed
+nothing: it added no curve, applied no transform and moved no axis, so
+the answer is the refusal it named, with the reason it gave -- not the
+state it would have left. A call that did not run, or that had not
+returned when you answered, is not a success: read the figure with
+read_figure(action="stats") before saying what it holds, or say it
 stands as you found it.
 
 A refused gesture is not a failure of the server: it is an answer, with
@@ -441,8 +442,8 @@ def buildServer(core, dispatcher, name='imasviz'):
         figure. Scale, shift and normalize are in place and reversible
         through "reset"; a reference that is zero or not a number is
         refused, as the division would then read as a picture full of
-        no-signal. `curve_stats` and `export_curve` answer the transformed
-        value afterwards; the quantity in the tree is unchanged.
+        no-signal. `read_figure` answers the transformed value afterwards;
+        the quantity in the tree is unchanged.
 
         `curve` is a name substring, a 0-based index, or left out for every
         curve the figure holds. The figure is the one a single curve was
@@ -537,29 +538,40 @@ def buildServer(core, dispatcher, name='imasviz'):
 
         return _run(move)
 
-    @server.tool(name='curve_stats')
-    def curve_stats(figure_key: str, curve: Optional[str] = None):
-        """The numbers of a figure's drawn curve(s): sample count, the
-        finite min/max/mean/std of the values, the nan/inf counts, and the
-        peak value with its abscissa. The read of a figure's curves in a
-        place the reader can act on, before or after a scale/shift/
-        normalize; a generate_report(scope='plot') is the same read with
-        an HTML file.
-        """
-        return _run(partial(core.curve_stats, figure_key, curve=curve))
+    # The two reads of the curves a figure holds answer under one name, and
+    # `action` says which: the numbers on the way back, or those same
+    # numbers in a file. The checks are the loop's, in the loop's order.
+    @server.tool(name='read_figure')
+    def read_figure(
+            action: Literal['stats', 'export'], figure_key: str,
+            curve: Optional[Union[str, int]] = None,
+            format: Optional[str] = None, name: Optional[str] = None):
+        """What the curve(s) a figure holds answer, and `action` picks.
 
-    @server.tool(name='export_curve')
-    def export_curve(figure_key: str, curve: Optional[str] = None,
-                     format: str = 'csv', name: Optional[str] = None):
-        """Take a figure's drawn curve(s) out to a file: the values as they
-        stand (a scale/shift/normalize on them is in the file). `format`
-        `csv` (default) or `json`; `curve` a name, an index, or left out.
-        The file lands in `~/.imasviz/exports` under the guard of the
-        configurations; a `name` that names a place, not a file, is refused
-        by name.
+        "stats": the sample count, the finite min/max/mean/std of the
+        values, the nan/inf counts, the peak with its abscissa -- the read
+        of a figure's curves where the reader can act on it, before or
+        after a scale/shift/normalize. "export": those same values, as they
+        stand, written to `~/.imasviz/exports` under the guard of the
+        configurations -- `format` `csv` (default) or `json`, a `name` that
+        names a place being refused by name.
+
+        `curve` is a name substring, a 0-based index, or left out for every
+        curve the figure holds. The figure is a single curve figure -- a
+        table or the flux-surface figure are refused by name.
         """
-        return _run(partial(core.export_curve, figure_key, curve=curve,
-                            format=format, name=name))
+        gesture = gestureOf('read_figure', {'action': action})
+        args = {field: value for field, value in (
+            ('figure_key', figure_key), ('curve', curve),
+            ('format', format), ('name', name)) if value is not None}
+        unknown = unknownParameters(gesture, args)
+        if unknown:
+            raise ValueError(unknownParameterRefusal(gesture, unknown))
+        missing = missingParameters(gesture, args)
+        if missing:
+            raise ValueError(missingParameterRefusal(gesture, missing))
+        spelled = argumentsForMember(gesture, args)
+        return _run(partial(getattr(core, gesture), **spelled))
 
     # ------------------------------------------------- physics of a signal
 

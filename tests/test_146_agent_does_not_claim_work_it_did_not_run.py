@@ -253,15 +253,18 @@ def test_a_real_transform_stands(qapp):
 
 def test_a_state_claim_verified_by_a_read_stands(qapp):
     """Work of an earlier request (the curve is genuinely on Plot1),
-    restated after a read back this request: ``curve_stats`` answered
-    for Plot1, so the state claim stands on the read. That is the shape
-    of the honest "elle est toujours là", with the evidence in the
-    transcript."""
+    restated after a read back this request: the turn asked
+    ``read_figure(action="stats")`` and Plot1 answered, so the state
+    claim stands on the read. That is the shape of the honest "elle est
+    toujours là", with the evidence in the transcript. The read reaches
+    the core through the member it means, the way every merged group
+    does."""
     core = Core()
     core._open = {'Plot1'}
     out = runTurn(core, [
         LLMResponse(tool_calls=[
-            {'name': 'curve_stats', 'args': {'figure_key': 'Plot1'}}],
+            {'name': 'read_figure',
+             'args': {'figure_key': 'Plot1', 'action': 'stats'}}],
             content=''),
         LLMResponse(content='Plot1 est là: la pression y est tracée, '
                             '100 points.',

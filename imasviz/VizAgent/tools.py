@@ -452,8 +452,8 @@ TOOLS = [
         'normalize work in place, and "reset" answers what a hand put on '
         'was and takes it off; "remove" leaves the figure with one curve '
         'less. `curve` is a name substring, a 0-based index, or left '
-        'out for every curve. curve_stats and export_curve then read the '
-        'transformed value; the quantity in the tree is unchanged. A table '
+        'out for every curve. read_figure then answers the transformed '
+        'value; the quantity in the tree is unchanged. A table '
         'or a stacked window is not one figure and is refused by name.',
         {'type': 'object', 'properties': {
             'figure_key': {'type': 'string'},
@@ -555,17 +555,34 @@ TOOLS = [
         }, 'required': ['figure_key', 'operation'],
            'additionalProperties': False},
     ),
+    # One name for the two reads of the curve(s) a figure already holds:
+    # what they answer as numbers, and those same numbers put in a file. The
+    # discriminant is `action`: neither read takes an `action` of its own
+    # (test_175 refuses a discriminant a member already answers for
+    # itself), and what the two share is wider than what sets them apart --
+    # one figure, one curve of it, and the values as they stand.
     _tool(
-        'curve_stats',
-        'The numbers of a figure\'s drawn curve(s): sample count, finite '
-        'min/max/mean/std of the values, the nan/inf counts, and the peak '
-        'value with its abscissa. The read of a figure before or after a '
-        'scale/shift/normalize; generate_report(scope="plot") is the same '
-        'read with an HTML file on disk.',
+        'read_figure',
+        'What the curve(s) a figure holds answer, and `action` says which '
+        'ask. "stats": the sample count, the finite min/max/mean/std of the '
+        'values, the nan/inf counts, the peak with its abscissa. "export": '
+        'the same values in a file under ~/.imasviz/exports. Both read the '
+        'values as they stand, so a transform a hand put on the figure is '
+        'in the answer and in the file, while the leaf in the tree is '
+        'unchanged.',
         {'type': 'object', 'properties': {
+            'action': {'type': 'string', 'enum': ['stats', 'export']},
             'figure_key': {'type': 'string'},
-            'curve': {'type': ['string', 'integer', 'null']},
-        }, 'required': ['figure_key'], 'additionalProperties': False},
+            'curve': {'type': ['string', 'integer', 'null'],
+                      'description': 'a name substring, a 0-based index, '
+                                     'or null for every curve'},
+            'format': {'type': ['string', 'null'], 'enum': ['csv', 'json'],
+                       'description': '"export": csv (the default) or json'},
+            'name': {'type': ['string', 'null'],
+                     'description': '"export": the file name; refused when '
+                                    'it names a place'},
+        }, 'required': ['action', 'figure_key'],
+           'additionalProperties': False},
     ),
 
     # One name for what a leaf's signal is doing, because the six asks are
@@ -791,22 +808,6 @@ TOOLS = [
                      'description': 'the report name, without the .html. '
                                     'Refused when it names a place.'},
         }, 'required': ['cases', 'path'], 'additionalProperties': False},
-    ),
-
-    _tool(
-        'export_curve',
-        'Take a figure\'s drawn curve(s) out to a file: the values as they '
-        'stand (a scale/shift/normalize is in the file). `format` csv or '
-        'json; `curve` a name, an index, or left out. The file lands in '
-        '~/.imasviz/exports; a `name` that names a place is refused by '
-        'name.',
-        {'type': 'object', 'properties': {
-            'figure_key': {'type': 'string'},
-            'curve': {'type': ['string', 'integer', 'null']},
-            'format': {'type': 'string', 'enum': ['csv', 'json'],
-                      'default': 'csv'},
-            'name': {'type': ['string', 'null']},
-        }, 'required': ['figure_key'], 'additionalProperties': False},
     ),
 
     # One name for everything a window of the session answers, because the
@@ -1656,6 +1657,22 @@ ACTION_PARAMETERS = {
     'remove_curve': ({
         'figure_key': {'type': 'string'},
         'curve': {'type': ['string', 'integer', 'null']},
+    }, ('figure_key',)),
+    # The two reads of `read_figure`. They ask the same figure and the same
+    # curve of it, and neither can do without the figure; what sets them
+    # apart is what is done with the answer, so the two parameters the file
+    # asks -- `format` and `name` -- are strangers on "stats", whose answer
+    # is already on its way back.
+    'curve_stats': ({
+        'figure_key': {'type': 'string'},
+        'curve': {'type': ['string', 'integer', 'null']},
+    }, ('figure_key',)),
+    'export_curve': ({
+        'figure_key': {'type': 'string'},
+        'curve': {'type': ['string', 'integer', 'null']},
+        'format': {'type': 'string', 'enum': ['csv', 'json'],
+                   'default': 'csv'},
+        'name': {'type': ['string', 'null']},
     }, ('figure_key',)),
     # The five moves of `configure_axes`. Four of them ask the figure and
     # answer themselves; the fifth asks a row of a band, and that row is

@@ -79,6 +79,13 @@ def test_captureAsk_reads_the_figure_of_the_mutation_gestures():
     for name in ('curve_stats', 'export_curve'):
         assert captureAsk(name, {'figure_key': 'SlicesPlot1'}) is None, \
             'a read is not a figure the user must see: %s' % name
+    # The same two reads spelled as a turn spells them today: one name and
+    # an ``action`` saying which. A turn that read the numbers back must not
+    # end with a capture ask any more than the gesture it means does.
+    for action in ('stats', 'export'):
+        assert captureAsk('read_figure',
+                          {'action': action,
+                           'figure_key': 'SlicesPlot1'}) is None, action
 
 
 def test_captureAsk_reads_the_other_ask_shapes_and_the_absences():
