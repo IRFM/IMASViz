@@ -75,8 +75,8 @@ def test_closing_a_figure_takes_it_out_of_the_records_of_the_session(qapp,
     llm = FakeLLMClient([
         # First: the figure is drawn, and the interface is asked.
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(tool_calls=[
             {'name': 'get_screenshot', 'args': {'window': 'app'}}],
@@ -144,8 +144,8 @@ def test_the_page_asking_the_close_updates_the_records_the_same_way(qapp,
     session, core = build(qapp, tmp_path)
     llm = FakeLLMClient([
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(content='La figure est tracée.', finish_reason='stop'),
     ])
@@ -187,8 +187,8 @@ def test_new_session_marks_every_capture_the_records_hold(qapp, tmp_path):
     was the answer to.)"""
     llm = FakeLLMClient([
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(tool_calls=[
             {'name': 'get_screenshot', 'args': {'window': 'app'}}],

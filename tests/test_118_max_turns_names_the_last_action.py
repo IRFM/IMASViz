@@ -99,7 +99,7 @@ def test_a_stop_names_the_last_action_and_its_artifact(qapp, agent_kwargs):
     core = RecordingCore()
     llm = FakeLLMClient([
         LLMResponse(content='', tool_calls=[
-            {'name': 'plot_one', 'args': {'uri': 'x', 'path': 'equilibrium.f'}}],
+            {'name': 'plot', 'args': {'mode': 'single', 'uri': 'x', 'path': 'equilibrium.f'}}],
             finish_reason='tool_calls'),
         LLMResponse(content='', tool_calls=[
             {'name': 'generate_report',
@@ -127,17 +127,20 @@ def test_a_stop_after_a_refused_action_names_it_as_refused(qapp, agent_kwargs):
     core = RefusingCore()
     llm = FakeLLMClient([
         LLMResponse(content='', tool_calls=[
-            {'name': 'plot_one', 'args': {'uri': 'x', 'path': 'equilibrium.f'}}],
+            {'name': 'plot', 'args': {'mode': 'single', 'uri': 'x', 'path': 'equilibrium.f'}}],
             finish_reason='tool_calls'),
         LLMResponse(content='', tool_calls=[
-            {'name': 'plot_one', 'args': {'uri': 'x', 'path': 'equilibrium.f'}}],
+            {'name': 'plot', 'args': {'mode': 'single', 'uri': 'x', 'path': 'equilibrium.f'}}],
             finish_reason='tool_calls'),
     ])
     agent = AgentLoop(core=core, llm=llm, dispatcher=FakeDispatcher(),
                       **agent_kwargs)
     transcript, errors = _ask(agent, 'plot it', max_turns=2)
     assert 'max_turns' in errors[0]
-    assert 'plot_one' in errors[0], 'the refused tool must be named'
+    assert 'plot:' in errors[0], 'the refused call must be named'
+    assert 'plot_one' not in errors[0], \
+        'the stop answers in the spelling the model typed, not in the ' \
+        'gesture name behind it'
     assert 'REFUSAL' in errors[0].upper(), \
         'a refused last action must still be a refusal in the stop'
     assert 'selection is empty' in errors[0] or 'REFUSAL' in transcript

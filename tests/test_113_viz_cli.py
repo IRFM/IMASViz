@@ -166,8 +166,8 @@ def toolCall():
 def plotCall():
     # The gesture that draws the figure the prompt then owns.
     return LLMResponse(content='',
-                       tool_calls=[{'name': 'plot_one',
-                                    'args': {'uri': CASE_URI,
+                       tool_calls=[{'name': 'plot',
+                                    'args': {'mode': 'single', 'uri': CASE_URI,
                                              'path': 'core.ion[0].temp'}}],
                        finish_reason='tool_calls')
 
@@ -289,7 +289,7 @@ def test_a_prompt_is_answered_and_its_turn_is_left_on_disk(qapp, tmp_path):
     with open(turn + '/transcript.txt') as f:
         transcript = f.read()
     assert 'La figure est tracée.' in transcript
-    assert 'plot_one' in transcript
+    assert 'plot(' in transcript
 
 
 def test_a_refused_turn_is_named_and_still_saved(qapp, tmp_path):

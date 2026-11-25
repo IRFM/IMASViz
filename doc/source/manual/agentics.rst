@@ -155,14 +155,15 @@ the same descriptions. The tools, in the order the faces group them:
        not hold is refused by name and the selection is left as it was), empty
        it, read it back.
    * - the drawing
-     - ``plot_one``, ``plot_slice``, ``plot_selection``, ``plot_table``,
-       ``plot_stacked``, ``get_signal``
-     - one quantity into the figure its axes call for (a curve for one axis, a
-       picture for two), a 1D-profile at a single instant, the selection, one
-       panel per quantity in a Table Plot View, the stacked view, and the
-       **values** of a leaf, as JSON -- the same read the plots use, so the
-       figure a viewer sees and the numbers a read reports are the same
-       element of the same array.
+     - ``plot``, ``get_signal``
+     - one tool, and ``mode`` says which drawing is meant: ``single`` puts one
+       quantity into the figure its axes call for (a curve for one axis, a
+       picture for two), ``slice`` answers a 1D-profile at a single instant,
+       ``selection`` draws what the case selection holds, ``table`` one panel
+       per quantity in a Table Plot View, ``stacked`` the stacked view. The
+       **values** of a leaf, as JSON, are the other tool: the same read the
+       plots use, so the figure a viewer sees and the numbers a read reports
+       are the same element of the same array.
    * - the equilibrium
      - ``equilibrium_surfaces``, ``equilibrium_at_time``
      - the two readings of the *Equilibrium* plugin, as gestures: the flux
@@ -429,9 +430,9 @@ Asking for a quantity of several axes
 
 A quantity is not drawn "at random". It is addressed with **one axis to run
 along** and **the other axes pinned at their index** under the names the tree
-gives them -- and :code:`plot_one`, :code:`plot_slice` and :code:`get_signal`
-take that pair in exactly the same shape, so the number a read reports and the
-element a figure draws are one and the same thing.
+gives them -- and :code:`plot` (its "single" and "slice" modes) and
+:code:`get_signal` take that pair in exactly the same shape, so the number a
+read reports and the element a figure draws are one and the same thing.
 
 The two words:
 
@@ -455,18 +456,20 @@ for the pressure profile of ``equilibrium``:
 
 1. **Along the time.** The profile is held by the dynamic array, so it runs
    along the clock by default. *"the pressure at psi = 50"* is
-   ``plot_one(uri, "equilibrium.time_slice[0].profiles_1d.pressure",
-   indices={"psi": 50})`` -- the curve it answers is the 49 samples of the
-   case's ``time_slice``, not a point.
+   :code:`plot(mode="single", uri,
+   "equilibrium.time_slice[0].profiles_1d.pressure", indices={"psi": 50})` --
+   the curve it answers is the 49 samples of the case's ``time_slice``, not a
+   point.
 2. **Along the coordinate that is not the time.** *"the pressure as a
-   function of psi"* is ``plot_one(uri, ..., along="psi")`` -- 101 samples, x
-   running over the coordinate of the leaf itself, where along the time it
+   function of psi"* is the same call with :code:`along="psi"` -- 101 samples,
+   x running over the coordinate of the leaf itself, where along the time it
    was 49 samples over about 16 seconds. :code:`get_signal` with the same
    address reports the same curve: a figure and a read that disagree about
    the abscissa have been a refusal since this release.
 3. **A slice at an instant.** *"the pressure of the slice closest to 35 s"*
-   is ``plot_slice(uri, leaf, time=35)`` -- the value the Access Layer answers
-   at that instant (its own slice read, not a GUI-side interpolation), with
+   is :code:`plot(mode="slice", uri, leaf, time=35)` -- the value the
+   Access Layer answers at that instant (its own slice read, not a GUI-side
+   interpolation), with
    ``linear`` (the default), ``closest`` or ``previous`` interpolation. A
    ``time`` outside the case's range answers the nearest slice it holds, and
    the answer names the time asked and the slice time **apart**, not a value
@@ -475,7 +478,7 @@ for the pressure profile of ``equilibrium``:
 
 Two figures, two ways (and two ways only):
 
-- **Stacking on the figure already open.** The first :code:`plot_one` opens the
+- **Stacking on the figure already open.** The first drawing opens the
   figure and **is** what its key is (``Plot1``); the next ones pass that key
   and are drawn on it. N indices of **the same leaf** is N curves on **one**
   figure: each curve is pinned to the index it carried, and the slider the
@@ -483,8 +486,8 @@ Two figures, two ways (and two ways only):
   curves of the old bug would have been, all of them answering the last value
   the slider was set to.
 - **Select first, draw after.** :code:`select_signals` then
-  :code:`plot_selection`: one selection, one figure per figure kind the
-  selection calls for.
+  :code:`plot(mode="selection", uri)`: one selection, one figure per figure
+  kind the selection calls for.
 
 What a superposition is **not**: two different structures (two probes, then two
 loops) is **two** figures, not four in one. The structure is already fixed by
@@ -511,19 +514,20 @@ A dictionary of ready phrases, with what they answer on the reference case:
      - what answers
    * - the pressure along the time, at one psi
      - "trace the pressure at psi = 50"
-     - :code:`plot_one(..., along` left out`, indices={"psi": 50})`
+     - :code:`plot(mode="single", ..., indices={"psi": 50})` -- "along" left
+       out
    * - the pressure as a function of psi
      - "draw the pressure as a function of psi"
-     - :code:`plot_one(..., along="psi")`
+     - :code:`plot(mode="single", ..., along="psi")`
    * - three psi's on **one** figure
      - "draw psi = 0, 10 and 50 on **one** figure"
-     - three :code:`plot_one`, the two last with the first's key
+     - three :code:`plot(mode="single")`, the two last with the first's key
    * - two probes, then two loops
      - "draw probe 2 and probe 10, then loop 2 and loop 10"
      - **two** figures
    * - a slice at an instant
      - "the pressure of the slice at 35 s"
-     - :code:`plot_slice(..., time=35)`
+     - :code:`plot(mode="slice", ..., time=35)`
    * - the value at one psi
      - "read the pressure at psi = 50"
      - :code:`get_signal(..., indices={"psi": 50})`
@@ -839,7 +843,7 @@ guards, and each is a refusal of the face, named:
 - **The number.** A number the run reports must be one the tool read **this
   run**. A figure and a number of a table, without a single call to a tool
   that reads, are a refusal of the run, renouncing the two tools that must be
-  called (``get_signal`` / ``plot_one``), and refused again when they repeat
+  called (``get_signal`` / ``plot``), and refused again when they repeat
   it. A value the case does not hold is a refusal with the extent the tree
   holds, not a 0.
 - **The name of a figure.** A name of a figure without a single opener of a

@@ -59,6 +59,7 @@ from imasviz.VizAgent.tools import (
     FAMILIES,
     TOOLS,
     TOOL_PARAMETERS,
+    argumentsForMember,
     callSpelling,
     callSpellings,
     discriminatorOf,
@@ -189,6 +190,40 @@ def test_a_group_call_reaches_the_core_as_its_member():
                             ({'scope': 'case_ids', 'uri': 'imas:hdf5'},
                              'case_ids_report')):
         assert resolveCall('generate_report', other)[0] == expected
+
+
+def test_a_merged_group_may_ask_its_own_word_for_a_parameter():
+    """``plot(mode="slice", path=...)`` reaches ``plot_slice`` as
+    ``leaf=...``. A group that answers one name must name one idea with one
+    word, and the gesture behind that name was written against another: the
+    drawing's "single" mode asks for a ``path`` and its "slice" mode asked
+    for a ``leaf``, two words for the same leaf in one schema -- the
+    confusion the merge exists to remove.
+
+    The rename happens once, on the way in, AFTER the parameter check and
+    before the call. Ask it the other way round and a refusal names a
+    parameter the model was never told it may type.
+    """
+    member, args = resolveCall('plot', {'mode': 'slice', 'uri': 'imas:hdf5',
+                                        'path': 'equilibrium.f', 'time': 3.0})
+    assert member == 'plot_slice'
+    assert unknownParameters(member, args) == [], \
+        'the check is asked with the spelling the model typed'
+    assert argumentsForMember(member, args) == {
+        'uri': 'imas:hdf5', 'time': 3.0, 'leaf': 'equilibrium.f'}, \
+        'the gesture is handed the names its own Python takes'
+
+    # And what it answers back is the offered word, never the spelled one.
+    text = missingParameterRefusal(
+        member, missingParameters(member, {'uri': 'imas:hdf5', 'time': 3.0}))
+    assert 'path' in text and 'leaf' not in text, text
+
+    # One way only: the schema offers one word for the leaf.
+    offered = {tool['function']['name']:
+               tool['function']['parameters']['properties']
+               for tool in TOOLS}
+    assert 'leaf' not in offered['plot'], \
+        'the drawing offer gives two words for one leaf again'
 
 
 def test_resolve_call_touches_nothing_it_is_handed():

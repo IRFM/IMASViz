@@ -119,8 +119,8 @@ class ScriptedInner:
         self._responses = [
             LLMResponse(
                 content='I will plot it now.',
-                tool_calls=[{'name': 'plot_one',
-                             'args': {'uri': CASE_URI,
+                tool_calls=[{'name': 'plot',
+                             'args': {'mode': 'single', 'uri': CASE_URI,
                                      'path': 'equilibrium.time_slice[i].flux.data'}}],
                 finish_reason='tool_calls'),
             LLMResponse(content='Done — the figure is on screen.',
@@ -153,7 +153,7 @@ def buildWeb(qapp, tmp_path):
 def test_cli_hide_view_is_quiet_but_artifact_keeps_the_calls(qapp, tmp_path, capsys):
     """The decoupling on the client: a `hide`-wearing turn prints only the
     final answer to the console, and the `transcript.txt` it leaves on disk
-    carries the `→ plot_one(...)` and `← plot_one: ...` the mode cut from
+    carries the `→ plot(...)` and `← plot: ...` the mode cut from
     the view — the reader who audits needs them.
 
     The live view is read from the console (`capsys`); the artifact is read
@@ -178,7 +178,10 @@ def test_cli_hide_view_is_quiet_but_artifact_keeps_the_calls(qapp, tmp_path, cap
         artifact = f.read()
     assert '→ ' in artifact          # the call is in the file
     assert '← ' in artifact          # the result (or refusal) is in the file
-    assert 'plot_one' in artifact
+    assert '"mode": "single"' in artifact, \
+        'the record keeps the call as it was made: a merged group is ' \
+        'addressed by its one name and its discriminant, so an auditor ' \
+        'reading the file can type the line back'
 
 
 def test_web_hide_page_is_quiet_but_lines_carry_the_calls(qapp, tmp_path):
@@ -227,7 +230,7 @@ def test_web_hide_page_is_quiet_but_lines_carry_the_calls(qapp, tmp_path):
     artifact = '\n'.join(r['lines'])
     assert '→ ' in artifact
     assert '← ' in artifact
-    assert 'plot_one' in artifact
+    assert 'plot(' in artifact
 
 
 def test_verbose_view_and_artifact_agree(qapp, tmp_path):
@@ -269,7 +272,7 @@ def test_verbose_view_and_artifact_agree(qapp, tmp_path):
     # Under verbose the live view has the calls: the mode shows them.
     assert '→ ' in live
     assert '← ' in live
-    assert 'plot_one' in live
+    assert 'plot(' in live
 
     # The artifact always has them: the fullLine is the full render.
     assert '→ ' in artifact

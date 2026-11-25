@@ -361,4 +361,5 @@ def test_the_refusal_points_at_the_grounding_tools(qapp, agent_kwargs):
     assert 'list_idss' in errors[0]
     assert 'list_sessions' in errors[0]
     assert 'get_signal' in errors[0], 'a figure claim is grounded by the read'
-    assert 'plot_one' in errors[0], 'a curve is shown by the draw tool'
+    assert 'plot(mode="single"' in errors[0], \
+        'a curve is shown by the draw tool, spelled as the loop may call it'

@@ -12,15 +12,20 @@
 # ****************************************************
 """The dispatch refuses a parameter the tool does not take, by name.
 
-The model invented ``time_index`` on ``plot_one`` in the 2026-11-07
+The model invented ``time_index`` on the drawing call in the 2026-11-07
 viz_cli run: the schema says ``additionalProperties: false`` and the
-tool takes ``uri, path, along_time, into_figure_key``. Python's
+call takes ``uri, path, along_time, into_figure_key``. Python's
 ``TypeError`` (``unexpected keyword argument``) was the refusal that
 survived, and it names the wrong thing -- it says the argument is not
 expected, not which ones are. The loop's own style, which the rest of
 this test file's neighbours use, is a refusal that names the parameter
 that is not there and the ones that are, so the model can answer with
 the right call instead of re-guessing.
+
+The call is spelled as it is offered: the five drawings answer one name
+and a ``mode``, and a parameter is checked against the row of the mode
+that was asked, so the stray is refused against ``plot(mode="single")``
+-- the spelling the model can type back.
 """
 
 import pytest
@@ -73,15 +78,16 @@ def _ask(agent, core, prompt):
 
 def test_an_unknown_parameter_is_refused_naming_the_valid_ones(
         qapp, agent_kwargs):
-    """``plot_one(time_index=7)`` is refused before Python's TypeError: the
-    refusal names the parameter that is not a tool argument, and lists the
-    ones that are. The core is never called.
+    """``plot(mode="single", time_index=7)`` is refused before Python's
+    TypeError: the refusal names the parameter that is not a parameter of
+    that mode, and lists the ones that are. The core is never called.
     """
     core = RecordingCore()
     llm = FakeLLMClient([
         LLMResponse(content='', tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': 'x', 'path': 'equilibrium.f', 'time_index': 3}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': 'x',
+                      'path': 'equilibrium.f', 'time_index': 3}}],
             finish_reason='tool_calls'),
         LLMResponse(content='refused.', tool_calls=None,
                     finish_reason='stop'),
@@ -91,7 +97,7 @@ def test_an_unknown_parameter_is_refused_naming_the_valid_ones(
     transcript, errors = _ask(agent, core, 'plot it at t=3')
     assert 'REFUSAL' in transcript
     refusal_line = [ln for ln in transcript.splitlines()
-                    if 'plot_one' in ln and 'REFUSAL' in ln][0]
+                    if 'REFUSAL' in ln and 'plot:' in ln][0]
     assert 'time_index' in refusal_line, \
         'the refusal must name the parameter that is not there'
     assert 'along_time' in refusal_line, \
@@ -105,14 +111,15 @@ def test_an_unknown_parameter_is_refused_naming_the_valid_ones(
 
 
 def test_a_known_parameter_is_not_refused(qapp, agent_kwargs):
-    """The refusal is for parameters the tool does not take, and nothing
-    else: ``plot_one`` with its real arguments reaches the core and
+    """The refusal is for parameters the mode does not take, and nothing
+    else: a single drawing with its real arguments reaches the core and
     answers a figure, with no REFUSAL line in the transcript."""
     core = RecordingCore()
     llm = FakeLLMClient([
         LLMResponse(content='', tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': 'x', 'path': 'equilibrium.f', 'along_time': 1}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': 'x',
+                      'path': 'equilibrium.f', 'along_time': 1}}],
             finish_reason='tool_calls'),
         LLMResponse(content='plotted.', tool_calls=None,
                     finish_reason='stop'),

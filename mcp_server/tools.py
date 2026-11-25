@@ -32,9 +32,12 @@ from mcp import types as mcp_types
 # declaration the in-app agent is offered, so a merged group cannot end up
 # spelled one way on the page and another on this endpoint.
 from imasviz.VizAgent.tools import (
+    argumentsForMember,
     gestureOf,
     missingParameterRefusal,
     missingParameters,
+    unknownParameterRefusal,
+    unknownParameters,
 )
 
 INSTRUCTIONS = """IMASViz, the ITER/CEA visualization front-end for IMAS plasma-fusion
@@ -46,10 +49,13 @@ How to work with it:
 2. list_idss(uri) tells which IDSs the case holds and which occurrences;
 3. load_ids(uri, ids_name, occurrence) builds the tree branch;
 4. search_nodes(uri, query) names the leaves in every spelling the tree
-   holds -- the paths select_signals, plot_one and get_signal take are
+   holds -- the paths select_signals, plot and get_signal take are
    any of those spellings;
-5. plot_one / plot_selection / plot_table / plot_stacked draw, and
-   get_screenshot answers a PNG of the window; the equilibrium has its
+5. plot draws, and its `mode` says which drawing: 'single' one quantity
+   into the figure its axes call for, 'slice' one value at an instant,
+   'selection' what the case holds selected, 'table' one panel per
+   quantity, 'stacked' the stacked view. get_screenshot answers a PNG of
+   the window; the equilibrium has its
    own two entries -- equilibrium_surfaces puts the flux surfaces of the
    instants you name side by side, and equilibrium_at_time puts one
    instant's surface with its radial profiles in one window, the global
@@ -190,7 +196,7 @@ def buildServer(core, dispatcher, name='imasviz'):
         display path, the data name and the parametrized path of every
         leaf; `ids_name` narrows to one IDS. The answer holds the three
         spellings of every match, and any of them is what
-        `select_signals`, `plot_one` and `get_signal` take.
+        `select_signals`, `plot` and `get_signal` take.
         """
         return {'matches': _run(partial(core.search_nodes, uri, query,
                                         ids_name=ids_name, limit=limit))}
@@ -259,69 +265,88 @@ def buildServer(core, dispatcher, name='imasviz'):
 
     # -------------------------------------------------------------- plotting
 
-    @server.tool(name='plot_one')
-    def plot_one(uri: str, path: str, along_time: Optional[bool] = None,
-                 into_figure_key: Optional[str] = None,
-                 along: Optional[str] = None,
-                 indices: Optional[dict] = None,
-                 time: Optional[float] = None,
-                 time_interp: Optional[bool] = None):
-        """Draw one quantity, into the figure its axes call for.
+    # One name for the five ways a quantity is drawn, the same offer the
+    # agent's loop makes (see `FAMILIES`, "the drawing"). The checks are the
+    # loop's, in the loop's order -- the action's unknown parameters, then
+    # its missing ones -- because a caller over this socket and a caller in
+    # the panel must hear the same words about the same mistake, and the
+    # parameters are checked in the spelling the caller typed (`path`, not
+    # the `leaf` the slice gesture has always taken in Python).
+    @server.tool(name='plot')
+    def plot(mode: Literal['single', 'slice', 'selection', 'table',
+                           'stacked'],
+             uri: str, path: Optional[str] = None,
+             paths: Optional[list] = None,
+             along: Optional[str] = None,
+             indices: Optional[dict] = None,
+             along_time: Optional[bool] = None,
+             into_figure_key: Optional[str] = None,
+             time: Optional[float] = None,
+             time_interp: Optional[bool] = None,
+             occurrence: Optional[int] = None,
+             interpolation: Optional[str] = None,
+             columns: Optional[int] = None,
+             plot_axis: Optional[str] = None):
+        """Draw, in the shape the ask calls for: `mode` picks it.
 
-        A curve figure for one axis to draw, a picture window for two.
-        The address is the one the agent and `get_signal` take, so the
-        figure a reader sees and the numbers a read reports are the same
-        element of the same array: `along` names the axis the quantity
-        runs along (the clock, or one of its own axes, e.g. `psi`), and
-        `indices` pins each OTHER axis at its 0-based index, one entry per
-        nested array of structures (`time_slice`, `profiles_1d`, `ion`, ...)
-        or the leaf's own coordinate. `equilibrium.time_slice[0]
-        .profiles_1d.pressure` is a profile held by the dynamic array, so
-        "le long du temps, un index `psi` de 50" is `along` left out (the
-        clock) and `indices={"psi": 50}` -- not a legacy position.
-        `along_time` and `indices` are the legacy ways of the same ask.
-        `time` pins a profile to one slice of its dynamic time array (by
-        default the nearest; `time_interp=true` the value between the two
-        that bracket it); `time` and the unified schema are refused
-        together, as opposite readings. `into_figure_key` adds it to an
-        open curve figure (a superposition) instead of opening one. A
-        quantity the read cannot answer, or an index past the extent the
-        tree names, is refused with the reason the application names in
-        its log, not a silent 0. The answer carries the figure key and
+        "single" draws one `path` into the figure its own axes call for -- a
+        curve figure for one axis to draw, a picture window for two. The
+        address is the one `get_signal` takes, so the figure a reader sees
+        and the numbers a read reports are the same element of the same
+        array: `along` names the axis the quantity runs along (the clock, or
+        one of its own axes, e.g. `psi`), and `indices` pins each OTHER axis
+        at its 0-based index, one entry per nested array of structures
+        (`time_slice`, `profiles_1d`, `ion`, ...) or the leaf's own
+        coordinate. `equilibrium.time_slice[0].profiles_1d.pressure` is a
+        profile held by the dynamic array, so "le long du temps, un index
+        `psi` de 50" is `along` left out (the clock) and `indices={"psi":
+        50}`. `time` pins a profile to one slice of its dynamic time array
+        (by default the nearest; `time_interp=true` the value between the
+        two that bracket it) and is refused together with `along`/`indices`,
+        as the opposite readings they are. `into_figure_key` adds it to an
+        open curve figure (a superposition) instead of opening one.
+
+        "slice" draws one `path` at one `time` through the Access Layer's
+        own `DBEntry.get_slice` -- the value it answers at that instant, not
+        a GUI-side lerp -- with `interpolation` `linear` (default),
+        `closest` or `previous`; the coordinate is the leaf's own, a time
+        outside the case's range answers the nearest slice it holds and says
+        so, and it is not a 2D-pictorial leaf nor a 0D scalar.
+
+        "selection" draws what `select_signals` selected for that case: one
+        curve figure, one window per picture. "table" lays one panel per
+        `paths` in a Table Plot View, `columns` wide, every quantity read
+        along `plot_axis`. "stacked" stacks `paths`, one panel per quantity,
+        in one window against the abscissa `plot_axis` names (the clock by
+        default).
+
+        A mode asked without a parameter it needs, or with one that belongs
+        to another mode, is refused by naming the missing or stray name and
+        the call that takes it. The answer carries the figure key and
         `curves`, the exact list of the curves the figure holds after the
-        call: a claim that a curve is on that figure stands on that list,
-        not on memory of the call.
+        call.
         """
-        kwargs = {'along_time': along_time,
-                  'into_figure_key': into_figure_key,
-                  'along': along, 'indices': indices,
-                  'time': time}
-        if time_interp is not None:
-            kwargs['time_interp'] = time_interp
-        return _run(partial(core.plot_one, uri, path, **kwargs))
+        gesture = gestureOf('plot', {'mode': mode})
+        args = {name: value for name, value in (
+            ('uri', uri), ('path', path), ('paths', paths),
+            ('along', along), ('indices', indices),
+            ('along_time', along_time),
+            ('into_figure_key', into_figure_key), ('time', time),
+            ('time_interp', time_interp), ('occurrence', occurrence),
+            ('interpolation', interpolation), ('columns', columns),
+            ('plot_axis', plot_axis)) if value is not None}
+        unknown = unknownParameters(gesture, args)
+        if unknown:
+            raise ValueError(unknownParameterRefusal(gesture, unknown))
+        missing = missingParameters(gesture, args)
+        if missing:
+            raise ValueError(missingParameterRefusal(gesture, missing))
+        spelled = argumentsForMember(gesture, args)
 
-    @server.tool(name='plot_slice')
-    def plot_slice(uri: str, leaf: str, time: float,
-                   occurrence: int = 0,
-                   interpolation: str = 'linear',
-                   into_figure_key: Optional[str] = None):
-        """Draw one 1D-profile leaf at a single time, the value the Access
-        Layer answers at that instant (its own `DBEntry.get_slice`, not a
-        GUI-side lerp).
+        def draw():
+            return getattr(core, gesture)(**spelled)
 
-        The coordinate is the leaf's own (independent of time); the curve
-        is its value at `time`. `interpolation` is `linear` (default),
-        `closest` (the case's nearest slice) or `previous` (the one at or
-        before `time`); a time outside the case's range answers the nearest
-        slice it holds, and the answer names `time_requested` and
-        `time_slice_time` apart. `into_figure_key` adds the profile to an
-        open figure (a superposition of slices) instead of opening one.
-        Not a 2D-pictorial leaf, nor a 0D scalar.
-        """
-        return _run(partial(core.plot_slice, uri, leaf, time,
-                            occurrence=occurrence,
-                            interpolation=interpolation,
-                            into_figure_key=into_figure_key))
+        return _run(draw)
 
     @server.tool(name='equilibrium_surfaces')
     def equilibrium_surfaces(uri: str, times: list, occurrence: int = 0):
@@ -357,37 +382,6 @@ def buildServer(core, dispatcher, name='imasviz'):
         return _run(partial(core.equilibrium_at_time, uri, time,
                             occurrence=occurrence))
 
-    @server.tool(name='plot_selection')
-    def plot_selection(uri: str):
-        """Draw the case selection: one curve figure, one window per picture.
-
-        `select_signals` first. The selection of this case alone, not the
-        other open cases -- the figure keys the windows carry come back.
-        """
-        return _run(partial(core.plot_selection, uri))
-
-    @server.tool(name='plot_table')
-    def plot_table(uri: str, paths: list, columns: Optional[int] = None,
-                   plot_axis: Optional[str] = None):
-        """One panel per named path, in a Table Plot View.
-
-        `columns` sets the width of the row, `plot_axis` "TIME" reads
-        every quantity along time; a quantity that reads nothing is
-        refused with the reason it gave.
-        """
-        return _run(partial(core.plot_table, uri, paths, columns=columns,
-                            plot_axis=plot_axis))
-
-    @server.tool(name='plot_stacked')
-    def plot_stacked(uri: str, paths: list, plot_axis: str = 'TIME'):
-        """The named paths stacked one panel per quantity.
-
-        Against the abscissa `plot_axis` names, the default being the
-        clock.
-        """
-        return _run(partial(core.plot_stacked, uri, paths,
-                            plot_axis=plot_axis))
-
     @server.tool(name='get_signal')
     def get_signal(uri: str, path: str,
                    as_function_of_time: Optional[bool] = None,
@@ -401,7 +395,8 @@ def buildServer(core, dispatcher, name='imasviz'):
         what this reports are the same element of the same array: `along`
         names the axis the quantity runs along (the clock by default, or
         one of its own axes, e.g. `psi`), and `indices` pins each other
-        axis at its 0-based index (the shared schema of `plot_one`).
+        axis at its 0-based index (the shared schema of
+        `plot(mode='single')`).
         `as_function_of_time`, `coordinate_index` and `time_index` are
         the legacy spellings of the same address. A word no axis answers,
         or an index past the extent the tree names, is refused with the

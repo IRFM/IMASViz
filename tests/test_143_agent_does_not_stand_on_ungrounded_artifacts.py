@@ -147,8 +147,8 @@ def test_a_fresh_figure_claim_is_reanchored_to_the_draw(qapp):
         LLMResponse(content='Plot3 shows the flux loop: value 1.2 W.',
                     tool_calls=None, finish_reason='stop'),
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': 'imas:hdf5', 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': 'imas:hdf5', 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(content='Plot1 shows the flux loop.',
                     tool_calls=None, finish_reason='stop'),
@@ -219,8 +219,8 @@ def test_a_real_figure_and_a_real_report_stand(qapp):
     core = Core()
     out = runTurn(core, [
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': 'imas:hdf5', 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': 'imas:hdf5', 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(tool_calls=[
             {'name': 'generate_report',

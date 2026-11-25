@@ -43,7 +43,7 @@ EXPECTED_TOOLS = {
     'list_idss', 'load_ids', 'search_nodes', 'select_signals',
     'unselect_all', 'list_selection', 'describe_node',
     'describe_ids', 'list_quantities',
-    'plot_one', 'plot_selection', 'plot_table', 'plot_stacked',
+    'plot',
     'get_signal',
     'list_windows', 'show_window', 'hide_window', 'close_window',
     'list_plugins', 'run_plugin',

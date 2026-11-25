@@ -245,12 +245,12 @@ def test_an_answered_turn_keeps_the_figure_it_drew(qapp, tmp_path):
     is the ask (a `get_screenshot` of the loop, or an `EXTRA_SHOTS` of
     the one-shot), not the by-product of the turn. The figure the turn
     drew is addressed, and the one the turn did not ask for is not among
-    its files -- here the figure is the one its own `plot_one` opened
+    its files -- here the figure is the one its own drawing opened
     in the same turn, and the stand-in held none before it."""
     llm = FakeLLMClient([
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(content='La figure est tracée.', finish_reason='stop'),
     ])
@@ -259,7 +259,7 @@ def test_an_answered_turn_keeps_the_figure_it_drew(qapp, tmp_path):
 
     text = '\n'.join(record['lines'])
     assert 'La figure est tracée.' in text
-    assert 'plot_one' in text
+    assert 'plot:' in text
 
     # The figure is on disk under a directory the session names, and its
     # base64 is in the record -- the `data:` URI the page draws from.
@@ -299,8 +299,8 @@ def test_a_turn_captures_what_it_drew_or_asked_and_only_that(qapp, tmp_path):
     llm = FakeLLMClient([
         # First: the figure is drawn, then the interface is asked.
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(tool_calls=[
             {'name': 'get_screenshot', 'args': {'window': 'app'}}],
@@ -403,8 +403,8 @@ def test_a_refused_turn_is_named_and_still_saves(qapp, tmp_path):
     turn has is the one its `plot_one` opened in it."""
     llm = FakeLLMClient([
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(content='partial...', finish_reason='length'),
     ])
@@ -489,20 +489,25 @@ def test_call_gesture_refuses_an_unknown_tool_by_name(qapp, tmp_path):
 
 
 def test_call_gesture_refuses_an_unknown_parameter_by_name(qapp, tmp_path):
-    """An argument a tool does not take is named, with the names it does
-    hold -- the same guard the agent's path takes, because `callGesture`
-    runs the loop's `_dispatch`. The page reads the reason, and the gesture
-    is not run."""
-    from imasviz.VizAgent.tools import TOOLS
-    plot_one = next(t for t in TOOLS if t['function']['name'] == 'plot_one')
-    allowed = list(plot_one['function']['parameters']['properties'])
+    """An argument a gesture does not take is named, with the names that
+    mode does hold -- the same guard the agent's path takes, because
+    `callGesture` runs the loop's `_dispatch`. The page reads the reason,
+    and the gesture is not run. The reason is spelled as the page typed it:
+    a group answers one name, so it is that name with the asked mode that
+    the refusal has to send back."""
+    from imasviz.VizAgent.tools import parametersOf
+    allowed = sorted(parametersOf('plot_one')['properties'])
     session, _ = build(qapp, tmp_path)
     out = inWorker(lambda: session.callGesture(
-        'plot_one', {'uri': CASE_URI, 'path': 'x', 'timeindex': 7}), qapp)
+        'plot', {'mode': 'single', 'uri': CASE_URI, 'path': 'x',
+                 'timeindex': 7}), qapp)
     assert out['error'] is not None
     assert 'timeindex' in out['error']
     for name in allowed:
         assert name in out['error']
+    assert 'plot(mode="single")' in out['error'], \
+        'the refusal names the call the page can type back, not the ' \
+        'gesture behind it'
 
 
 def test_call_gesture_forwarding_the_tensor_addressing(qapp, tmp_path):
@@ -543,7 +548,7 @@ def test_call_gesture_forwarding_the_tensor_addressing(qapp, tmp_path):
     for gesture, args in (
             ('get_signal', {'uri': uri, 'path': path,
                             'along': 'psi', 'indices': {'psi': 50}}),
-            ('plot_one', {'uri': uri, 'path': path,
+            ('plot', {'mode': 'single', 'uri': uri, 'path': path,
                           'along': 'psi', 'indices': {'psi': 50}})):
         out = inWorker(lambda g=gesture, a=args: session.callGesture(g, a), qapp)
         assert out['error'] is None, out.get('error')

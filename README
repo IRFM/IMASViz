@@ -16,7 +16,7 @@ The terms and conditions of the CeCILL-C license are deemed to be accepted upon 
 This release turns IMASViz from a plotter into a session you can drive:
 
 - **The agent is in the application.** One LLM-driven agent operates the gestures of the application itself — no external agent and no MCP client needed — and it is reached five ways: the *Agent* line of the application's [File menu](#the-in-app-agent), the terminal *REPL* [`viz_cli`](#the-terminal-client-viz_cli), the browser page [`viz_web`](#the-web-interface-viz_web), the [multi-user gateway](#the-multi-user-gateway-viz_gateway) (one isolated instance per user, behind a token), and as [MCP tools](#driving-imasviz-from-an-agent-mcp-tools) for external clients such as Qwen Code. The [one-shot mode](#the-one-shot-agent-mode) runs a prompt on a node without a display and leaves the pictures and the transcript on disk.
-- **The multi-axis data, along the axis you want.** Any quantity can be traced where it lives — along the clock, or along the leaf's own coordinate (the `equilibrium` pressure profile as a function of `psi`), a slice at any instant (`plot_slice`), and slices stacked on the same figure with each curve's index fixed in the legend (`into_figure_key`) — the way `AGENT_HELP.md` at the repository root talks it through.
+- **The multi-axis data, along the axis you want.** Any quantity can be traced where it lives — along the clock, or along the leaf's own coordinate (the `equilibrium` pressure profile as a function of `psi`), a slice at any instant (`plot` with its `slice` mode), and slices stacked on the same figure with each curve's index fixed in the legend (`into_figure_key`) — the way `AGENT_HELP.md` at the repository root talks it through.
 - **A major cleanup.** The defects of the earlier releases were chased down and fixed; the fixes are pinned by the test suite under `tests/` (see `TESTING.md`), which is what keeps them fixed.
 
 
@@ -220,7 +220,7 @@ them for the user.
 | --- | --- |
 | cases | `open_case`, `list_cases`, `close_case` |
 | tree | `list_idss`, `list_case_idss` (the IDS the case actually holds), `load_ids`, `search_nodes`, `describe_node`, `describe_ids`, `list_quantities`, `select_signals`, `unselect_all`, `list_selection`, `select_from_configuration` |
-| plotting | `plot_one` (along the clock or a leaf coordinate, `time`/`time_interp` for a slice, `into_figure_key` to stack on an open figure), `plot_slice`, `plot_selection`, `plot_table`, `plot_stacked`, `get_signal`, `save_plot_configuration` |
+| plotting | `plot` — one tool, and its `mode` picks the drawing: `single` (along the clock or a leaf coordinate, `time`/`time_interp` for a slice, `into_figure_key` to stack on an open figure), `slice` (one value at one instant, read by the Access Layer), `selection`, `table`, `stacked` — plus `get_signal`, `save_plot_configuration` |
 | windows | `list_windows`, `show_window`, `hide_window`, `close_window`, `focus_window` (bring a window to the front, at the size it holds — pixels only when named) |
 | plugins | `list_plugins`, `run_plugin` |
 | session | `save_session`, `restore_session`, `export_to_ids`, `list_sessions`, `list_configurations`, `save_selection` |
@@ -288,7 +288,7 @@ Inside the REPL, a line runs the agent; the `/` commands steer it:
   `/v1/models` entry, read on first use;
 - `/mcp [name]` — the services this session answers today (endpoint, models,
   tools) and, for one tool, its words and its parameters
-  (e.g. `/mcp plot_selection`);
+  (e.g. `/mcp plot`);
 - `/ids [URI]` — the IDS the open case actually holds, raw: the names and
   their occurrences read off the case's entry, with no LLM in between
   (with no URI, the one open case, refused by name when there is no
@@ -330,9 +330,9 @@ prompt, the transcript streamed in the order the loop writes it — refusals
 included, in the log colour they wear in the panel — the *Requests* list
 naming the turns the session has had, and beneath it a closed *Raw
 gestures* group (the rarely used one), one form per tool with its
-parameters, run the way the loop runs them (so `plot_one` given an
-argument it does not take is refused by name, the names it does hold
-beside it). The right column re-draws under *Screenshots* and *Reports*
+parameters, run the way the loop runs them (so `plot` given an
+argument its mode does not take is refused by name, the names that mode
+does hold beside it). The right column re-draws under *Screenshots* and *Reports*
 what each turn left on disk in `~/.imasviz/web/shots/<n>/` — its
 transcript, and the PNG of the application and of each of its windows:
 a turn's captures are the figures it drew, the ones its gestures moved,

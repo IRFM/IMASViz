@@ -57,7 +57,7 @@ def _draw(qapp, session):
     """The one figure the session will hold: drawn by a turn whose
     scripted LLM calls `plot_one` and then answers."""
     session.agent.llm = FakeLLM([
-        ('plot_one', {'uri': CASE_URI, 'path': 'core.ion[0].temp'}),
+        ('plot', {'mode': 'single', 'uri': CASE_URI, 'path': 'core.ion[0].temp'}),
         ('say', 'Tracé.'),
     ])
     record = inWorker(lambda: session.runTurn('trace une figure'), qapp)

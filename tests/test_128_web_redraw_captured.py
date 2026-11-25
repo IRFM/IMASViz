@@ -125,8 +125,8 @@ def test_a_turn_that_only_redrew_a_figure_is_a_capture_of_that_figure(
     # Turn 1: open Plot1.
     session.agent.llm = FakeLLMClient([
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': CASE_URI, 'path': 'equilibrium.time_slice[0].'
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': CASE_URI, 'path': 'equilibrium.time_slice[0].'
                      'profiles_1d.j_tor'}}],
             content=''),
         LLMResponse(content='tracé', finish_reason='stop'),
@@ -140,8 +140,8 @@ def test_a_turn_that_only_redrew_a_figure_is_a_capture_of_that_figure(
     # Turn 2: redraw onto Plot1 (no new key).
     session.agent.llm = FakeLLMClient([
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': CASE_URI,
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': CASE_URI,
                       'path': 'equilibrium.time_slice[0].'
                      'profiles_1d.j_tor',
                       'into_figure_key': 'Plot1'}}],
@@ -172,8 +172,8 @@ def test_a_redraw_is_one_capture_not_two(coexisting, qapp):
     # Turn 1: open Plot1.
     session.agent.llm = FakeLLMClient([
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': CASE_URI, 'path': 'equilibrium.time_slice[0].'
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': CASE_URI, 'path': 'equilibrium.time_slice[0].'
                      'profiles_1d.j_tor'}}],
             content=''),
         LLMResponse(content='tracé', finish_reason='stop'),
@@ -183,8 +183,8 @@ def test_a_redraw_is_one_capture_not_two(coexisting, qapp):
     # Turn 2: redraw + ask the screenshot of Plot1 in the same turn.
     session.agent.llm = FakeLLMClient([
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': CASE_URI,
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': CASE_URI,
                       'path': 'equilibrium.time_slice[0].'
                      'profiles_1d.j_tor',
                       'into_figure_key': 'Plot1'}}],

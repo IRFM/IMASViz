@@ -74,14 +74,14 @@ def _signatureHas(name, param):
     return param in signature.group(0)
 
 
-def test_plot_one_names_and_forwards_the_addressing():
-    body = _sourceOf('plot_one')
+def test_plot_names_and_forwards_the_addressing():
+    body = _sourceOf('plot')
     for param in ('along', 'indices'):
-        assert _signatureHas('plot_one', param), \
-            'plot_one does not name %s: the MCP surface cannot address a ' \
+        assert _signatureHas('plot', param), \
+            'plot does not name %s: the MCP surface cannot address a ' \
             'profile by axis' % param
     assert 'along' in body and 'indices' in body, \
-        'plot_one names the addressing but does not forward it to the core'
+        'plot names the addressing but does not forward it to the core'
 
 
 def test_get_signal_names_and_forwards_the_addressing():
@@ -95,11 +95,24 @@ def test_get_signal_names_and_forwards_the_addressing():
 
 
 def test_the_mcp_surface_offers_the_slice_read():
-    """`plot_slice` is the one value a slice answers through
-    `DBEntry.get_slice` -- the agent surface has it, so the MCP surface
-    does not leave that reading out of the two surfaces of the one core.
-    """
-    assert re.search(r"@server\.tool\(name='plot_slice'\)",
-                     open(TOOLS, encoding='utf-8').read()), \
-        'no plot_slice tool: the slice read the agent answers is missing ' \
-        'from the MCP surface'
+    """The slice read is the one value answered through `DBEntry.get_slice`.
+    The agent surface has it, so the MCP surface does not leave that reading
+    out of the two surfaces of the one core -- and it is a mode of the one
+    `plot` entry there, as it is here: a surface that kept the five names
+    while the other merged them would be a third vocabulary, not the same
+    one served twice."""
+    signature = re.match(r'def plot\([^)]*\)', _sourceOf('plot')).group(0)
+    for action in ('single', 'slice', 'selection', 'table', 'stacked'):
+        assert action in signature, \
+            'plot does not answer "%s": that drawing is missing from the ' \
+            'MCP surface' % action
+    # The slice read's own address: the instant, the occurrence, and how the
+    # instant is settled between two slices.
+    for param in ('time', 'occurrence', 'interpolation'):
+        assert param in signature, \
+            'the slice read is offered without %s on the MCP surface' % param
+    assert not re.search(r"@server\.tool\(name='plot_(one|slice|selection|"
+                         r"table|stacked)'\)",
+                         open(TOOLS, encoding='utf-8').read()), \
+        'the MCP surface still offers a drawing under a name the loop ' \
+        'refuses: the two faces are one vocabulary'

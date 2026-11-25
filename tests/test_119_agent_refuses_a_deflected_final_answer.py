@@ -88,8 +88,8 @@ def _ask(agent, prompt, max_turns=12):
 def _plotTurn():
     return LLMResponse(
         content='', tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': 'x',
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': 'x',
                       'path': 'magnetics.bpol_probe[2].field.data'}}],
         finish_reason='tool_calls')
 
@@ -115,7 +115,11 @@ def test_a_deflected_answer_after_a_tool_is_reanchored_then_stands(qapp,
     transcript, errors = _ask(agent, 'trace le signal bpol_probe sonde 2')
     assert errors == [None], 'the honest re-anchored answer must stand'
     assert 'REFUSAL' in transcript, 'the deflection must be named in the log'
-    assert 'plot_one' in transcript, 'the delivered work is named in it'
+    assert 'plot:' in transcript, 'the delivered work is named in it, in the ' \
+                                  'spelling the model called it'
+    assert 'plot_one' not in transcript, \
+        'a model answered in a name it was never offered answers with that ' \
+        'name next turn, and that call is refused'
     assert 'probe 2' in transcript.lower(), 'the standing answer is the honest one'
     assert llm.calls == 3, 'one re-anchored turn, then the answer stands'
 
@@ -154,7 +158,7 @@ def test_two_deflections_is_a_named_refusal_and_stops(qapp, agent_kwargs):
                       **agent_kwargs)
     transcript, errors = _ask(agent, 'trace le signal bpol_probe sonde 2')
     assert errors and errors[0] is not None, 'two deflections must be refused'
-    assert 'plot_one' in errors[0], 'the refusal still names the work that ran'
+    assert 'plot:' in errors[0], 'the refusal still names the work that ran'
     assert llm.calls == 3, 'it re-anchored once and then stopped, never twice'
 
 
@@ -175,4 +179,4 @@ def test_a_french_deflection_is_caught_the_same_way(qapp, agent_kwargs):
     transcript, errors = _ask(agent, 'trace le champ bpol_probe')
     assert errors == [None]
     assert 'REFUSAL' in transcript, 'the French deflection is named too'
-    assert 'plot_one' in transcript
+    assert 'plot:' in transcript, 'the refusal names the tool that traced it'

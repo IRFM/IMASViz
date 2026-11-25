@@ -91,6 +91,20 @@ def test_captureAsk_reads_the_other_ask_shapes_and_the_absences():
     assert captureAsk('plot_one',
                       {'uri': CASE_URI, 'path': 'core.ion[0].temp',
                        'into_figure_key': 'SlicesPlot1'}) == 'SlicesPlot1'
+    # The same two shapes spelled as a turn spells them today: a merged
+    # group answers one name and a discriminant, while the rule above is
+    # written gesture by gesture. A ``plot(mode="single")`` that reached a
+    # different answer than the ``plot_one`` it means is a turn that leaves
+    # the user a transcript and no picture.
+    assert captureAsk('plot', {'mode': 'single', 'uri': CASE_URI,
+                               'path': 'core.ion[0].temp'}) is None
+    assert captureAsk('plot', {'mode': 'single', 'uri': CASE_URI,
+                               'path': 'core.ion[0].temp',
+                               'into_figure_key': 'SlicesPlot1'}) \
+        == 'SlicesPlot1'
+    assert captureAsk('plot', {'mode': 'slice', 'uri': CASE_URI,
+                               'path': 'core.ion[0].temp',
+                               'time': 3.0}) is None
     assert captureAsk('get_screenshot', {'window': 'SlicesPlot1'}) \
         == 'SlicesPlot1'
     assert captureAsk('get_screenshot', {}) == 'app'
@@ -148,8 +162,8 @@ def test_a_prompt_that_moved_a_figure_keeps_its_capture(qapp, tmp_path):
     directory, the PNG the user acts on."""
     llm = CliLLMClient([
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(content='Les deux boucles sont tracées.',
                     finish_reason='stop'),
@@ -186,8 +200,8 @@ def test_a_prompt_that_only_named_a_figure_saves_the_answer_alone(
     that drew it, where the user already has it."""
     llm = CliLLMClient([
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(content='La figure est tracée.',
                     finish_reason='stop'),
@@ -216,8 +230,8 @@ def test_an_explicit_show_of_a_held_figure_is_a_capture(qapp, tmp_path):
     the figure is in this prompt's directory like any other ask."""
     llm = CliLLMClient([
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(content='La figure est tracée.',
                     finish_reason='stop'),
@@ -258,8 +272,8 @@ def test_the_web_turn_that_moved_a_figure_keeps_its_capture(qapp, tmp_path):
     refusal, as in the REPL."""
     llm = FakeLLMClient([
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': WEB_CASE_URI, 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': WEB_CASE_URI, 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(content='La figure est tracée.', finish_reason='stop'),
         LLMResponse(tool_calls=[

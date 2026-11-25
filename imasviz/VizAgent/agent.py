@@ -32,6 +32,8 @@ from imasviz.VizAgent.tools import (
     SYSTEM_INSTRUCTIONS,
     CHAT_INSTRUCTIONS,
     TOOLS,
+    argumentsForMember,
+    callSpelling,
     callSpellings,
     gestureOf,
     memberNames,
@@ -456,8 +458,8 @@ class AgentLoop(QObject):
                         # because a call of this request wrote it -- a note
                         # no call wrote is what the guard refuses. Grounded
                         # on the success -- a refused call grounds nothing.
-                        if name in SHARED_JOURNAL_GESTURES:
-                            journals_written.add(name)
+                        if gesture in SHARED_JOURNAL_GESTURES:
+                            journals_written.add(gesture)
                         # The work and the reads of the request, per
                         # figure: a claim of a change on a figure stands
                         # on a successful call that did it (a draw into
@@ -465,10 +467,10 @@ class AgentLoop(QObject):
                         # that read it back -- grounded on the success,
                         # the way the report path is: a refused call
                         # grounds nothing.
-                        if name in _WORK_GESTURES:
+                        if gesture in _WORK_GESTURES:
                             acted_on.update(
                                 _groundedFigureKeys(args, result))
-                        elif name in _READ_GESTURES:
+                        elif gesture in _READ_GESTURES:
                             read_from.update(
                                 _groundedFigureKeys(args, result))
                     except Exception as e:
@@ -699,6 +701,9 @@ class AgentLoop(QObject):
         ]
         if len(names) < 3 and len(table_rows) < 3:
             return None
+        # The calls this names are spelled from the table, not by hand: an
+        # instruction naming a tool the model is no longer offered is a
+        # refusal that manufactures the next refused call.
         return (
             'your answer presents a list of names, or a figure and a '
             'table of values, but no tool was called this request to '
@@ -707,8 +712,8 @@ class AgentLoop(QObject):
             'list_case_idss(uri) or list_idss(uri), the saved sessions '
             'with list_sessions(), the profile\'s arrays with '
             'get_signal(uri, path, ...) -- and show its curve with '
-            'plot_one(uri, path, ...) -- and answer only from what those '
-            'calls return.')
+            '%s -- and answer only from what those '
+            'calls return.' % callSpelling('plot_one'))
 
     def _deflectionRefusal(self, content, last_action):
         """A final answer, after a successful tool, that gives the work back
@@ -757,7 +762,7 @@ class AgentLoop(QObject):
 
         This is the confabulation branch of ``ask``: the work behind the
         claim was never done. The instruction is to *do* it -- read the
-        arrays with ``get_signal``, draw the figure with ``plot_one`` --
+        arrays with ``get_signal``, draw the figure with ``plot`` --
         and answer only from what those calls return, so the next turn is
         either a real, tool-grounded answer or a repeated fabrication that
         the named refusal below finally turns away.
@@ -766,8 +771,9 @@ class AgentLoop(QObject):
             '[SYSTEM FEEDBACK] That answer named lists, figures, or '
             'values this request never read. Do the work: read the arrays '
             'with get_signal(uri, path, ...) and draw the owed curves '
-            'with plot_one(uri, path, ...), and answer only from what '
-            'those calls return. Request: "%s".' % user_prompt)
+            'with %s, and answer only from what '
+            'those calls return. Request: "%s".'
+            % (callSpelling('plot_one'), user_prompt))
 
     def _heldFigureKeys(self):
         """The figure keys the session holds now, through the
@@ -826,10 +832,12 @@ class AgentLoop(QObject):
                     'the answer presents %s with a curve it does not '
                     'hold: the session has no such figure open -- '
                     'list_windows() names what is, and it is not among '
-                    'them. Draw it: call plot_one(uri, path, ...), '
+                    'them. Draw it: call %s, '
                     'pill it onto its figure with into_figure_key where '
                     'a curve belongs, and answer from what that call '
-                    'returns.' % ' and '.join(sorted(invented)))
+                    'returns.'
+                    % (' and '.join(sorted(invented)),
+                       callSpelling('plot_one')))
         return None
 
     def _artifactReanchor(self, user_prompt):
@@ -839,10 +847,11 @@ class AgentLoop(QObject):
         return (
             '[SYSTEM FEEDBACK] That figure or report does not stand: '
             'no call of this request produced it. Do the work -- '
-            'plot_one(uri, path, ...) for the figure, or %s for the '
+            '%s for the figure, or %s for the '
             'report -- and answer only from what those calls return. '
             'Request: "%s".'
-            % (callSpellings('the reports'), user_prompt))
+            % (callSpelling('plot_one'),
+               callSpellings('the reports'), user_prompt))
 
     def _unperformedWorkRefusal(self, content, acted_on, read_from,
                                 closed_figures):
@@ -877,12 +886,13 @@ class AgentLoop(QObject):
             'figure checked it: the state of a figure is what the call '
             'that changed it, or curve_stats, answers -- not what was '
             'said. If the call ran and was refused, report the refusal '
-            'it named; otherwise do the work -- plot_one(uri, path, '
-            '...) with into_figure_key to add the curve, '
+            'it named; otherwise do the work -- %s '
+            'with into_figure_key to add the curve, '
             'scale_curve / shift_curve / normalize_curve for a '
             'transform, set_axis_range / set_log_scale / invert_axis '
             'for the axes -- or read it back with curve_stats, and '
-            'answer only from what those calls return.' % keys)
+            'answer only from what those calls return.'
+            % (keys, callSpelling('plot_one')))
 
     def _workReanchor(self, user_prompt):
         """The one re-anchor for a claimed-but-unperformed work on a
@@ -891,11 +901,11 @@ class AgentLoop(QObject):
         """
         return (
             '[SYSTEM FEEDBACK] That work on the figure did not run, '
-            'and no read verified it. Do it -- plot_one(uri, path, '
-            '...) with into_figure_key, the curve transforms, the axis '
+            'and no read verified it. Do it -- %s with into_figure_key '
+            'to add a curve, the curve transforms, the axis '
             'tools -- or read it back with curve_stats(figure_key), '
             'and answer only from what those calls return. '
-            'Request: "%s".' % user_prompt)
+            'Request: "%s".' % (callSpelling('plot_one'), user_prompt))
 
     def _unmadeNoteRefusal(self, content, journals_written):
         """A journal line claimed but not written this request, refused
@@ -1062,8 +1072,16 @@ class AgentLoop(QObject):
                 and requested_by == 'model'
                 and not _userAskedForAPublish(user_prompt)):
             raise ValueError(self._sharedJournalRefusal(name, user_prompt))
-        self.gestureIssued.emit(name, args or {})
-        result = method(**args)
+        # The last step of the seam, and the only one that leaves the
+        # offered vocabulary: a merged group is offered one spelling for an
+        # idea its gestures were written under another (`plot` asks every
+        # mode for a `path`; the slice gesture has always taken a `leaf`).
+        # The checks above ran on the spelling the MODEL typed, so a refusal
+        # never names a parameter it was never offered; the core is handed
+        # the one it takes.
+        spelled = argumentsForMember(name, args)
+        self.gestureIssued.emit(name, spelled)
+        result = method(**spelled)
         if name == 'new_session':
             # A new session is a clean slate for the loop's own memory too,
             # not just for the core it closed. The core answered the reset

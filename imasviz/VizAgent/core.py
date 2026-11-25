@@ -290,7 +290,7 @@ def axesAddressing(axesSpec, along=None, indices=None):
                 'is that one member alone -- there is no slider over the '
                 'other members of the family. For another member, use its '
                 'own path (with into_figure_key to share the figure, or '
-                'select_signals + plot_selection for a selection).'
+                'select_signals + plot(mode="selection") for a selection).'
                 % (word, axis.index, axesSpec.dataPath or axesSpec.idsName or '?'))
         _checkExtent(axis, (indices or {})[key])
 
@@ -1114,9 +1114,10 @@ class McpGuiCore:
             '"%s" already picks %s by its path: this figure draws that one '
             'member as its own curve, and the family %s has no slider here to '
             'move to a different index. A family member is named by its own '
-            'path, not by indices: for another member, plot_one its own path '
-            '(with into_figure_key to put it in this figure) or select_signals '
-            'the two members and plot_selection. Change the call; repeating '
+            'path, not by indices: for another member, draw its own path with '
+            'plot(mode="single") (with into_figure_key to put it in this '
+            'figure) or select_signals the two members and '
+            'plot(mode="selection"). Change the call; repeating '
             'the refused one will not help.' % (path, word, word))
 
     def _timeBase(self, view, node):
@@ -1778,7 +1779,7 @@ class McpGuiCore:
                 'No transform to take off on "%s": the %d curve(s) it '
                 'holds stand as drawn (a reset asks for a curve that was '
                 'scaled, shifted, or normalized, or a re-plot with '
-                'plot_one).' % (figure_key, held))
+                'plot(mode="single")).' % (figure_key, held))
         self._logFor(record.cases,
                      'reset_curve: %s back to the data as drawn, on %s.'
                      % (', '.join(restored), figure_key))

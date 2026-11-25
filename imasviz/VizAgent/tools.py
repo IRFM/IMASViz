@@ -23,7 +23,10 @@ You control the GUI strictly through the provided tools.
 2. `list_case_idss(uri)` -> Check which IDSs and occurrences actually exist in the case.
 3. `load_ids(uri, ids_name, occurrence)` -> Load the required IDS into the tree.
 4. `search_nodes(uri, query)` or `list_quantities(uri, ids_name)` -> Find exact leaf paths.
-5. `plot_one(...)` or `get_signal(...)` -> Draw curves or read numerical values.
+5. `plot(mode=...)` or `get_signal(...)` -> Draw curves or read numerical values.
+   `mode` is the shape of the drawing: "single" one quantity, "slice" one
+   profile at one instant, "selection" what was selected, "table" one panel
+   per path, "stacked" the paths stacked in one window.
 
 ### STRICT RULES (NEVER VIOLATE)
 - **NO HALLUCINATION:** Never invent IDS names, paths, numbers, figure keys, or file paths. Only state facts returned by a tool in this session.
@@ -31,7 +34,7 @@ You control the GUI strictly through the provided tools.
 - **OCCURRENCE vs INDICES vs PATH:**
   - `occurrence`: Version of an IDS (passed to `load_ids`).
   - `indices`: 0-based index of a tensor dimension or nested array (e.g., `indices={"psi": 50}`).
-  - `path`: Specific member of a structure array (e.g., `magnetics.flux_loop[2].flux.data`). To plot two members together, call `plot_one` twice using `into_figure_key` on the second call—never put `flux_loop` in `indices`.
+  - `path`: Specific member of a structure array (e.g., `magnetics.flux_loop[2].flux.data`). To plot two members together, call `plot(mode="single")` twice using `into_figure_key` on the second call—never put `flux_loop` in `indices`.
 - **MULTIPLE FAMILIES:** When asked to plot two different families (e.g., probes then flux loops), create two separate figures unless the user explicitly asks to overlay them ("sur la même figure" / "on the same figure").
 - **WINDOWS & FOCUS:** Do NOT call `focus_window` or `show_window` automatically after plotting. Only call them if the user explicitly asks to bring a window to the front.
 - **DESTRUCTIVE & SHARED ACTIONS:** Never call `close_window`, `close_case`, `new_session`, or write to `scope="shared"` (journals/prompts) unless the user explicitly asks for it in their prompt.
@@ -71,7 +74,7 @@ names any of it is an answer that is wrong.
 What you do: say in direct words what you can answer from what you know
 about plasma fusion and IMAS in general, and say out loud where an answer
 needs the case, naming the gesture that would read it from the case --
-``list_case_idss``, ``plot_one``, ``get_signal`` -- and inviting the user
+``list_case_idss``, ``plot``, ``get_signal`` -- and inviting the user
 to switch the agent back to a shape where it runs, the tools back on.
 The user asks a question, you answer it in the shape you can answer in."""
 
@@ -234,47 +237,68 @@ TOOLS = [
             'occurrence': {'type': 'integer', 'default': 0},
         }, 'required': ['uri', 'ids_name'], 'additionalProperties': False},
     ),
+    # One name for the five ways a quantity is drawn, because the question
+    # the model is answering is « under what shape do I draw this », not
+    # « which of these five functions is it ». `mode` answers it, and the
+    # parameters each mode takes are checked per action
+    # (`ACTION_PARAMETERS`): a `plot(mode="slice")` without a `time` is
+    # refused by naming the missing parameter, never as a Python error.
+    # The prose of the old five schemas is not recopied here five times --
+    # what is per mode is written on the parameter that carries it.
     _tool(
-        'plot_one',
-        'Draw one quantity, into the figure its axes call for. '
-        'A curve figure for one axis to draw, a picture window for two. '
-        '`along` names the axis the quantity runs along (the clock, or one '
-        'of its own axes); `indices` pins each OTHER axis at its index -- '
-        'the same schema `get_signal` uses, so the figure the user sees and '
-        'the numbers get_signal reports are the same element. '
-        '`time` pins a profile to one slice of its dynamic time array: by '
-        'default the nearest slice (the answer names the index and that '
-        'slice\'s own time, not the value asked at), or, with '
-        'time_interp=true, the linear interpolation between the two slices '
-        'that bracket the value (the answer then carries the exact value '
-        'requested). `along_time` / `along` / `indices` and `time` are '
-        'refused together (two opposite readings). The answer carries the '
-        'figure key and `curves`, the exact list of the curves the figure '
-        'holds after the call: a claim that a curve is on that figure '
-        'stands on that list, not on memory of the call.',
+        'plot',
+        'Draw, in the shape the ask calls for: `mode` picks it. '
+        '"single" draws one `path` into the figure its own axes call for '
+        '-- a curve figure for one axis to draw, a picture window for two. '
+        '"slice" draws one `path` at one `time`, the value the Access Layer '
+        'answers at that instant. "selection" draws what the case '
+        'selection holds (`select_signals` first). "table" lays one panel '
+        'per `paths` in a Table Plot View. "stacked" stacks `paths`, one '
+        'panel per quantity, in one window. The answer carries the figure '
+        'key and `curves`, the exact list of the curves the figure holds '
+        'after the call: a claim that a curve is on that figure stands on '
+        'that list, not on memory of the call.',
         {'type': 'object', 'properties': {
+            'mode': {'type': 'string',
+                     'enum': ['single', 'slice', 'selection', 'table',
+                              'stacked'],
+                     'description': 'the shape to draw: "single" one '
+                                    'quantity, "slice" one profile at one '
+                                    'instant, "selection" the case '
+                                    'selection, "table" one panel per '
+                                    'path, "stacked" the paths stacked in '
+                                    'one window'},
             'uri': {'type': 'string'},
-            'path': {'type': 'string'},
+            'path': {'type': 'string',
+                     'description': '"single" and "slice": the leaf to '
+                                    'draw, by its full data path, e.g. '
+                                    'core_profiles.profiles_1d[0].electrons'
+                                    '.temperature'},
+            'paths': {'type': 'array', 'items': {},
+                      'description': '"table" and "stacked": one panel per '
+                                     'path'},
             'along_time': {'type': ['boolean', 'null'],
-                           'description': 'legacy: one axis to draw. '
-                                          'Prefer `along` + `indices`.'},
+                           'description': 'legacy ("single"): one axis to '
+                                          'draw. Prefer `along` + '
+                                          '`indices`.'},
             'along': {'type': ['string', 'null'],
-                      'description': 'the axis the quantity runs along: '
-                                     '"time"/"temps"/"t" for the clock, or '
-                                     'the name of one of its own axes '
-                                     '(e.g. "psi"). None for the default '
-                                     '(the clock when it holds one).'},
+                      'description': '"single": the axis the quantity runs '
+                                     'along: "time"/"temps"/"t" for the '
+                                     'clock, or the name of one of its own '
+                                     'axes (e.g. "psi"). None for the '
+                                     'default (the clock when it holds '
+                                     'one).'},
             'indices': {'type': ['object', 'null'],
-                        'description': 'one entry per axis the figure does '
-                                       'not draw, by that axis\'s name, at '
-                                       'its 0-based index. An array of '
-                                       'structures (time_slice, profiles_1d, '
-                                       'ion, ...), or the leaf\'s own '
-                                       'coordinate (psi, ...); each of '
-                                       'several nested arrays on its own. '
-                                       'e.g. {"psi": 50} for a profile held '
-                                       'by the dynamic array, "ion": 4 '
-                                       'for one structure in it.',
+                        'description': '"single": one entry per axis the '
+                                       'figure does not draw, by that '
+                                       'axis\'s name, at its 0-based index. '
+                                       'An array of structures (time_slice, '
+                                       'profiles_1d, ion, ...), or the '
+                                       'leaf\'s own coordinate (psi, ...); '
+                                       'each of several nested arrays on '
+                                       'its own. e.g. {"psi": 50} for a '
+                                       'profile held by the dynamic array, '
+                                       '"ion": 4 for one structure in it.',
                         'additionalProperties': {'type': 'integer'}},
             'into_figure_key': {
                 'type': ['string', 'null'],
@@ -287,49 +311,49 @@ TOOLS = [
                                '(e.g. "2 sondes, puis 2 boucles" is two '
                                'figures, not four in one).'},
             'time': {'type': ['number', 'null'],
-                     'description': 'seconds; the time at which to pin the '
-                                    'profile. Nearest slice by default; '
-                                    'interpolated with time_interp=true.'},
+                     'description': 'seconds. "single": pins the profile to '
+                                    'one slice of its dynamic time array, '
+                                    'the nearest by default (the answer '
+                                    'names the index and that slice\'s own '
+                                    'time, not the value asked at), or the '
+                                    'linear interpolation between the two '
+                                    'slices that bracket it with '
+                                    'time_interp=true. Refused together '
+                                    'with `along_time` / `along` / '
+                                    '`indices` -- two opposite readings. '
+                                    '"slice": required, the instant the '
+                                    'profile is read at; a time outside '
+                                    'the case\'s range answers the nearest '
+                                    'slice the case holds, and the answer '
+                                    'names time_requested and '
+                                    'time_slice_time apart.'},
             'time_interp': {'type': ['boolean', 'null'],
-                            'description': 'when true, interpolates '
-                                           'linearly between the two slices '
-                                           'that bracket the requested time, '
-                                           'leaving the answer\'s '
-                                           'time_slice_time equal to the '
-                                           'exact value asked at, not the '
-                                           'nearest slice. Defaults to '
-                                           'false (nearest slice).'},
-        }, 'required': ['uri', 'path'], 'additionalProperties': False},
-    ),
-    _tool(
-        'plot_slice',
-        'Draw one 1D-profile leaf at a single time, through the Access '
-        'Layer\'s own DBEntry.get_slice (the value the Access Layer answers '
-        'at that instant, not a GUI-side lerp). The coordinate is the leaf\'s '
-        'own (independent of time); the curve is its value at `time`. '
-        'interpolation: "linear" (default), "closest" (the case\'s nearest '
-        'slice), or "previous" (the one at or before `time`). A time outside '
-        'the case\'s range answers the nearest slice the case holds, and the '
-        'answer names time_requested and time_slice_time apart. Not a '
-        '2D-pictorial leaf, nor a 0D scalar.',
-        {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-            'leaf': {'type': 'string',
-                     'description': 'the full data path of the leaf, e.g. '
-                                    'core_profiles.profiles_1d[0].'
-                                    'electrons.temperature'},
-            'time': {'type': 'number',
-                     'description': 'the instant the profile is read at'},
-            'occurrence': {'type': 'integer', 'default': 0},
+                            'description': '"single": when true, '
+                                           'interpolates linearly between '
+                                           'the two slices that bracket the '
+                                           'requested time, leaving the '
+                                           'answer\'s time_slice_time equal '
+                                           'to the exact value asked at, '
+                                           'not the nearest slice. Defaults '
+                                           'to false (nearest slice).'},
+            'occurrence': {'type': 'integer', 'default': 0,
+                           'description': '"slice": which occurrence of '
+                                          'that IDS holds the leaf'},
             'interpolation': {'type': 'string',
                               'enum': ['linear', 'closest', 'previous'],
-                              'default': 'linear'},
-            'into_figure_key': {'type': ['string', 'null'],
-                                'description': 'an open Plot: figure to add '
-                                               'to; by default a new '
-                                               'figure is opened'},
-        }, 'required': ['uri', 'leaf', 'time'],
-           'additionalProperties': False},
+                              'default': 'linear',
+                              'description': '"slice": how the instant is '
+                                             'read -- the case\'s nearest '
+                                             'slice, or the one at or '
+                                             'before `time`'},
+            'columns': {'type': ['integer', 'null'],
+                        'description': '"table": the width of the row of '
+                                       'panels'},
+            'plot_axis': {'type': ['string', 'null'],
+                          'description': '"table" and "stacked": the '
+                                         'abscissa every quantity is read '
+                                         'along, "TIME" the clock'},
+        }, 'required': ['mode', 'uri'], 'additionalProperties': False},
     ),
     _tool(
         'equilibrium_surfaces',
@@ -374,43 +398,14 @@ TOOLS = [
         }, 'required': ['uri', 'time'], 'additionalProperties': False},
     ),
     _tool(
-        'plot_selection',
-        'Draw the case selection: one curve figure, one window per picture. '
-        '`select_signals` first.',
-        {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-        }, 'required': ['uri'], 'additionalProperties': False},
-    ),
-    _tool(
-        'plot_table',
-        'One panel per named path, in a Table Plot View. '
-        '`columns` sets the width of the row; `plot_axis` "TIME" reads '
-        'every quantity along time.',
-        {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-            'paths': {'type': 'array', 'items': {}},
-            'columns': {'type': ['integer', 'null']},
-            'plot_axis': {'type': ['string', 'null']},
-        }, 'required': ['uri', 'paths'], 'additionalProperties': False},
-    ),
-    _tool(
-        'plot_stacked',
-        'The named paths stacked one panel per quantity. '
-        'Against the abscissa `plot_axis` names, the default being the clock.',
-        {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-            'paths': {'type': 'array', 'items': {}},
-            'plot_axis': {'type': 'string', 'default': 'TIME'},
-        }, 'required': ['uri', 'paths'], 'additionalProperties': False},
-    ),
-    _tool(
         'get_signal',
         'The values the tree read gives for one leaf, as JSON. '
         '`along` names the axis it runs along (the clock, or one of its own '
         'axes); `indices` pins each OTHER axis at its index -- the same '
-        'schema `plot_one` uses, so what the figures show and what this '
-        'answers are the same element. Legacy `as_function_of_time` true '
-        'reads along the clock, false along its own axis; `coordinate_index` '
+        'schema `plot(mode="single")` uses, so what the figures show and '
+        'what this answers are the same element. Legacy '
+        '`as_function_of_time` true reads along the clock, false along its '
+        'own axis; `coordinate_index` '
         'pins one of the leaf\'s axes by position.',
         {'type': 'object', 'properties': {
             'uri': {'type': 'string'},
@@ -646,7 +641,7 @@ TOOLS = [
             'along': {'type': ['string', 'null']},
             'indices': {'type': ['object', 'null'],
                         'description': 'each other axis fixed by name, '
-                                       'the way plot_one does.'},
+                                       'the way plot and get_signal do.'},
             'figure_key': {'type': ['string', 'null'],
                            'description': 'mark the events on this curve '
                                           'figure.'},
@@ -709,7 +704,7 @@ TOOLS = [
             'along': {'type': ['string', 'null']},
             'indices': {'type': ['object', 'null'],
                         'description': 'each other axis fixed by name, '
-                                       'the way plot_one does.'},
+                                       'the way plot and get_signal do.'},
         }, 'required': ['uri', 'path'],
            'additionalProperties': False},
     ),
@@ -1787,6 +1782,46 @@ for _name, (_label, _discriminator, _actions, _order) in _OFFERS.items():
 # schema of its group: an action taking a parameter the group's schema does
 # not declare is a call the model is never told it may make.
 ACTION_PARAMETERS = {
+    'plot_one': ({
+        'uri': {'type': 'string'},
+        'path': {'type': 'string'},
+        'along_time': {'type': ['boolean', 'null']},
+        'along': {'type': ['string', 'null']},
+        'indices': {'type': ['object', 'null'],
+                    'additionalProperties': {'type': 'integer'}},
+        'into_figure_key': {'type': ['string', 'null']},
+        'time': {'type': ['number', 'null']},
+        'time_interp': {'type': ['boolean', 'null']},
+    }, ('uri', 'path')),
+    # `leaf` is the name `plot_slice` takes in Python. A model answering
+    # `plot(mode="slice", leaf=...)` would be typing a second word for what
+    # every other mode of the same tool calls `path` -- so the OFFER spells
+    # `path` and this row is written in the offer's vocabulary, and
+    # `ACTION_RENAMES` below is the one place the two spellings meet.
+    'plot_slice': ({
+        'uri': {'type': 'string'},
+        'path': {'type': 'string'},
+        'time': {'type': 'number'},
+        'occurrence': {'type': 'integer', 'default': 0},
+        'interpolation': {'type': 'string',
+                          'enum': ['linear', 'closest', 'previous'],
+                          'default': 'linear'},
+        'into_figure_key': {'type': ['string', 'null']},
+    }, ('uri', 'path', 'time')),
+    'plot_selection': ({
+        'uri': {'type': 'string'},
+    }, ('uri',)),
+    'plot_table': ({
+        'uri': {'type': 'string'},
+        'paths': {'type': 'array', 'items': {}},
+        'columns': {'type': ['integer', 'null']},
+        'plot_axis': {'type': ['string', 'null']},
+    }, ('uri', 'paths')),
+    'plot_stacked': ({
+        'uri': {'type': 'string'},
+        'paths': {'type': 'array', 'items': {}},
+        'plot_axis': {'type': ['string', 'null']},
+    }, ('uri', 'paths')),
     'plot_report': ({
         'figure_key': {'type': 'string'},
         'name': {'type': ['string', 'null']},
@@ -1800,6 +1835,40 @@ ACTION_PARAMETERS = {
         'name': {'type': ['string', 'null']},
     }, ('uri',)),
 }
+
+# The few names a merged group offers under a different spelling than the
+# gesture's Python takes -- ``offered name -> spelled name``, per member.
+# It exists for one reason: a group whose modes share an idea must name it
+# with one word. ``plot`` asks for a ``path``, and the "slice" mode of that
+# same tool was written against ``leaf``, a second word for the same leaf;
+# leaving both in one schema is the confusion the merge was asked to remove.
+#
+# The rename happens once, on the way IN, after the call has been checked
+# against the row above -- which is why that row is written in the offer's
+# vocabulary: a refusal that named ``leaf`` would be naming a parameter the
+# model was never told it may type.
+ACTION_RENAMES = {
+    'plot_slice': {'path': 'leaf'},
+}
+
+
+def argumentsForMember(member, args):
+    """The arguments of a call, spelled the way the gesture's Python takes
+    them.
+
+    A merged group is offered one vocabulary and the core was written in
+    another; ``ACTION_RENAMES`` is the seam between the two, and this is the
+    one place it is applied -- after the parameter checks, before the call.
+    A member with no row there is handed its arguments unchanged.
+    """
+    renames = ACTION_RENAMES.get(member)
+    out = dict(args or {})
+    if not renames:
+        return out
+    for offered, spelled in renames.items():
+        if offered in out:
+            out[spelled] = out.pop(offered)
+    return out
 
 
 def parametersOf(name):
@@ -1910,28 +1979,34 @@ def unknownParameterRefusal(name, unknown):
     that are -- a Python ``TypeError`` says "unexpected keyword argument",
     which does not tell the model what to answer with -- and then, when a
     neighbour in the same group takes the stray, names that neighbour:
-    ``columns`` on ``plot_one`` is a table asked with a single quantity's
-    call, and the short way back is the tool that takes it.
+    ``columns`` put on a single quantity's call is a table asked that way,
+    and the short way back is the call that takes it.
+
+    Both sides of that sentence are spelled as the model may type them
+    (``offerHead``): a refusal that names ``plot_table`` names a name that
+    is not on the menu, and a model told to ask it will be refused for
+    asking it.
     """
     schema = parametersOf(name)
     allowed = sorted(schema.get('properties', {}))
     if allowed:
-        text = ('"%s" is not a parameter of the %s tool: it takes %s. '
-                'Answer with the parameters the tool names.'
-                % (unknown[0], name, ', '.join(allowed)))
+        text = ('"%s" is not a parameter of the %s call: it takes %s. '
+                'Answer with the parameters the call names.'
+                % (unknown[0], offerHead(name), ', '.join(allowed)))
     else:
-        text = ('"%s" is not a parameter of the %s tool, which takes no '
+        text = ('"%s" is not a parameter of the %s call, which takes no '
                 'parameter at all. Answer with no arguments.'
-                % (unknown[0], name))
+                % (unknown[0], offerHead(name)))
     siblings = siblingTaking(name, unknown[0])
     if siblings:
-        if len(siblings) == 1:
-            text += (' "%s" is a parameter of %s: ask that tool if that is '
-                     'the gesture you mean.' % (unknown[0], siblings[0]))
+        spelled = [offerHead(sibling) for sibling in siblings]
+        if len(spelled) == 1:
+            text += (' "%s" is a parameter of %s: ask that call if that is '
+                     'the gesture you mean.' % (unknown[0], spelled[0]))
         else:
             text += (' "%s" is a parameter of %s: ask one of those if that '
                      'is the gesture you mean.'
-                     % (unknown[0], ', '.join(siblings)))
+                     % (unknown[0], ', '.join(spelled)))
     return text
 
 
@@ -1941,7 +2016,7 @@ def unknownParameters(name, args):
     Every tool in ``TOOLS`` declares ``additionalProperties: false`` and
     lists the names it does take in ``parameters.properties``. An
     argument whose name is not in that list is one the model invented --
-    ``time_index`` on ``plot_one`` is the one measured -- and the loop
+    ``time_index`` on ``plot(mode="single")`` is the one measured -- the loop
     must refuse it by naming the parameter that is not there and the ones
     that are, instead of letting Python's ``TypeError`` (``unexpected
     keyword argument``) speak for it. An unknown tool name, or a tool that
@@ -1962,6 +2037,24 @@ def unknownParameters(name, args):
 
 
 _OFFERED_NAMES = frozenset(tool['function']['name'] for tool in TOOLS)
+
+
+def offerHead(member):
+    """The name a model may TYPE to ask for ``member``, with no parameters.
+
+    The half of ``callSpelling`` a refusal needs when it is naming the call
+    rather than telling the model what to answer with: a refusal that names
+    ``plot_table`` is naming a name that is not on the menu, and the model
+    cannot act on it -- it has to be told the name it does have,
+    ``plot(mode="table")``. A gesture whose group is not merged is answered
+    by its own name, which IS the offer.
+    """
+    offer = _OFFER_OF_MEMBER.get(member)
+    if (offer is not None and offer[0] in _OFFERED_NAMES
+            and _OFFERS[offer[0]][1] is not None):
+        name, action, _label = offer
+        return '%s(%s="%s")' % (name, _OFFERS[name][1], action)
+    return member
 
 
 def callSpelling(member):
@@ -2088,5 +2181,11 @@ def missingParameters(name, args):
 
 
 def missingParameterRefusal(name, missing):
-    return ('the %s tool needs %s and the call did not give it: answer with '
-            '%s.' % (name, ' and '.join(missing), callSpelling(name)))
+    """The words for an incomplete call, spelled as the model may type it.
+
+    ``name`` is the gesture that would have run; ``offerHead`` is what the
+    model has to answer with, because a merged gesture's own name is not
+    something it can call.
+    """
+    return ('%s needs %s, and the call left it out: answer with %s.'
+            % (offerHead(name), ' and '.join(missing), callSpelling(name)))

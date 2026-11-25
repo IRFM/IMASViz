@@ -172,16 +172,18 @@ def test_an_add_claimed_on_a_held_figure_without_a_call_is_refused(qapp):
 
 
 def test_a_real_add_on_a_held_figure_stands(qapp):
-    """The work ran: ``plot_one`` into Plot1 succeeded, and the answer
+    """The work ran: a drawing into Plot1 succeeded, and the answer
     says exactly that. The claim stands on the call that did it -- the
     guard must not refuse a true statement, or it would refuse every
-    good answer."""
+    good answer. The call is spelled as it is offered (``plot`` with its
+    "single" mode); what the stand-in records is the gesture that ran."""
     core = Core()
     core._open = {'Plot1'}
     out = runTurn(core, [
         LLMResponse(tool_calls=[{
-            'name': 'plot_one',
-            'args': {'uri': 'imas:hdf5', 'path': 'core.temperature',
+            'name': 'plot',
+            'args': {'mode': 'single', 'uri': 'imas:hdf5',
+                     'path': 'core.temperature',
                      'into_figure_key': 'Plot1'}}],
             content=''),
         LLMResponse(content='J\'ai ajouté la courbe de température sur '

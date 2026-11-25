@@ -195,14 +195,18 @@ def test_the_groups_are_in_the_manual_s_order():
 # --- what the grouping answers -----------------------------------------
 
 def test_a_parameter_a_neighbour_takes_is_answered_by_naming_it():
-    """``columns`` is not a ``plot_one`` argument -- it is what a Table Plot
-    View takes. The refusal says both: what plot_one takes, and who takes
-    ``columns``."""
+    """``columns`` is not what a single quantity's drawing takes -- it is
+    what a Table Plot View takes. The refusal says both: what that mode
+    takes, and who takes ``columns``. Both sides are spelled as the model
+    may type them, because the drawing group answers one name now."""
     text = unknownParameterRefusal('plot_one', ['columns'])
-    assert '"columns" is not a parameter of the plot_one tool' in text
+    assert '"columns" is not a parameter of the plot(mode="single") call' \
+        in text
     assert 'along_time' in text, 'the parameters that are stay named'
-    assert 'plot_table' in text, \
+    assert 'plot(mode="table")' in text, \
         'the neighbour that takes the stray must be named'
+    assert 'plot_table' not in text, \
+        'the refusal named a name the model is not offered'
     assert siblingTaking('plot_one', 'columns') == ['plot_table']
 
 
@@ -318,21 +322,25 @@ def _oneTurnAgent(core, tool, args):
 
 
 def test_the_loop_names_the_neighbour_it_refused_a_parameter_for(qapp):
-    """``plot_one(columns=3)`` through the loop: the refusal the model reads
-    names the stray, what the tool takes, and the neighbour that takes the
-    stray. The core is never called."""
+    """``plot(mode="single", columns=3)`` through the loop: the refusal the
+    model reads names the stray, what that mode takes, and the neighbour
+    that takes the stray -- spelled as the model may type it. The core is
+    never called."""
     core = RecordingCore()
     agent, transcript, errors = _oneTurnAgent(
-        core, 'plot_one',
-        {'uri': 'imas:hdf5?path=/fake', 'path': 'equilibrium.f',
-         'columns': 3})
+        core, 'plot',
+        {'mode': 'single', 'uri': 'imas:hdf5?path=/fake',
+         'path': 'equilibrium.f', 'columns': 3})
     refusal = [ln for ln in transcript.splitlines()
-               if 'REFUSAL' in ln and 'plot_one' in ln]
+               if 'REFUSAL' in ln and 'plot:' in ln]
     assert refusal, 'the parameter was not refused: %r' % transcript
     assert 'columns' in refusal[0]
     assert 'along_time' in refusal[0]
-    assert 'plot_table' in refusal[0], \
-        'the loop must name the tool that does take the parameter'
+    assert 'plot(mode="table")' in refusal[0], \
+        'the loop must name the call that does take the parameter'
+    assert 'plot_table' not in refusal[0], \
+        'a refusal that names a name the model is no longer offered is not ' \
+        'an answer: the model would ask it and be refused for asking'
     assert core.calls == [], 'a refused call must not reach the core'
     assert errors == [None]
 
@@ -342,9 +350,9 @@ def test_a_call_the_core_answers_is_not_touched_by_the_grouping(qapp):
     its own parameters still reaches the core and answers its figure."""
     core = RecordingCore()
     agent, transcript, errors = _oneTurnAgent(
-        core, 'plot_one',
-        {'uri': 'imas:hdf5?path=/fake', 'path': 'equilibrium.f',
-         'along_time': 1})
+        core, 'plot',
+        {'mode': 'single', 'uri': 'imas:hdf5?path=/fake',
+         'path': 'equilibrium.f', 'along_time': 1})
     assert core.calls == [{'uri': 'imas:hdf5?path=/fake',
                            'path': 'equilibrium.f'}]
     assert 'REFUSAL' not in transcript

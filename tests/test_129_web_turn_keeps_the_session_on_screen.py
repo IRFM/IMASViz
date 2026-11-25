@@ -55,8 +55,8 @@ def test_a_web_turn_keeps_the_application_on_screen(qapp, tmp_path):
 
     session.agent.llm = FakeLLMClient([
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(content='tracé.', finish_reason='stop'),
     ])

@@ -68,7 +68,7 @@ def test_a_family_member_is_its_own_path_not_an_index():
     ``indices``."""
     text = _text()
     assert 'magnetics.flux_loop[2].flux.data' in text
-    assert 'call `plot_one` twice using `into_figure_key`' in text
+    assert 'call `plot(mode="single")` twice using `into_figure_key`' in text
     assert 'never put `flux_loop` in `indices`' in text
     # No number of a family member as a count: an index in brackets is an
     # index, a word or digit before the name is the count the old prompt
