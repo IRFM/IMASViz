@@ -118,7 +118,9 @@ def test_a_note_claimed_without_a_write_is_refused(qapp):
     assert out['finished'][0] is not None
     ref = out['finished'][0]
     assert 'cahier' in ref or 'journal' in ref, 'the refusal must name the journal'
-    assert 'add_note' in ref, 'the refusal must name the tool that would write it'
+    assert 'manage_note(action="add")' in ref, \
+        'the refusal must name the call that would write it, as the tool ' \
+        'set offers it'
     assert 'REFUSAL' in ' '.join(out['lines'])
     assert core.calls == [], 'the claim must not have earned a call'
     assert core.lines == [], 'a refused claim must not write the line'
@@ -136,19 +138,21 @@ def test_english_note_claim_without_a_write_is_refused(qapp):
     ], 'note it in the journal')
     assert out['finished'][0] is not None
     assert 'journal' in out['finished'][0]
-    assert 'add_note' in out['finished'][0]
+    assert 'manage_note(action="add")' in out['finished'][0]
     assert core.calls == [] and core.lines == []
 
 
 def test_a_real_note_stands(qapp):
-    """The write ran: ``add_note`` succeeded, and the answer says exactly
+    """The write ran: the notebook's add answered, and the answer says exactly
     that. The claim stands on the call that did it -- the guard must
-    not refuse a true statement, or it would refuse every good answer."""
+    not refuse a true statement, or it would refuse every good answer.
+    The model names the group and its ``action``; the stand-in core
+    answers the gesture under its own name."""
     core = Core()
     out = runTurn(core, [
         LLMResponse(tool_calls=[{
-            'name': 'add_note',
-            'args': {'scope': 'personal', 'author': 'me',
+            'name': 'manage_note',
+            'args': {'action': 'add', 'scope': 'personal', 'author': 'me',
                      'text': 'WEST 54924, flux loop stable.'}}],
             content=''),
         LLMResponse(content='J\'ai ajouté la note au cahier: WEST 54924, '
@@ -162,7 +166,7 @@ def test_a_real_note_stands(qapp):
 
 
 def test_a_refused_write_reported_honestly_stands(qapp):
-    """The ``add_note`` this request ran was **refused** (no author), and
+    """The add this request ran was **refused** (no author), and
     the answer reports the refusal instead of claiming the line: "j'ai
     pas pu l'ajouter, aucun auteur". A refusal word near the claim is the
     honest report the guard must let stand -- the model did the work it
@@ -171,8 +175,8 @@ def test_a_refused_write_reported_honestly_stands(qapp):
     core.refuse_write = True
     out = runTurn(core, [
         LLMResponse(tool_calls=[{
-            'name': 'add_note',
-            'args': {'scope': 'personal',
+            'name': 'manage_note',
+            'args': {'action': 'add', 'scope': 'personal',
                      'text': 'WEST 54924, flux loop stable.'}}],
             content=''),
         LLMResponse(content='J\'ai pas pu ajouter la note au cahier: aucun '
@@ -181,10 +185,11 @@ def test_a_refused_write_reported_honestly_stands(qapp):
                     tool_calls=None, finish_reason='stop'),
     ], 'note ça au cahier: WEST 54924 flux loop stable')
     assert out['finished'] == [None]
-    # The call's own refusal line ("  -> add_note: REFUSAL — …") stands in
-    # the transcript whatever -- it is the answer the tools gave. The
-    # guard's own line is the one at column zero ("REFUSAL: …"); on the
-    # honest report of a refusal there is none of those.
+    # The call's own refusal line ("  -> manage_note: REFUSAL — …") stands
+    # in the transcript whatever -- it is the answer the tools gave, spelled
+    # as the call was made. The guard's own line is the one at column zero
+    # ("REFUSAL: …"); on the honest report of a refusal there is none of
+    # those.
     guard_refusals = [line for line in out['lines']
                       if line.startswith('REFUSAL')]
     assert guard_refusals == [], \

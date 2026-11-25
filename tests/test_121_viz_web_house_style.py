@@ -246,9 +246,9 @@ def test_the_page_edits_a_journal_note_in_place():
     Read and Delete, the edit form is its own section (the note the user
     edits is named by the id it reads under, and the fields the form
     holds are pre-filled from the read of that note), and the Save asks
-    `edit_note` -- the gesture that changes the note in place -- not a
-    delete-and-re-add that would cost the note a new id the other
-    writers read it under.
+    `manage_note(action="edit")` -- the notebook's one tool and the action
+    that changes the note in place -- not a delete-and-re-add that would
+    cost the note a new id the other writers read it under.
     """
     with open(INDEX, 'r', encoding='utf-8') as f:
         text = f.read()
@@ -258,9 +258,12 @@ def test_the_page_edits_a_journal_note_in_place():
     assert 'notesEdit' in text, 'no edit section for the note being changed'
     assert 'notesEditBody' in text, 'no body to edit on the note being changed'
     assert 'notesEditOpen' in text, 'no open of the edit form from a note'
-    assert 'read_note' in text, 'the form is pre-filled from the read of the note'
-    # The gesture the Save asks, and the save itself.
-    assert 'edit_note' in text, 'the page does not ask the edit gesture'
+    assert 'manage_note(action="read")' in text, \
+        'the form is pre-filled from the read of the note'
+    # The gesture the Save asks, and the save itself. The page spells the
+    # group, because the route it posts to answers every ask by that name.
+    assert 'manage_note(action="edit")' in text, \
+        'the page does not ask the edit gesture'
     assert 'notesSaveEdit' in text, 'no save of the edit'
 
 

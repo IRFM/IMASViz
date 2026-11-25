@@ -37,7 +37,7 @@ You control the GUI strictly through the provided tools.
   - `path`: Specific member of a structure array (e.g., `magnetics.flux_loop[2].flux.data`). To plot two members together, call `plot(mode="single")` twice using `into_figure_key` on the second call—never put `flux_loop` in `indices`.
 - **MULTIPLE FAMILIES:** When asked to plot two different families (e.g., probes then flux loops), create two separate figures unless the user explicitly asks to overlay them ("sur la même figure" / "on the same figure").
 - **WINDOWS & FOCUS:** Do NOT call `manage_window(action="focus")` or `manage_window(action="show")` automatically after plotting. Only call them if the user explicitly asks to bring a window to the front.
-- **DESTRUCTIVE & SHARED ACTIONS:** Never call `manage_window(action="close")`, `close_case`, `new_session`, or write to `scope="shared"` (journals/prompts) unless the user explicitly asks for it in their prompt.
+- **DESTRUCTIVE & SHARED ACTIONS:** Never call `manage_window(action="close")`, `close_case`, `new_session`, or write with `scope="shared"` (`manage_note`, the prompt tools) unless the user explicitly asks for it in their prompt.
 - **AMBIGUITY:** If a user request is ambiguous (e.g., "sonde 2" when multiple probes exist), list the exact paths found by `search_nodes` and ask the user to choose.
 
 ### RESPONSE FORMAT
@@ -1111,169 +1111,105 @@ TOOLS = [
             'tail': {'type': 'integer', 'default': 200},
         }, 'additionalProperties': False},
     ),
+    # One name for the lab notebook, because the eight asks are one question
+    # about it -- « qu'est-ce que je fais des notes » -- and the answers
+    # differ by one word. The discriminant is `action` and NOT `scope`:
+    # `add_note(scope, ...)` already answers `scope` for which of the two
+    # journals it writes, and a group merged under a word its own members
+    # take is one word answering two questions (test_175 refuses it).
     _tool(
-        'search_journals',
-        'The lab notebook, in its two journals (the personal under '
-        '~/.imasviz/journals, the shared under the folder '
-        'SharedJournalDir names), asked as a RAG: the structured '
-        'filters (machine, campaign, shot, date, author) narrow to '
-        'the notes that name each field you ask of, then your `query` '
-        'is ranked over them -- by embeddings when the preferences '
-        'name the embedding endpoint and it answers, else by keyword, '
-        'and the answer names which it used. A note about a shot names '
-        'machine, campaign, shot and date, and a note with none of '
-        'them is a general one, the same journal. With no query, the '
-        'notes come back in the order they are newest.',
+        'manage_note',
+        'The lab notebook of the two journals, and `action` says what is '
+        'asked of it. "search": the notebook asked as a RAG -- the '
+        'structured filters (machine, campaign, shot, date_from, date_to, '
+        'author) narrow to the notes that name each field asked of, then '
+        '`query` is ranked over them, by embeddings when the preferences '
+        'name the embedding endpoint and it answers, else by keyword, and '
+        'the answer names which it used; with no `query` the notes come '
+        'back newest first. "list": the same filters without a query, '
+        'newest first -- and an empty answer is an answer. "read": the '
+        'full body of one `note_id`; the `snippet` of "search" is the hand '
+        'that leads to it, not the text. "stats": what the two journals '
+        'are on this node -- the folder each is under, how many notes each '
+        'holds, whether the embedding endpoint is named and which model it '
+        'names; ask it before a search and it names the method the run '
+        'will rank with, and the shared one answers a refusal (not a '
+        'folder named) when it is not set up. "reindex": put the '
+        'journal(s) in step with their index -- the ask of a fresh, stale '
+        'or guarded index (written under an embedding endpoint the run is '
+        'no longer under: its vectors are in a different space than the '
+        'query), answering per journal how many it kept, wrote and '
+        'dropped. "add": one new note, `text` required and `author` '
+        'defaulting to $USER -- a write with no author at all is refused '
+        'by name, the write being visible to whoever reads the journal. '
+        '"edit": one existing note changed in place, keeping the id the '
+        'other writers read it under; a field left out keeps the one the '
+        'note held, a field named replaces it and an empty one clears it, '
+        'except the author (a note keeps its author) and the body (an '
+        'empty `text` is a refusal). "delete": one note gone, its file and '
+        'the cache entry the run holds for it. A note that names machine, '
+        'campaign, shot and date is the one about a shot, and one that '
+        'names none of them is a general one, in the same journal. '
+        'A `note_id` the journal does not hold is refused by name, naming '
+        'the ids it does hold. A write to the shared journal is a visible '
+        'line in a place everyone you share it with reads, and it is the '
+        'loop that asks for it in the user\'s own words before it runs.',
         {'type': 'object', 'properties': {
-            'scope': {'type': ['string', 'null'],
-                      'enum': ['personal', 'shared'],
-                      'description': 'the one journal to ask of; left '
-                                     'out, both are asked'},
-            'query': {'type': ['string', 'null'],
-                      'description': 'the text to rank the filtered '
-                                     'notes by; left out, the notes '
-                                     'come back newest first'},
-            'limit': {'type': 'integer', 'default': 20},
-            'machine': {'type': ['string', 'null']},
-            'campaign': {'type': ['string', 'null']},
-            'shot': {'type': ['string', 'null']},
-            'date_from': {'type': ['string', 'null'],
-                          'description': 'ISO 8601 YYYY-MM-DD, inclusive'},
-            'date_to': {'type': ['string', 'null'],
-                        'description': 'ISO 8601 YYYY-MM-DD, inclusive'},
-            'author': {'type': ['string', 'null']},
-        }, 'additionalProperties': False},
-    ),
-    _tool(
-        'read_note',
-        'The full body of one note, by its `note_id` (the file name '
-        'without .md) and its `scope`. The `snippet` of '
-        'search_journals is the one it is a hand for -- not the full '
-        'text this one gives. Not in the journal is refused by name, '
-        'naming the ids it does hold.',
-        {'type': 'object', 'properties': {
-            'scope': {'type': 'string', 'enum': ['personal', 'shared']},
-            'note_id': {'type': 'string'},
-        }, 'required': ['scope', 'note_id'], 'additionalProperties': False},
-    ),
-    _tool(
-        'list_notes',
-        'The notes in the journal(s) the caller names, filtered '
-        '(machine, campaign, shot, date_from, date_to, author) and '
-        'newest first. date_from and date_to bound the shot date '
-        '(YYYY-MM-DD); a note that names no date is excluded only '
-        'when a window is named. A filter left out is no filter at '
-        'all. Empty is an answer, the same shape a search_journals '
-        'that answers nothing holds.',
-        {'type': 'object', 'properties': {
-            'scope': {'type': ['string', 'null'],
-                      'enum': ['personal', 'shared']},
-            'machine': {'type': ['string', 'null']},
-            'campaign': {'type': ['string', 'null']},
-            'shot': {'type': ['string', 'null']},
-            'date_from': {'type': ['string', 'null']},
-            'date_to': {'type': ['string', 'null']},
-            'author': {'type': ['string', 'null']},
-        }, 'additionalProperties': False},
-    ),
-    _tool(
-        'journal_stats',
-        'The state of the two journals: the folder each is under, '
-        'the count of notes each holds, and the state of the '
-        'embeddings (is the endpoint named, and which model it '
-        'names). Ask of it before a search, and it tells the method '
-        'a run will rank with -- and the shared one answers a '
-        'refusal (not a folder named) when it is not set up.',
-        {'type': 'object', 'properties': {}, 'additionalProperties': False},
-    ),
-    _tool(
-        'add_note',
-        'One new note in the journal you name. `text` is the body '
-        '(required), `author` is the one who wrote it (defaults to '
-        '$USER, and a write with no author at all is refused by '
-        'name: the write is visible to whoever reads the journal), '
-        'and `machine`/`campaign`/`shot`/`date`/`title` are the '
-        'note\'s filters -- a note that names them is the one about '
-        'a shot, and one that does not is the one that is general. '
-        'A write to the shared journal is a visible line in a place '
-        'everyone you share it with reads, and it is the loop that '
-        'asks for it in the user\'s own words before it runs -- the '
-        'word you would give for the shared one.',
-        {'type': 'object', 'properties': {
-            'scope': {'type': 'string', 'enum': ['personal', 'shared']},
-            'text': {'type': 'string'},
-            'author': {'type': ['string', 'null']},
-            'machine': {'type': ['string', 'null']},
-            'campaign': {'type': ['string', 'null']},
-            'shot': {'type': ['string', 'null']},
-            'date': {'type': ['string', 'null'],
-                     'description': 'ISO 8601 YYYY-MM-DD'},
-            'title': {'type': ['string', 'null']},
-        }, 'required': ['scope', 'text'], 'additionalProperties': False},
-    ),
-    _tool(
-        'edit_note',
-        'One existing note, changed in place: `scope` and `note_id` '
-        'name it, and it keeps the id the other writers read it under. '
-        'A field you leave out keeps the one the note held, a field '
-        'you name replaces it, and an empty one clears it -- except '
-        'the author (a note keeps its author) and the body (your '
-        '`text` left out keeps the one it held; an empty one is a '
-        'refusal). Not in the journal is refused by name, naming the '
-        'ids it does hold. A write to the shared journal is a visible '
-        'line in a place everyone you share it with reads, and it is '
-        'the loop that asks for it in the user\'s own words before it '
-        'runs -- the word you would give for the shared one.',
-        {'type': 'object', 'properties': {
-            'scope': {'type': 'string', 'enum': ['personal', 'shared']},
-            'note_id': {'type': 'string'},
-            'text': {'type': ['string', 'null'],
-                     'description': 'the new body; left out, the one '
-                                    'the note held'},
-            'author': {'type': ['string', 'null']},
-            'machine': {'type': ['string', 'null']},
-            'campaign': {'type': ['string', 'null']},
-            'shot': {'type': ['string', 'null']},
-            'date': {'type': ['string', 'null'],
-                     'description': 'ISO 8601 YYYY-MM-DD'},
-            'title': {'type': ['string', 'null']},
-        }, 'required': ['scope', 'note_id'], 'additionalProperties': False},
-    ),
-    _tool(
-        'delete_note',
-        'One note gone: its file and the cache entry the run holds '
-        'for it. `scope` and `note_id` name the one to take out, and '
-        'not in the journal is refused by name, naming the ids it '
-        'does hold. The next search of the journal you take one out '
-        'of does not hold the note it did: its file is not there.',
-        {'type': 'object', 'properties': {
-            'scope': {'type': 'string', 'enum': ['personal', 'shared']},
-            'note_id': {'type': 'string'},
-        }, 'required': ['scope', 'note_id'], 'additionalProperties': False},
-    ),
-    _tool(
-        'reindex_journals',
-        'Put the journal(s) in step with their index: the run asks of '
-        'this when the index is empty (a fresh journal), stale (a note '
-        'written before it could be indexed), or guarded (the index was '
-        'written under an embedding endpoint the run is no longer '
-        'under — its vectors are in a different space than the query, '
-        'and this re-embeds them). It walks the notes the journal '
-        'holds, keeps the ones it already has, re-embeds the ones that '
-        'moved, and drops the ones the journal no longer holds. '
-        '`scope` names the one to run it on (or is left out for the '
-        'two at once), and the answer names, per journal, how many it '
-        'kept, how many it wrote, how many it dropped, and whether the '
-        'run vectorized this pass or kept the text for the keyword. '
-        'A write to the shared journal is a visible one in a place '
-        'everyone you share it with reads, and it is the loop that '
-        'asks for it in the user\'s own words before it runs.',
-        {'type': 'object', 'properties': {
+            'action': {'type': 'string',
+                       'enum': ['search', 'list', 'read', 'add', 'edit',
+                                'delete', 'stats', 'reindex']},
             'scope': {'type': ['string', 'null'],
                       'enum': ['personal', 'shared', None],
-                      'description': 'the one journal to reindex; left '
-                                     'out, both are asked'},
-        }, 'additionalProperties': False},
+                      'description': 'Which journal the action is made on: '
+                                     '"personal" under ~/.imasviz/journals, '
+                                     '"shared" under the folder '
+                                     'SharedJournalDir names. Required of '
+                                     '"read", "add", "edit" and "delete"; '
+                                     'left out of "search", "list" and '
+                                     '"reindex" to ask the two at once; '
+                                     'not a parameter of "stats".'},
+            'note_id': {'type': 'string',
+                        'description': '"read", "edit" and "delete": the '
+                                       'note, under the id the journal '
+                                       'names it (a file name without .md), '
+                                       'the one "search" and "list" answer '
+                                       'it by'},
+            'query': {'type': ['string', 'null'],
+                      'description': '"search": the text to rank the '
+                                     'filtered notes by; left out, the '
+                                     'notes come back newest first'},
+            'limit': {'type': 'integer',
+                      'description': '"search": how many notes to answer'},
+            'text': {'type': ['string', 'null'],
+                     'description': '"add": the body, required. "edit": '
+                                    'the new body; left out, the one the '
+                                    'note held, and an empty one is a '
+                                    'refusal'},
+            'machine': {'type': ['string', 'null'],
+                        'description': 'a filter of "search" and "list", a '
+                                       'field of "add" and "edit"'},
+            'campaign': {'type': ['string', 'null'],
+                         'description': 'a filter of "search" and "list", '
+                                        'a field of "add" and "edit"'},
+            'shot': {'type': ['string', 'null'],
+                     'description': 'a filter of "search" and "list", a '
+                                    'field of "add" and "edit"'},
+            'date': {'type': ['string', 'null'],
+                     'description': '"add" and "edit": the note\'s shot '
+                                    'date, ISO 8601 YYYY-MM-DD'},
+            'date_from': {'type': ['string', 'null'],
+                          'description': '"search" and "list": ISO 8601 '
+                                         'YYYY-MM-DD, inclusive'},
+            'date_to': {'type': ['string', 'null'],
+                        'description': '"search" and "list": ISO 8601 '
+                                       'YYYY-MM-DD, inclusive'},
+            'author': {'type': ['string', 'null'],
+                       'description': 'a filter of "search" and "list"; on '
+                                      '"add" and "edit" the writer, '
+                                      'defaulting to $USER'},
+            'title': {'type': ['string', 'null'],
+                      'description': '"add" and "edit": the note\'s title'},
+        }, 'required': ['action'], 'additionalProperties': False},
     ),
     _tool(
         'list_documents',
@@ -1886,6 +1822,62 @@ ACTION_PARAMETERS = {
         'uri': {'type': 'string'},
         'name': {'type': ['string', 'null']},
     }, ('uri',)),
+    # The notebook's eight asks. `scope` is WHICH JOURNAL the gesture runs
+    # on, never which gesture is meant -- which is why this group answers
+    # `action` and could not be merged under `scope` the reports are.
+    'search_journals': ({
+        'scope': {'type': ['string', 'null']},
+        'query': {'type': ['string', 'null']},
+        'limit': {'type': 'integer', 'default': 20},
+        'machine': {'type': ['string', 'null']},
+        'campaign': {'type': ['string', 'null']},
+        'shot': {'type': ['string', 'null']},
+        'date_from': {'type': ['string', 'null']},
+        'date_to': {'type': ['string', 'null']},
+        'author': {'type': ['string', 'null']},
+    }, ()),
+    'list_notes': ({
+        'scope': {'type': ['string', 'null']},
+        'machine': {'type': ['string', 'null']},
+        'campaign': {'type': ['string', 'null']},
+        'shot': {'type': ['string', 'null']},
+        'date_from': {'type': ['string', 'null']},
+        'date_to': {'type': ['string', 'null']},
+        'author': {'type': ['string', 'null']},
+    }, ()),
+    'read_note': ({
+        'scope': {'type': 'string'},
+        'note_id': {'type': 'string'},
+    }, ('scope', 'note_id')),
+    'journal_stats': ({}, ()),
+    'add_note': ({
+        'scope': {'type': 'string'},
+        'text': {'type': 'string'},
+        'author': {'type': ['string', 'null']},
+        'machine': {'type': ['string', 'null']},
+        'campaign': {'type': ['string', 'null']},
+        'shot': {'type': ['string', 'null']},
+        'date': {'type': ['string', 'null']},
+        'title': {'type': ['string', 'null']},
+    }, ('scope', 'text')),
+    'edit_note': ({
+        'scope': {'type': 'string'},
+        'note_id': {'type': 'string'},
+        'text': {'type': ['string', 'null']},
+        'author': {'type': ['string', 'null']},
+        'machine': {'type': ['string', 'null']},
+        'campaign': {'type': ['string', 'null']},
+        'shot': {'type': ['string', 'null']},
+        'date': {'type': ['string', 'null']},
+        'title': {'type': ['string', 'null']},
+    }, ('scope', 'note_id')),
+    'delete_note': ({
+        'scope': {'type': 'string'},
+        'note_id': {'type': 'string'},
+    }, ('scope', 'note_id')),
+    'reindex_journals': ({
+        'scope': {'type': ['string', 'null']},
+    }, ()),
 }
 
 # The few names a merged group offers under a different spelling than the

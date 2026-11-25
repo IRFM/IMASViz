@@ -935,6 +935,10 @@ class AgentLoop(QObject):
         and the refusal words the other guards keep out are the same
         ones ``noteClaimed`` reads.
 
+        The prose names the CALL the model can still type: the notebook
+        answers one tool whose ``action`` says which write is meant, so
+        the spelling comes from the table rather than from the gesture.
+
         Returns the refusal reason, or None when the answer may stand.
         """
         if journals_written:
@@ -943,14 +947,16 @@ class AgentLoop(QObject):
             return None
         return (
             'the answer says a note was added to the journal, but no '
-            'call of this request wrote one: add_note, edit_note and '
-            'delete_note did not run this turn, so the line is not in '
-            'the journal -- the user will look for it and not find it. '
-            'Do the work instead: write it with add_note(scope, text, '
-            'author=..., ...) or change it with edit_note(scope, '
-            'note_id, ...) -- and answer only from what that call '
-            'returns. If the call was refused, report the refusal it '
-            'named.')
+            'call of this request wrote one: %s, %s and %s did not run '
+            'this turn, so the line is not in the journal -- the user '
+            'will look for it and not find it. Do the work instead: '
+            'write it with %s -- author, title and the rest being '
+            'optional -- or change it with %s, and answer only from '
+            'what that call returns. If the call was refused, report '
+            'the refusal it named.'
+            % (offerHead('add_note'), offerHead('edit_note'),
+               offerHead('delete_note'), callSpelling('add_note'),
+               callSpelling('edit_note')))
 
     def _noteReanchor(self, user_prompt):
         """The one re-anchor for a claimed-but-unwritten journal line:
@@ -958,10 +964,10 @@ class AgentLoop(QObject):
         """
         return (
             '[SYSTEM FEEDBACK] That line is not in the journal: no '
-            'call of this request wrote it. Write it -- add_note('
-            'scope, text, ...) or edit_note(scope, note_id, ...) -- '
-            'and answer only from what that call returns. '
-            'Request: "%s".' % user_prompt)
+            'call of this request wrote it. Write it -- %s -- or edit '
+            'it -- %s -- and answer only from what that call returns. '
+            'Request: "%s".' % (callSpelling('add_note'),
+                                callSpelling('edit_note'), user_prompt))
 
     def _destructiveRefusal(self, name, user_prompt):
         """The named refusal a destructive gesture receives on a request
@@ -1005,14 +1011,21 @@ class AgentLoop(QObject):
         request that does not ask for it.
 
         The rule the model sees, in the shape the rest of this file's
-        refusals wear: who is refused (the gesture, by name), where the
-        write would land (the shared journal the writers all read --
-        the note the user sees in the application, the viz_web page
-        and the other writers' sessions), that the refusal did not run
-        the gesture (the line is not in the journal), and the one word
-        that unblocks it (an ask in the user's own words). The write
-        the model reaches for on a "note down what I said" goes to
-        the PERSONAL journal.
+        refusals wear: who is refused, where the write would land (the
+        shared journal the writers all read -- the note the user sees in
+        the application, the viz_web page and the other writers'
+        sessions), that the refusal did not run the gesture (the line is
+        not in the journal), and the one word that unblocks it (an ask in
+        the user's own words). The write the model reaches for on a "note
+        down what I said" goes to the PERSONAL journal.
+
+        The two vocabularies of a merged group apply here: the gate is
+        asked about the GESTURE (``SHARED_JOURNAL_GESTURES`` holds
+        members, and it is the gesture that wrote the line), while the
+        words name the CALL -- the journals answer one name and their
+        ``action`` says which write is meant, so a refusal naming
+        ``add_note`` would send the model to a name it is refused for
+        asking.
         """
         taken = {
             'add_note': 'a line the writers all read',
@@ -1021,7 +1034,7 @@ class AgentLoop(QObject):
             'reindex_journals': 'an index the writers all read',
         }[name]
         return (
-            'the %s gesture writes to the shared journal, and this '
+            'the %s gesture writes %s to the shared journal, and this '
             'request does not ask for it: "%s" does not name a '
             'journal to put a line in -- not a "publier au journal '
             'partagé", not a "share this", not a "cahier de manip". '
@@ -1032,7 +1045,7 @@ class AgentLoop(QObject):
             'the user asks for it in their own words ('
             '("publier au journal partagé", "share this", '
             '"cahier de manip"), and answer from what that call '
-            'returns.' % (name, user_prompt))
+            'returns.' % (offerHead(name), taken, user_prompt))
 
     def _dispatch(self, name, args, requested_by='model', user_prompt=''):
         """Run one tool by name on the calling thread (the GUI thread,

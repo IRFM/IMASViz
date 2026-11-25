@@ -309,19 +309,22 @@ the same descriptions. The tools, in the order the faces group them:
        wrote there, the named refusals among them -- where a loop reads what a
        dialog would have told a hand.
    * - the journals
-     - ``search_journals``, ``list_notes``, ``read_note``, ``add_note``,
-       ``edit_note``, ``delete_note``, ``journal_stats``,
-       ``reindex_journals``
-     - the two journals of the run: the **personal** one (the author's own
-       notes, under ``~/.imasviz/journals``) and the **shared** one
-       (:ref:`agentics_journal_shared`) -- a note is one file with its own
-       front matter (*machine*, *campaign*, *shot*, *date*, *author*,
-       *title*) and its body, and a search narrows by any of the filters and
-       ranks by meaning when the embeddings endpoint is named
-       (:ref:`agentics_journal_llm`), by words while it is not.
-       ``reindex_journals`` puts a journal back in step with its index: an
-       index that is empty, stale, or **guarded** because it was written under
-       an embeddings endpoint this run is no longer under.
+     - ``manage_note``
+     - one tool for the notebook, and its ``action`` says which of the eight
+       is meant: ``search``, ``list``, ``read``, ``add``, ``edit``,
+       ``delete``, ``stats``, ``reindex``. The two journals of the run: the
+       **personal** one (the author's own notes, under ``~/.imasviz/journals``)
+       and the **shared** one (:ref:`agentics_journal_shared`) -- a note is one
+       file with its own front matter (*machine*, *campaign*, *shot*, *date*,
+       *author*, *title*) and its body, and a search narrows by any of the
+       filters and ranks by meaning when the embeddings endpoint is named
+       (:ref:`agentics_journal_llm`), by words while it is not. ``scope`` says
+       which of the two journals an action runs on -- a word the write
+       gestures already answered for themselves, which is why the group took
+       ``action`` as its discriminant and not ``scope``. ``reindex`` puts a
+       journal back in step with its index: an index that is empty, stale, or
+       **guarded** because it was written under an embeddings endpoint this
+       run is no longer under.
    * - the documents corpus
      - ``list_documents``, ``search_documents``, ``read_document``,
        ``reindex_documents``, ``documents_stats``
@@ -395,16 +398,18 @@ The two are:
   node reach, so that a note written by one is reachable by the others, and
   the author of the note is the ``$USER`` of the writer, written by hand.
 
-The read: ``search_journals`` (the query and the filters), ``list_notes`` (the
-filters alone, in date order), ``read_note`` (the body by the id a search or
-a list names), and ``journal_stats`` (what the two journals hold on this node,
+The read: ``manage_note(action="search")`` (the query and the filters),
+``manage_note(action="list")`` (the filters alone, in date order),
+``manage_note(action="read")`` (the body by the id a search or a list names),
+and ``manage_note(action="stats")`` (what the two journals hold on this node,
 and whether the embeddings endpoint is named and the model it names). The
-write: ``add_note`` (a new line in one of the two, the fields that name it,
-and the body), ``edit_note`` (one of the lines, changed in place — the note
+write: ``manage_note(action="add")`` (a new line in one of the two, the
+fields that name it, and the body), ``manage_note(action="edit")`` (one of
+the lines, changed in place — the note
 keeps the id it reads under, a field the caller names takes the place of
 the one it held, a field left out keeps it, and an empty one clears it,
 leaving the author and the body the two a note does not go without), and
-``delete_note`` (one of them, gone). Every refusal the read
+``manage_note(action="delete")`` (one of them, gone). Every refusal the read
 answers is one the write does not take: a note with no author is refused by
 name, a body that is empty is refused by name, and an explicit ask for the
 shared journal on a node that does not hold one names the reason, not the
@@ -420,11 +425,11 @@ written. The same rule wears on the *Windows* menu's close and on the *File*
 menu's new session: a close the model runs, the loop names the gesture and
 the rule, the case and the session are still in force.
 
-The ranking: ``search_journals`` ranks by **embeddings** when
+The ranking: ``manage_note(action="search")`` ranks by **embeddings** when
 :code:`AgentEmbedEndpoint` is named and the server answers (the
 :ref:`agentics_journal_llm`), and by **words** while it is not, or while the
-server does not answer -- which is what ``journal_stats`` says, in
-``method`` and, for the fallback case, in ``fallback_from`` and
+server does not answer -- which is what ``manage_note(action="stats")``
+says, in ``method`` and, for the fallback case, in ``fallback_from`` and
 ``fallback_reason``: a search that ran on the keyword with the reason named
 is not a search that presented itself as an embeddings answer. The vectors
 the endpoints answer are cached under the note's journal folder, keyed on

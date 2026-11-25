@@ -887,18 +887,22 @@ details.tool summary strong { color: var(--accent-strong); }
 
   /* --------------------------------------------------------------- the notes
 
-     The two journals — `search_journals` for the list (ranked for the
-     query or listed for the filters), `read_note` for the body of one,
-     `add_note` for the write, `edit_note` for a line the writers read
-     back changed in place (the note keeps the id it reads under, and
-     the fields you name take the place of the ones it held),
-     `delete_note` for the erase, and `journal_stats` for the overview
-     at the top. The scope is a two-button tab (personal / shared), the
-     filter row reads off the six filters the core already answers
-     (machine, campaign, shot, date_from, date_to, author), and the add
-     and edit forms at the foot are what the user fills to write one or
-     to change one of them. A note without the field the user did not
-     name is a match on the rest of its body, not a refusal. */
+     The notebook answers one tool on the tool set -- `manage_note` -- and
+     its `action` says which of the asks is meant: `search` for the list
+     ranked for the query, `list` for the same filters without one, `read`
+     for the body of one note, `add` for the write, `edit` for a line the
+     writers read back changed in place (the note keeps the id it reads
+     under, and the fields you name take the place of the ones it held),
+     `delete` for the erase, and `stats` for the overview at the top. The
+     page asks every one of them by that name, because the route it posts
+     to answers every ask through `resolveCall`: a button that spelled a
+     gesture the group took away would be refused that name. The scope is a
+     two-button tab (personal / shared), the filter row reads off the six
+     filters the core already answers (machine, campaign, shot, date_from,
+     date_to, author), and the add and edit forms at the foot are what the
+     user fills to write one or to change one of them. A note without the
+     field the user did not name is a match on the rest of its body, not a
+     refusal. */
 
   var notesTab = { scope: 'personal' };
 
@@ -937,7 +941,7 @@ details.tool summary strong { color: var(--accent-strong); }
   }
 
   function notesRefreshStats() {
-    return notesFetch('journal_stats', {}).then(function (j) {
+    return notesFetch('manage_note', { action: 'stats' }).then(function (j) {
       if (j.error) byId('notesStats').textContent = 'REFUSAL — ' + j.error;
       else notesRenderStats(j.result);
     });
@@ -986,10 +990,11 @@ details.tool summary strong { color: var(--accent-strong); }
     filters.scope = notesTab.scope;
     var query = (byId('notesQuery') || {}).value || '';
     if (query.trim()) filters.query = query.trim();
-    return (filters.query
-      ? notesFetch('search_journals', filters)
-      : notesFetch('list_notes', filters)
-    ).then(function (j) {
+    // The notebook answers one tool, and its `action` is the question the
+    // page is asking: a query ranks the notes it filtered, no query lists
+    // them newest first.
+    filters.action = filters.query ? 'search' : 'list';
+    return notesFetch('manage_note', filters).then(function (j) {
       var wrap = byId('notesList');
       wrap.innerHTML = '';
       if (j.error) {
@@ -1001,7 +1006,9 @@ details.tool summary strong { color: var(--accent-strong); }
   }
 
   function openNotesOne(scope, id) {
-    return notesFetch('read_note', { scope: scope, note_id: id }).then(function (j) {
+    return notesFetch('manage_note',
+                      { action: 'read', scope: scope, note_id: id })
+    .then(function (j) {
       var reader = byId('notesReader');
       reader.innerHTML = '';
       if (j.error) {
@@ -1019,18 +1026,23 @@ details.tool summary strong { color: var(--accent-strong); }
   }
 
   function notesDelete(scope, id) {
-    return notesFetch('delete_note', { scope: scope, note_id: id }).then(function (j) {
-      if (j.error) appendLine('  ← REFUSAL — delete_note: ' + j.error, 'refusal');
-      else appendLine('  ← delete_note: ' + id + ' is from ' + scope);
+    return notesFetch('manage_note',
+                      { action: 'delete', scope: scope, note_id: id })
+    .then(function (j) {
+      if (j.error) appendLine('  ← REFUSAL — manage_note(action="delete"): '
+                              + j.error, 'refusal');
+      else appendLine('  ← manage_note(action="delete"): ' + id
+                      + ' is from ' + scope);
       notesDoSearch();
       notesRefreshStats();
     });
   }
 
   /* The edit of one note, the way the add is: the form the note already
-     wears (read back through `read_note`, so the form holds what the
-     note holds, not what the list's snippet showed), and the Save the
-     user presses asks `edit_note` for it. The note keeps the id it
+     wears (read back through `manage_note(action="read")`, so the form
+     holds what the note holds, not what the list's snippet showed), and
+     the Save the user presses asks `manage_note(action="edit")` for it.
+     The note keeps the id it
      reads under: `scope` and `note_id` of the form are fixed to the one
      it was opened on, and only the fields the form names can move.
      A field the form leaves empty is cleared from the note, and a
@@ -1040,7 +1052,9 @@ details.tool summary strong { color: var(--accent-strong); }
   var notesEditing = null;
 
   function notesEditOpen(scope, id) {
-    return notesFetch('read_note', { scope: scope, note_id: id }).then(function (j) {
+    return notesFetch('manage_note',
+                      { action: 'read', scope: scope, note_id: id })
+    .then(function (j) {
       var box = byId('notesEdit');
       box.innerHTML = '';
       if (j.error) {
@@ -1099,6 +1113,7 @@ details.tool summary strong { color: var(--accent-strong); }
       return;
     }
     var args = {
+      action: 'edit',
       scope: scope, note_id: id, text: body,
       author: val('notesEditAuthor'),
       title: val('notesEditTitle'),
@@ -1107,11 +1122,13 @@ details.tool summary strong { color: var(--accent-strong); }
       shot: val('notesEditShot'),
       date: val('notesEditDate'),
     };
-    notesFetch('edit_note', args).then(function (j) {
+    notesFetch('manage_note', args).then(function (j) {
       if (j.error) {
-        appendLine('  ← REFUSAL — edit_note: ' + j.error, 'refusal');
+        appendLine('  ← REFUSAL — manage_note(action="edit"): ' + j.error,
+                   'refusal');
       } else {
-        appendLine('  ← edit_note: ' + id + ' is as you changed it, ' +
+        appendLine('  ← manage_note(action="edit"): ' + id
+                   + ' is as you changed it, ' +
           'under ' + j.result.path);
         byId('notesEdit').removeAttribute('open');
       }
@@ -1186,16 +1203,18 @@ details.tool summary strong { color: var(--accent-strong); }
     function val(id) { var i = byId(id); return i ? i.value.trim() : ''; }
     var text = val('notesAddBody');
     if (!text) { appendLine('A note needs a body.', 'refusal'); return; }
-    var args = { scope: notesTab.scope, text: text };
+    var args = { action: 'add', scope: notesTab.scope, text: text };
     ['title', 'author', 'machine', 'campaign', 'shot', 'date'].forEach(function (field) {
       var id = 'notesAdd' + field.charAt(0).toUpperCase() + field.slice(1);
       if (val(id)) args[field] = val(id);
     });
-    var j = await notesFetch('add_note', args);
+    var j = await notesFetch('manage_note', args);
     if (j.error) {
-      appendLine('  ← REFUSAL — add_note: ' + j.error, 'refusal');
+      appendLine('  ← REFUSAL — manage_note(action="add"): ' + j.error,
+                 'refusal');
     } else {
-      appendLine('  ← add_note: ' + j.result.id + '  under  ' + j.result.path);
+      appendLine('  ← manage_note(action="add"): ' + j.result.id
+                 + '  under  ' + j.result.path);
       var area = byId('notesAddBody');
       if (area) area.value = '';
       notesDoSearch();
