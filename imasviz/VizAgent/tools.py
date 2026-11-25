@@ -22,7 +22,7 @@ You control the GUI strictly through the provided tools.
 1. `open_case(uri)` -> Open the shot.
 2. `list_case_idss(uri)` -> Check which IDSs and occurrences actually exist in the case.
 3. `load_ids(uri, ids_name, occurrence)` -> Load the required IDS into the tree.
-4. `search_nodes(uri, query)` or `list_quantities(uri, ids_name)` -> Find exact leaf paths.
+4. `inspect_tree(action="search")` or `inspect_tree(action="quantities")` -> Find exact leaf paths.
 5. `plot(mode=...)` or `get_signal(...)` -> Draw curves or read numerical values.
    `mode` is the shape of the drawing: "single" one quantity, "slice" one
    profile at one instant, "selection" what was selected, "table" one panel
@@ -38,7 +38,7 @@ You control the GUI strictly through the provided tools.
 - **MULTIPLE FAMILIES:** When asked to plot two different families (e.g., probes then flux loops), create two separate figures unless the user explicitly asks to overlay them ("sur la même figure" / "on the same figure").
 - **WINDOWS & FOCUS:** Do NOT call `manage_window(action="focus")` or `manage_window(action="show")` automatically after plotting. Only call them if the user explicitly asks to bring a window to the front.
 - **DESTRUCTIVE & SHARED ACTIONS:** Never call `manage_window(action="close")`, `close_case`, `manage_session(action="new")`, or write with `scope="shared"` (`manage_note`, the prompt tools) unless the user explicitly asks for it in their prompt.
-- **AMBIGUITY:** If a user request is ambiguous (e.g., "sonde 2" when multiple probes exist), list the exact paths found by `search_nodes` and ask the user to choose.
+- **AMBIGUITY:** If a user request is ambiguous (e.g., "sonde 2" when multiple probes exist), list the exact paths found by `inspect_tree(action="search")` and ask the user to choose.
 
 ### RESPONSE FORMAT
 - Keep answers concise, factual, and grounded in tool outputs.
@@ -154,17 +154,56 @@ TOOLS = [
                        'default': 'first'},
         }, 'required': ['uri', 'ids_name'], 'additionalProperties': False},
     ),
+    # One name for the four ways the tree answers a question about itself:
+    # which leaves the case holds, what one of them holds, what the data
+    # dictionary says about an IDS, and what one occurrence can be drawn as.
+    # The discriminant is `action`: no member of the group takes a word of
+    # its own (test_175 refuses a discriminant a member already answers for
+    # itself). `uri` is required of the offer because the four ask a case;
+    # `path` and `ids_name` are not common, so each member names the one it
+    # cannot do without, and the refusal of that member asks for it.
     _tool(
-        'search_nodes',
-        'The leaves of the case, matched by a substring of their spellings. '
-        '`query` is a case-insensitive substring; `ids_name` narrows to one '
-        'IDS. The answer holds the three spellings of every match.',
+        'inspect_tree',
+        'What the tree of a case says about itself, and `action` says which '
+        'ask. "search": the leaves whose spelling carries `query` '
+        '(case-insensitive), `ids_name` narrowing to one IDS; each match '
+        'carries its three spellings -- any is what a plot takes -- and the '
+        '`kind` a plot would make of it, `curve`, `image` or `scalar`. '
+        '"node": what one `path` holds, as the application documentation '
+        'says it -- units, size, finite minimum and maximum, the zero/nan/'
+        'inf counts, a bounded preview; a leaf the tree does not hold is '
+        'refused by name. "ids": what the data dictionary says of an '
+        '`ids_name` -- its comment, homogeneous time, units, the version '
+        'the case was written at; a property the case leaves empty is '
+        'absent, not invented, and an IDS the case does not declare is '
+        'refused naming the ones it does. "quantities": the filled tensors '
+        'of one `occurrence`, grouped by the array of structures that '
+        'drives them -- the "what can be drawn" answer. A scalar (0D) leaf '
+        'is not a tensor and is not listed; an occurrence whose tree was '
+        'never built is refused by name, load it with load_ids first.',
         {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-            'query': {'type': 'string', 'default': ''},
-            'ids_name': {'type': ['string', 'null']},
-            'limit': {'type': 'integer', 'default': 200},
-        }, 'required': ['uri'], 'additionalProperties': False},
+            'action': {'type': 'string',
+                       'enum': ['search', 'node', 'ids', 'quantities']},
+            'uri': {'type': 'string',
+                    'description': 'the case whose tree is asked'},
+            'query': {'type': ['string', 'null'],
+                      'description': '"search": the substring a leaf '
+                                     'spelling must carry; empty answers '
+                                     'every leaf up to the limit'},
+            'ids_name': {'type': ['string', 'null'],
+                         'description': '"search": narrow to one IDS; '
+                                        '"ids" and "quantities": the IDS to '
+                                        'read, and it is asked of them'},
+            'occurrence': {'type': ['integer', 'null'],
+                           'description': '"ids" and "quantities": which '
+                                          'occurrence; 0 when left out'},
+            'limit': {'type': ['integer', 'null'],
+                      'description': '"search": how many matches come back; '
+                                     '200 when left out'},
+            'path': {'type': ['string', 'null'],
+                     'description': '"node": the leaf, spelled as a search '
+                                    'hit names it'},
+        }, 'required': ['action', 'uri'], 'additionalProperties': False},
     ),
     _tool(
         'select_signals',
@@ -192,50 +231,6 @@ TOOLS = [
         {'type': 'object', 'properties': {
             'uri': {'type': 'string'},
         }, 'required': ['uri'], 'additionalProperties': False},
-    ),
-    _tool(
-        'describe_node',
-        'What this node holds, as the application documentation says it: '
-        'dictionary documentation and units, and for an array the size, '
-        'shape, the finite minimum and maximum, the counts of zeros, nan and '
-        'inf entries, and a bounded preview of the values. A leaf the tree '
-        'does not hold is refused by name.',
-        {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-            'path': {'type': 'string'},
-        }, 'required': ['uri', 'path'], 'additionalProperties': False},
-    ),
-    _tool(
-        'describe_ids',
-        'What the data dictionary says about an IDS: its comment '
-        '(ids_properties.comment), whether it is written with homogeneous '
-        'time (ids_properties.homogeneous_time), its units, time units, and '
-        'the data dictionary version the case was written at. The answer '
-        'holds only the fields the case fills; a property the case leaves '
-        'empty is absent, not invented. An IDS the case does not declare is '
-        'refused by name, naming the ones it does.',
-        {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-            'ids_name': {'type': 'string'},
-            'occurrence': {'type': 'integer', 'default': 0},
-        }, 'required': ['uri', 'ids_name'], 'additionalProperties': False},
-    ),
-    _tool(
-        'list_quantities',
-        'The filled tensors (dimension >= 1) of one occurrence, grouped by '
-        'the array of structures that drives them: one entry per quantity '
-        '(its path, data name, parametrized path, units, data type, and how '
-        'many elements of its array the case holds). A quantity that '
-        'contains no data -- not blue in the tree -- is not listed, and '
-        'scalar leaves (0D) are not tensors and are not listed either. This '
-        'is the "what can be drawn" answer for one occurrence. An occurrence '
-        'whose tree was never built is refused by name: load it with '
-        'load_ids first.',
-        {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-            'ids_name': {'type': 'string'},
-            'occurrence': {'type': 'integer', 'default': 0},
-        }, 'required': ['uri', 'ids_name'], 'additionalProperties': False},
     ),
     # One name for the five ways a quantity is drawn, because the question
     # the model is answering is « under what shape do I draw this », not
@@ -1563,6 +1558,31 @@ for _name, (_label, _discriminator, _actions, _order) in _OFFERS.items():
 # schema of its group: an action taking a parameter the group's schema does
 # not declare is a call the model is never told it may make.
 ACTION_PARAMETERS = {
+    # What the tree of a case says about itself. `query` belongs to the
+    # rank alone, and `ids_name` is optional for that one only: it narrows a
+    # search that stands without it, while "ids" and "quantities" are
+    # nothing without the IDS they read. "node" is nothing without its leaf,
+    # and the leaf it asks for is spelled as a search hit named it.
+    'search_nodes': ({
+        'uri': {'type': 'string'},
+        'query': {'type': 'string', 'default': ''},
+        'ids_name': {'type': ['string', 'null']},
+        'limit': {'type': 'integer', 'default': 200},
+    }, ('uri',)),
+    'describe_node': ({
+        'uri': {'type': 'string'},
+        'path': {'type': 'string'},
+    }, ('uri', 'path')),
+    'describe_ids': ({
+        'uri': {'type': 'string'},
+        'ids_name': {'type': 'string'},
+        'occurrence': {'type': 'integer', 'default': 0},
+    }, ('uri', 'ids_name')),
+    'list_quantities': ({
+        'uri': {'type': 'string'},
+        'ids_name': {'type': 'string'},
+        'occurrence': {'type': 'integer', 'default': 0},
+    }, ('uri', 'ids_name')),
     'plot_one': ({
         'uri': {'type': 'string'},
         'path': {'type': 'string'},

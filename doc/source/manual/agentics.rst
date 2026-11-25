@@ -141,14 +141,16 @@ the same descriptions. The tools, in the order the faces group them:
        occurrence into the tree -- "first" for the slice a plain load keeps,
        "all" for the whole dynamic array.
    * - the tree
-     - ``search_nodes``, ``describe_node``, ``describe_ids``,
-       ``list_quantities``
-     - the leaves matched by a substring of their spellings (any of the
-       match's three spellings is what the plot tools take), what a node holds
+     - ``inspect_tree``
+     - one tool for what the tree says about itself, and ``action`` says
+       which ask: ``search`` matches the leaves by a substring of their
+       spellings (any of a match's three spellings is what the plot tools
+       take, and its ``kind`` says whether a plot would make a curve, a
+       picture or nothing of it); ``node`` answers what one leaf holds
        (units, size, finite minimum and maximum, the zero/nan/inf counts, a
-       bounded preview), what the dictionary says of an IDS, and the filled
-       tensors of an occurrence grouped by the array of structures that drives
-       them.
+       bounded preview); ``ids`` what the dictionary says of an IDS; and
+       ``quantities`` the filled tensors of an occurrence grouped by the
+       array of structures that drives them.
    * - the selection
      - ``select_signals``, ``unselect_all``, ``list_selection``
      - put paths into the case selection as clicks would (a path the tree does

@@ -627,8 +627,9 @@ class McpGuiCore:
                 resolved.append(node)
         if missing:
             raise ValueError(
-                'Not found in the tree of %s: %s -- search_nodes names '
-                'what this case can give, in every spelling it holds.'
+                'Not found in the tree of %s: %s -- inspect_tree('
+                'action="search") names what this case can give, in every '
+                'spelling it holds.'
                 % (uri, ', '.join('"%s"' % path for path in missing)))
         for node in resolved:
             command.selectNode(node, view)
@@ -843,8 +844,9 @@ class McpGuiCore:
             if path in self._aliasesOf(node):
                 return node
         raise ValueError(
-            '"%s" is not a leaf of the case %s -- search_nodes names '
-            'what this tree can give, in every spelling it holds.'
+            '"%s" is not a leaf of the case %s -- inspect_tree('
+            'action="search") names what this tree can give, in every '
+            'spelling it holds.'
             % (path, view.uri))
 
     def _leafKind(self, node):
@@ -879,10 +881,10 @@ class McpGuiCore:
         agent does not have, and a model reads it as "no data" and asks again.
         """
         return ('"%s" is a scalar -- one value per element of its array, '
-                'not a curve of time or coordinate. search_nodes marks the '
-                'curves with "kind": "curve"; for a leaf like this the '
-                'sibling "…/data" under the same array element is '
-                'usually the one a plot wanted.' % path)
+                'not a curve of time or coordinate. inspect_tree('
+                'action="search") marks the curves with "kind": "curve"; '
+                'for a leaf like this the sibling "…/data" under the same '
+                'array element is usually the one a plot wanted.' % path)
 
     def _embedIfNew(self, command, frame):
         """A frame the command opened is embedded and shown; a joined one is not.

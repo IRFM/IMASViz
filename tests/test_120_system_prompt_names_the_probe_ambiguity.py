@@ -29,8 +29,8 @@ own words:
   ([0] to [4])`` in the old prompt, ``bpol_probe (5 occurrences : 0 à 4)``
   on screen where the case holds 130 elements);
 * a loose ordinal over one array of structures is an ambiguity, not a
-  fact: "sonde 2" names the options ``search_nodes`` found and asks the
-  user to choose, instead of picking one by feel.
+  fact: "sonde 2" names the options ``inspect_tree(action="search")``
+  found and asks the user to choose, instead of picking one by feel.
 
 Pinning the prompt text is the shape the surface contracts use elsewhere
 (``test_116`` pins the tool names, this one pins these words), because
@@ -93,9 +93,10 @@ def test_the_prompt_anchors_every_fact_to_the_tools():
 def test_the_prompt_keeps_the_probe_ambiguity_a_question():
     """The ambiguity stays a question to the user, not a pick: "sonde 2"
     with several probes standing is named as an ambiguity, and the rule
-    ends asking the user to choose among the exact paths search_nodes
-    found."""
+    ends asking the user to choose among the exact paths
+    ``inspect_tree(action="search")`` found."""
     text = _text()
     assert '"sonde 2" when multiple probes exist' in text
-    assert 'list the exact paths found by `search_nodes`' in text
+    assert ('list the exact paths found by '
+            '`inspect_tree(action="search")`') in text
     assert 'ask the user to choose' in text

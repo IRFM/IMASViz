@@ -191,19 +191,66 @@ def buildServer(core, dispatcher, name='imasviz'):
         return _run(partial(core.load_ids, uri, ids_name, occurrence,
                             slices=slices))
 
-    @server.tool(name='search_nodes')
-    def search_nodes(uri: str, query: str = '',
-                     ids_name: Optional[str] = None, limit: int = 200):
-        """The leaves of the case, matched by a substring of their spellings.
+    # ------------------------------------------------------- the tree itself
 
-        `query` is a case-insensitive substring matched against the
-        display path, the data name and the parametrized path of every
-        leaf; `ids_name` narrows to one IDS. The answer holds the three
-        spellings of every match, and any of them is what
-        `select_signals`, `plot` and `get_signal` take.
+    # One name for the four ways the tree answers a question about itself,
+    # the same offer the agent's loop makes (see `FAMILIES`, "the tree").
+    # The checks are the loop's, in the loop's order, so a caller over this
+    # socket and a caller in the panel hear the same words about the same
+    # mistake.
+    @server.tool(name='inspect_tree')
+    def inspect_tree(
+            action: Literal['search', 'node', 'ids', 'quantities'],
+            uri: str,
+            query: Optional[str] = None,
+            ids_name: Optional[str] = None,
+            occurrence: Optional[int] = None,
+            limit: Optional[int] = None,
+            path: Optional[str] = None):
+        """What the tree of a case says about itself, and `action` picks.
+
+        "search" matches the leaves whose spelling carries `query`
+        (case-insensitive: the display path, the data name, the parametrized
+        path), `ids_name` narrowing to one IDS and `limit` bounding the
+        answer. The matches come back under `matches`, each with its three
+        spellings -- any is what `select_signals`, `plot` and `get_signal`
+        take -- and the `kind` a plot would make of it.
+
+        "node" answers what one `path` holds, as the application's own
+        documentation says it: units, size, shape, the finite minimum and
+        maximum, the zero/nan/inf counts, a bounded preview. A leaf the tree
+        does not hold is refused by name.
+
+        "ids" answers what the data dictionary says of an `ids_name`: its
+        comment, homogeneous_time, units, time units, and the version the
+        case was written at. A property the case leaves empty is absent, not
+        invented; an IDS the case does not declare is refused by name.
+
+        "quantities" answers the filled tensors of one `occurrence`, grouped
+        by the array of structures that drives them: path, data name,
+        parametrized path, units, data type, how many elements the case
+        holds. A scalar (0D) leaf is not a tensor and is not listed; an
+        occurrence whose tree was never built is refused -- load it with
+        load_ids first.
         """
-        return {'matches': _run(partial(core.search_nodes, uri, query,
-                                        ids_name=ids_name, limit=limit))}
+        gesture = gestureOf('inspect_tree', {'action': action})
+        args = {field: value for field, value in (
+            ('uri', uri), ('query', query), ('ids_name', ids_name),
+            ('occurrence', occurrence), ('limit', limit), ('path', path))
+            if value is not None}
+        unknown = unknownParameters(gesture, args)
+        if unknown:
+            raise ValueError(unknownParameterRefusal(gesture, unknown))
+        missing = missingParameters(gesture, args)
+        if missing:
+            raise ValueError(missingParameterRefusal(gesture, missing))
+        spelled = argumentsForMember(gesture, args)
+        answer = _run(partial(getattr(core, gesture), **spelled))
+        if gesture == 'search_nodes':
+            # The search answer is a bare list of matches; the socket hands
+            # it under a key, as this entry always did.
+            return {'matches': answer}
+        return answer
 
     @server.tool(name='select_signals')
     def select_signals(uri: str, paths: list, additive: bool = True):
@@ -228,44 +275,6 @@ def buildServer(core, dispatcher, name='imasviz'):
         empty is an answer, count 0 -- not a refusal.
         """
         return _run(partial(core.list_selection, uri))
-
-    @server.tool(name='describe_node')
-    def describe_node(uri: str, path: str):
-        """What this node holds, as the application's documentation says it.
-
-        Dictionary documentation and units, and for an array the size,
-        shape, the finite minimum and maximum, the counts of zeros, nan
-        and inf entries, and a bounded preview of the values. A leaf the
-        tree does not hold is refused by name.
-        """
-        return _run(partial(core.describe_node, uri, path))
-
-    @server.tool(name='describe_ids')
-    def describe_ids(uri: str, ids_name: str, occurrence: int = 0):
-        """What the data dictionary says about an IDS: its comment
-        (ids_properties.comment), homogeneous_time, units, time units,
-        and the data dictionary version the case was written at.
-
-        A property the case leaves empty is absent, not invented; an IDS
-        the case does not declare is refused by name.
-        """
-        return _run(partial(core.describe_ids, uri, ids_name,
-                            occurrence=occurrence))
-
-    @server.tool(name='list_quantities')
-    def list_quantities(uri: str, ids_name: str, occurrence: int = 0):
-        """The filled tensors (dimension >= 1) of one occurrence, grouped
-        by the array of structures that drives them.
-
-        One entry per quantity: its path, data name, parametrized path,
-        units, data type, and how many elements of its array the case
-        holds. A quantity that contains no data (not blue in the tree) is
-        not listed, and scalar leaves (0D) are not tensors and are not
-        listed either. An occurrence whose tree was never built is
-        refused by name: load it with load_ids first.
-        """
-        return _run(partial(core.list_quantities, uri, ids_name,
-                            occurrence=occurrence))
 
     # -------------------------------------------------------------- plotting
 
