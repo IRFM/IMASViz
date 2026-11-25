@@ -317,9 +317,9 @@ def test_a_window_a_plugin_entry_drew_grounds_the_draw_claimed_on_it(qapp):
     turn, and until now it was refused: a plugin entry named no window it
     drew, so the guard had seen no work on `EquiSurfaces:1` -- and its
     re-anchor, "do the work: draw it", is what sent the model to
-    `equilibrium_surfaces`. The second, identical window the user reported
-    is that re-anchor arriving on the screen. The entry answers the keys it
-    opened as `drawn`, and the claim stands on them."""
+    `equilibrium(action="surfaces")`. The second, identical window the user
+    reported is that re-anchor arriving on the screen. The entry answers the
+    keys it opened as `drawn`, and the claim stands on them."""
     core = Core()
     out = runTurn(core, [
         LLMResponse(tool_calls=[

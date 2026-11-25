@@ -56,10 +56,11 @@ How to work with it:
    'selection' what the case holds selected, 'table' one panel per
    quantity, 'stacked' the stacked view. get_screenshot answers a PNG of
    the window; the equilibrium has its
-   own two entries -- equilibrium_surfaces puts the flux surfaces of the
-   instants you name side by side, and equilibrium_at_time puts one
-   instant's surface with its radial profiles in one window, the global
-   quantities of the slice coming back in the answer;
+   own entry asked with an action -- equilibrium(action='surfaces') puts
+   the flux surfaces of the instants you name side by side, and
+   equilibrium(action='at_time') puts one instant's surface with its
+   radial profiles in one window, the global quantities of the slice
+   coming back in the answer;
 6. state is read with list_selection (what the case holds selected),
    describe_node (what one node holds: documentation, units, size, the
    finite minimum and maximum, the nan and inf counts, a bounded
@@ -362,39 +363,48 @@ def buildServer(core, dispatcher, name='imasviz'):
 
         return _run(draw)
 
-    @server.tool(name='equilibrium_surfaces')
-    def equilibrium_surfaces(uri: str, times: list, occurrence: int = 0):
-        """The flux surfaces of the equilibrium, one frame per named instant.
+    # The two reads of the equilibrium the plugin offers, under one name:
+    # `action` says whether the caller wants the surfaces of several instants
+    # side by side or one instant with its profiles under it.
+    @server.tool(name='equilibrium')
+    def equilibrium(action: Literal['surfaces', 'at_time'], uri: str,
+                    times: Optional[list] = None,
+                    time: Optional[float] = None,
+                    occurrence: Optional[int] = None):
+        """The equilibrium as the plugin reads it, and `action` picks.
 
-        `times` is the list of instants in seconds (a single number is read
-        as a list of one). The instants answer the case's own slices
-        nearest to them -- a GGD grid is discrete, and the frame each
-        instant answered is named back: `time_requested` vs
-        `time_slice_time` and the slice index, per frame. Every frame
-        shares the levels, the bounds and the marks (plasma boundary,
-        magnetic axis, O-point, limiter), so the instants compare at
-        equal measure. The window opens in the session like every other
-        figure (`EquiSurfaces:` key); get_screenshot answers its PNG."""
-        return _run(partial(core.equilibrium_surfaces, uri, times,
-                            occurrence=occurrence))
+        "surfaces": one frame per named instant, side by side in one window
+        (an `EquiSurfaces:` key; get_screenshot answers its PNG). `times` in
+        seconds -- a single number is read as a list of one. Each instant
+        answers the case's nearest slice and says which: `time_requested`
+        vs `time_slice_time` and the slice index, per frame. Every frame
+        shares its levels, bounds and marks (plasma boundary, magnetic
+        axis, O-point, limiter), so the instants compare at equal measure.
 
-    @server.tool(name='equilibrium_at_time')
-    def equilibrium_at_time(uri: str, time: float, occurrence: int = 0):
-        """One instant of the equilibrium, the way the Equilibrium plugin
-        reads it: the flux surface at the instant, the radial profiles
-        under it (q, elongation, triangularities, j_tor in MA/m^2,
-        pressure in kPa, f_df_dpsi, dpressure_dpsi -- the plugin's
-        quantities and its unit conversions, on rho_tor_norm), and the
-        global quantities of the slice (Ip in kA, q95, q_axis, li_3,
-        W_mhd in kJ, axis position) in the answer itself.
+        "at_time": one instant's flux surface with the radial profiles under
+        it (q, elongation, triangularities, j_tor in MA/m^2, pressure in
+        kPa, f_df_dpsi, dpressure_dpsi -- the plugin's quantities and its
+        unit conversions, on rho_tor_norm) and the slice's global
+        quantities in the answer (Ip in kA, q95, q_axis, li_3, W_mhd in kJ,
+        axis position). `time` in seconds answers the nearest slice the
+        case holds, named back as `time_slice_time`; a time outside the
+        case's range says it was clamped.
 
-        `time` in seconds answers the nearest slice the case holds, named
-        back as `time_slice_time`; a time outside the case's range says
-        it was clamped. Not a leaf of the tree: the read is the one the
-        plugin does on the IDS object, which the tree does not hold
-        (the GGD branch, and the profiles read at one named slice)."""
-        return _run(partial(core.equilibrium_at_time, uri, time,
-                            occurrence=occurrence))
+        Neither read is a leaf of the tree: it is the read the plugin does
+        on the IDS object, the GGD branch the tree does not hold.
+        """
+        gesture = gestureOf('equilibrium', {'action': action})
+        args = {field: value for field, value in (
+            ('uri', uri), ('times', times), ('time', time),
+            ('occurrence', occurrence)) if value is not None}
+        unknown = unknownParameters(gesture, args)
+        if unknown:
+            raise ValueError(unknownParameterRefusal(gesture, unknown))
+        missing = missingParameters(gesture, args)
+        if missing:
+            raise ValueError(missingParameterRefusal(gesture, missing))
+        spelled = argumentsForMember(gesture, args)
+        return _run(partial(getattr(core, gesture), **spelled))
 
     @server.tool(name='get_signal')
     def get_signal(uri: str, path: str,

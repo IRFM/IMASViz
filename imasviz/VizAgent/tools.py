@@ -350,47 +350,37 @@ TOOLS = [
                                          'along, "TIME" the clock'},
         }, 'required': ['mode', 'uri'], 'additionalProperties': False},
     ),
+    # One name for the two reads of the equilibrium the plugin offers: the
+    # surfaces of the instants the caller names, and one instant with its
+    # radial profiles under it. Both take the same `uri` and `occurrence`;
+    # one takes a list of instants, the other a single one, and the group
+    # schema cannot tell them apart -- the rows of the two actions can.
     _tool(
-        'equilibrium_surfaces',
-        'The flux surfaces of the equilibrium, one frame per named instant, '
-        'side by side in one window (the Equilibrium plugin\'s reading of '
-        'the equilibrium IDS: the psi levels, the plasma boundary, the '
-        'magnetic axis, the O-point, the limiter, at equal bounds). '
-        '`times` is the list of instants in seconds, e.g. [40, 44, 48]; '
-        'each answers the nearest slice the case holds, named back '
-        '(time_requested vs time_slice_time). Use it when the user asks '
-        'to compare the equilibrium at several instants, or to trace the '
-        'flux surfaces (surfaces de flux). It is what the '
-        '`equilibriumsurfaces` plugin entry 0 answers with: this tool opens '
-        'a window of its own every time, so asking it AND that entry leaves '
-        'two windows of the same row. Ask one.',
+        'equilibrium',
+        'The equilibrium as the Equilibrium plugin reads it, and `action` '
+        'says which ask. "surfaces": one frame per named instant, side by '
+        'side in one window -- the psi levels, the plasma boundary, the '
+        'magnetic axis, the O-point, the limiter, at equal bounds; `times` '
+        'is the list of instants in seconds, e.g. [40, 44, 48], each '
+        'answering the nearest slice the case holds, named back '
+        '(time_requested vs time_slice_time). "at_time": one instant with '
+        'the radial profiles under it (q, elongation, triangularities, '
+        'j_tor [MA/m^2], pressure [kPa], f_df_dpsi, dpressure_dpsi, on '
+        'rho_tor_norm) and the slice\'s global quantities in the answer '
+        '(Ip [kA], q95, q_axis, li_3, W_mhd [kJ], axis position). Both '
+        'open a window of their own, and the `equilibriumsurfaces` plugin '
+        'entries answer these same two asks -- ask one, not both.',
         {'type': 'object', 'properties': {
+            'action': {'type': 'string', 'enum': ['surfaces', 'at_time']},
             'uri': {'type': 'string'},
-            'times': {'type': 'array', 'items': {'type': 'number'},
-                      'description': 'instants in the case clock, seconds'},
+            'times': {'type': ['array', 'null'],
+                      'items': {'type': 'number'},
+                      'description': '"surfaces": the instants in the case '
+                                     'clock, seconds'},
+            'time': {'type': ['number', 'null'],
+                     'description': '"at_time": the instant in seconds'},
             'occurrence': {'type': 'integer', 'default': 0},
-        }, 'required': ['uri', 'times'], 'additionalProperties': False},
-    ),
-    _tool(
-        'equilibrium_at_time',
-        'One instant of the equilibrium, the way the Equilibrium plugin '
-        'reads it: the flux surface at the instant with the radial '
-        'profiles under it (q, elongation, triangularities, j_tor [MA/m^2], '
-        'pressure [kPa], f_df_dpsi, dpressure_dpsi, on rho_tor_norm), and '
-        'the global quantities of the slice (Ip [kA], q95, q_axis, li_3, '
-        'W_mhd [kJ], axis position) in the answer. `time` is the instant '
-        'in seconds; it answers the nearest slice the case holds, named '
-        'back as time_slice_time. Use it when the user names one instant '
-        'of the equilibrium ("l\'équilibre à 44 s", "q et pression à '
-        'cet instant"). It is what the `equilibriumsurfaces` plugin entry '
-        '1 answers with: asking that entry through `run_plugin` AND this '
-        'tool opens two windows of the same instant, so ask one.',
-        {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-            'time': {'type': 'number',
-                     'description': 'the instant in seconds'},
-            'occurrence': {'type': 'integer', 'default': 0},
-        }, 'required': ['uri', 'time'], 'additionalProperties': False},
+        }, 'required': ['action', 'uri'], 'additionalProperties': False},
     ),
     _tool(
         'get_signal',
@@ -873,9 +863,10 @@ TOOLS = [
         'again with the same answers draws into the window that already '
         'stands instead of opening another over it. What does double is '
         'asking the entry AND the tool that entry answers with: the two '
-        '`equilibriumsurfaces` entries ARE `equilibrium_surfaces` (entry 0) '
-        'and `equilibrium_at_time` (entry 1), as the profiles entry is the '
-        'table and curve draws. Ask one per window.',
+        '`equilibriumsurfaces` entries ARE '
+        '`equilibrium(action="surfaces")` (entry 0) and '
+        '`equilibrium(action="at_time")` (entry 1), as the profiles entry '
+        'is the table and curve draws. Ask one per window.',
         {'type': 'object', 'properties': {
             'uri': {'type': 'string'},
             'plugin': {'type': 'string'},
@@ -1615,6 +1606,20 @@ ACTION_PARAMETERS = {
         'paths': {'type': 'array', 'items': {}},
         'plot_axis': {'type': ['string', 'null']},
     }, ('uri', 'paths')),
+    # The two reads of the equilibrium. `uri` and `occurrence` are common --
+    # the group requires the first -- and the instant is not: a list of them
+    # for the surfaces, one for the profiles under it. The group schema can
+    # declare both and mean neither; these two rows say which takes which.
+    'equilibrium_surfaces': ({
+        'uri': {'type': 'string'},
+        'times': {'type': ['array', 'null'], 'items': {'type': 'number'}},
+        'occurrence': {'type': 'integer', 'default': 0},
+    }, ('uri', 'times')),
+    'equilibrium_at_time': ({
+        'uri': {'type': 'string'},
+        'time': {'type': ['number', 'null']},
+        'occurrence': {'type': 'integer', 'default': 0},
+    }, ('uri', 'time')),
     # The five operations of `transform_curve`. What they share is a figure
     # and the curve(s) of it; what sets them apart is the one number each
     # one asks for, which is why `factor` is required of "scale" and a

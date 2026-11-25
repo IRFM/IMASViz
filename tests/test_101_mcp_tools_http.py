@@ -44,6 +44,9 @@ EXPECTED_TOOLS = {
     'unselect_all', 'list_selection',
     'plot',
     'get_signal',
+    # The one tool of the equilibrium reads -- a different thing from the
+    # IDS name above, which is a value of an `ids_name` parameter.
+    'equilibrium',
     'manage_window',
     'list_plugins', 'run_plugin',
     'manage_session',

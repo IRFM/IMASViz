@@ -167,9 +167,10 @@ the same descriptions. The tools, in the order the faces group them:
        plots use, so the figure a viewer sees and the numbers a read reports
        are the same element of the same array.
    * - the equilibrium
-     - ``equilibrium_surfaces``, ``equilibrium_at_time``
-     - the two readings of the *Equilibrium* plugin, as gestures: the flux
-       surfaces of several named instants side by side in one window, and one
+     - ``equilibrium``
+     - one tool for the two readings of the *Equilibrium* plugin, and
+       ``action`` says which: ``surfaces`` answers the flux surfaces of
+       several named instants side by side in one window, ``at_time`` one
        instant with the radial profiles under it and the slice's global
        quantities in the answer. Each instant answers the **nearest slice the
        case holds**, and the answer keeps ``time_requested`` and
@@ -267,8 +268,9 @@ the same descriptions. The tools, in the order the faces group them:
        from a session put back and once from the agent, say -- leaves one window
        showing the second answer instead of two on the screen. What still makes
        two windows is asking an entry *and* the tool that entry answers with,
-       since ``equilibriumsurfaces`` entry 0 *is* ``equilibrium_surfaces`` and
-       entry 1 *is* ``equilibrium_at_time``.
+       since ``equilibriumsurfaces`` entry 0 *is*
+       ``equilibrium(action="surfaces")`` and entry 1 *is*
+       ``equilibrium(action="at_time")``.
    * - sessions and configurations
      - ``manage_session``
      - the run kept and read back, and ``action`` says which of the eight is

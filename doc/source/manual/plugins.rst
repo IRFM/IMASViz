@@ -349,15 +349,16 @@ with the slice's global quantities (``ip`` in kA, ``q_95``, ``q_axis``,
    A tool call is not a click. The ``run_plugin`` tool hands the instant as its
    ``time`` rather than asking for it, and an entry that asks one and is handed
    none is **refused by name** -- naming the parameter and the
-   ``equilibrium_at_time`` tool that draws the same window -- because a dialog
-   opened where nobody is there to answer it is a session that stops. The
-   question above is what a hand on the menu line earns.
+   ``equilibrium(action="at_time")`` call that draws the same window --
+   because a dialog opened where nobody is there to answer it is a session
+   that stops. The question above is what a hand on the menu line earns.
 
 Also available as tools, not just the menu
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The same two surfaces are the two gestures the in-app agent and the MCP server
-drive (``equilibrium_surfaces`` and ``equilibrium_at_time``), so the agent can
+The same two surfaces are one gesture the in-app agent and the MCP server
+drive -- ``equilibrium``, whose ``action`` is ``surfaces`` for the frames side
+by side and ``at_time`` for the instant with its profiles -- so the agent can
 open them from a conversation and an external client over MCP can draw them
 without a GUI. What they draw and how they refuse is the code this menu line
 runs -- and a refusal is the named reason rather than an empty window.
