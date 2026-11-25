@@ -683,80 +683,66 @@ TOOLS = [
                                     'place, not a report, is refused.'},
         }, 'required': ['action'], 'additionalProperties': False},
     ),
+    # One name for the three numbers a case is judged on: the three are
+    # asked the same way -- a case, a leaf, an axis -- and answer the same
+    # shape (the path that read it, the values, the points, the mean, the
+    # peak and the floor). The discriminant is `quantity`: no member of the
+    # group takes a word of its own (test_175 refuses a discriminant a
+    # member already answers for itself). `uri` is required of the offer
+    # because all three ask a case, the way `figure_key` is required of the
+    # curve transforms; the leaves one member asks for belong to that
+    # member's row, and a call that leaves one out is refused in that
+    # member's own words.
     _tool(
-        'greenwald',
-        'The Greenwald fraction of a case, over the time the three read. '
-        'f_G = n_e / n_G, with n_G = (I_pl / A) x 1e20 (I_pl in mega-Ampere, '
-        'A in square metre). The three leaves -- n_e (m^-3), I_pl (A), A (m^2) '
-        '-- are named by the caller, so the formula and the numbers come from '
-        'the case, not from this method. A case that does not hold one, or '
-        'holds the three at different lengths, is refused by name.',
+        'derived_quantity',
+        'A number a case is judged on, and `quantity` says which one. '
+        '"greenwald": the Greenwald fraction over the time the three read, '
+        'f_G = n_e / n_G with n_G = (I_pl / A) x 1e20 (I_pl in mega-Ampere, '
+        'A in square metre) -- the three leaves are named by the caller '
+        '(`n_e_path` in m^-3, `ip_path` in A, `area_path` in m^2), so the '
+        'formula and the numbers both come from the case. "beta_normal" and '
+        '"total_pressure" are the case\'s own numbers, read off the leaf the '
+        'case keeps them in -- `global_quantities.beta_normal` and '
+        '`profiles_1d.pressure` unless `path` names another -- never '
+        'computed here (p = n_e k_B T_e + n_i k_B T_i). The two that read a '
+        'leaf answer the path that read it, the values, the points and the '
+        'mean, max and min; `along` and `indices` are the seams the case '
+        'keeps. A case that does not hold a leaf, or holds the three at '
+        'different lengths, is refused by name, never with a '
+        'plausible-looking value.',
         {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
+            'quantity': {'type': 'string',
+                         'enum': ['greenwald', 'beta_normal',
+                                  'total_pressure']},
+            'uri': {'type': 'string',
+                    'description': 'the case the number is read from'},
             'n_e_path': {'type': 'string',
-                         'description': 'the electron density, in m^-3, '
-                                        'over time.'},
+                         'description': '"greenwald": the electron density, '
+                                        'in m^-3, over time'},
             'ip_path': {'type': 'string',
-                        'description': 'the plasma current, in A, over time.'},
+                        'description': '"greenwald": the plasma current, in '
+                                       'A, over time'},
             'area_path': {'type': 'string',
-                          'description': 'the cross-section, in m^2, over '
-                                         'time.'},
-            'along': {'type': ['string', 'null']},
-            'indices': {'type': ['object', 'null'],
-                        'description': 'the element of the density series '
-                                       'fixed by name.'},
-            'indices_ip': {'type': ['object', 'null'],
-                           'description': 'the element of the current '
-                                          'series fixed by name.'},
-            'indices_area': {'type': ['object', 'null'],
-                             'description': 'the element of the area series '
-                                            'fixed by name.'},
-        }, 'required': ['uri', 'n_e_path', 'ip_path', 'area_path'],
-           'additionalProperties': False},
-    ),
-
-    _tool(
-        'beta_normal',
-        'The normalized beta beta_N = 2 mu_0 p / (B^2 a^2 / I_pl^-2) of a '
-        'case, over the time the case holds it. The value is the case\'s own '
-        'number read off its leaf (`beta_normal`), not one computed here. '
-        'The answer carries the path that named it, the values, the points '
-        'and the mean, max and min. `path`, `along` and `indices` are the '
-        'seams the case keeps. A case that does not hold the leaf is '
-        'refused by name, never a plausible-looking value.',
-        {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
+                          'description': '"greenwald": the cross-section, in '
+                                         'm^2, over time'},
             'path': {'type': ['string', 'null'],
-                     'description': 'the beta leaf. Defaults to the one the '
-                                    'equilibrium case keeps '
-                                    '(global_quantities.beta_normal).'},
+                     'description': '"beta_normal" and "total_pressure": the '
+                                    'leaf to read; the one the case keeps '
+                                    'for it when left out'},
             'along': {'type': ['string', 'null'],
-                      'description': 'the axis of the node, for an array that '
-                                     'has one; the clock (equilibrium.time) '
-                                     'where it holds one.'},
+                      'description': 'the axis of the leaf, for an array that '
+                                     'has one; the clock where the case holds '
+                                     'one'},
             'indices': {'type': ['object', 'null'],
-                        'description': 'the element of the node, for a node '
-                                       'of one.'},
-        }, 'required': ['uri'], 'additionalProperties': False},
-    ),
-
-    _tool(
-        'total_pressure',
-        'The total pressure p = n_e k_B T_e + n_i k_B T_i of a case, read off '
-        'the leaf the case holds for it. The answer names the path that read '
-        'it, the values, the points and the mean, max and min. `path`, '
-        '`along` and `indices` are the seams the case keeps. A case that does '
-        'not hold the leaf is refused by name, never a plausible-looking '
-        'profile.',
-        {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-            'path': {'type': ['string', 'null'],
-                     'description': 'the pressure leaf. Defaults to the total '
-                                    'the equilibrium case keeps '
-                                    '(profiles_1d.pressure).'},
-            'along': {'type': ['string', 'null']},
-            'indices': {'type': ['object', 'null']},
-        }, 'required': ['uri'], 'additionalProperties': False},
+                        'description': 'the element of the leaf, for an array '
+                                       'of several'},
+            'indices_ip': {'type': ['object', 'null'],
+                           'description': '"greenwald": the element of the '
+                                          'current series'},
+            'indices_area': {'type': ['object', 'null'],
+                             'description': '"greenwald": the element of the '
+                                            'area series'},
+        }, 'required': ['quantity', 'uri'], 'additionalProperties': False},
     ),
 
     _tool(
@@ -1839,6 +1825,34 @@ ACTION_PARAMETERS = {
         'figure_key': {'type': ['string', 'null']},
         'name': {'type': ['string', 'null']},
     }, ('uri', 'path')),
+    # The three numbers a case is judged on. `uri` is common to the three,
+    # which is why the offer requires it; the leaves are not common, so each
+    # member names the ones it cannot do without. Greenwald asks for all
+    # three because it manufactures nothing and takes its numbers from the
+    # case; the two that read a leaf settle on the one the case keeps for
+    # them, which is why `path` is required of neither.
+    'greenwald': ({
+        'uri': {'type': 'string'},
+        'n_e_path': {'type': 'string'},
+        'ip_path': {'type': 'string'},
+        'area_path': {'type': 'string'},
+        'along': {'type': ['string', 'null']},
+        'indices': {'type': ['object', 'null']},
+        'indices_ip': {'type': ['object', 'null']},
+        'indices_area': {'type': ['object', 'null']},
+    }, ('uri', 'n_e_path', 'ip_path', 'area_path')),
+    'beta_normal': ({
+        'uri': {'type': 'string'},
+        'path': {'type': ['string', 'null']},
+        'along': {'type': ['string', 'null']},
+        'indices': {'type': ['object', 'null']},
+    }, ('uri',)),
+    'total_pressure': ({
+        'uri': {'type': 'string'},
+        'path': {'type': ['string', 'null']},
+        'along': {'type': ['string', 'null']},
+        'indices': {'type': ['object', 'null']},
+    }, ('uri',)),
     # The catalogue of prompts. `list` is the one ask that takes no `name`:
     # it is the ask that goes looking for one, so its row is the only one
     # with no required parameter, and `query` -- which no other action takes

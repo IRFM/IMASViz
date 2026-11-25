@@ -636,48 +636,49 @@ def buildServer(core, dispatcher, name='imasviz'):
         spelled = argumentsForMember(gesture, args)
         return _run(partial(getattr(core, gesture), **spelled))
 
-    @server.tool(name='greenwald')
-    def greenwald(uri: str, n_e_path: str, ip_path: str, area_path: str,
-                  along: Optional[str] = None,
-                  indices: Optional[dict] = None,
-                  indices_ip: Optional[dict] = None,
-                  indices_area: Optional[dict] = None):
-        """The Greenwald fraction of a case, over the time the three read.
-        f_G = n_e / n_G, n_G = (I_pl/A) x 1e20 (I_pl in A, A in m^2). The three
-        leaves are named by the caller, so the formula and the numbers come
-        from the case. A case that does not hold one is refused by name.
+    # -------------------------------------------------- what a case says
+
+    @server.tool(name='derived_quantity')
+    def derived_quantity(
+            quantity: Literal['greenwald', 'beta_normal', 'total_pressure'],
+            uri: str,
+            n_e_path: Optional[str] = None,
+            ip_path: Optional[str] = None,
+            area_path: Optional[str] = None,
+            path: Optional[str] = None,
+            along: Optional[str] = None,
+            indices: Optional[dict] = None,
+            indices_ip: Optional[dict] = None,
+            indices_area: Optional[dict] = None):
+        """A number a case is judged on, and `quantity` picks which one.
+
+        "greenwald" divides the case's own density by the Greenwald limit,
+        f_G = n_e / n_G with n_G = (I_pl/A) x 1e20 (I_pl in A, A in m^2). It
+        manufactures nothing: the three leaves are named by the caller, and a
+        case that does not hold one is refused by name.
+
+        "beta_normal" and "total_pressure" are the case's own numbers, read
+        off the leaf it keeps them in -- `global_quantities.beta_normal` and
+        `profiles_1d.pressure` unless `path` names another -- never computed
+        here. The answer carries the path that read it, the values, the
+        points and the mean, max and min; a case that does not hold the leaf
+        is refused by name.
         """
-        return _run(partial(core.greenwald, uri, n_e_path, ip_path,
-                            area_path,
-                            along=along, indices=indices,
-                            indices_ip=indices_ip, indices_area=indices_area))
-
-    @server.tool(name='beta_normal')
-    def beta_normal(uri: str, path: Optional[str] = None,
-                    along: Optional[str] = None,
-                    indices: Optional[dict] = None):
-        """The normalized beta of a case, over the time the case holds it.
-
-        The value is the case's own number read off its leaf (`beta_normal`),
-        not one computed here. The answer carries the path that named it, the
-        values, the points and the mean, max and min. A case that does not
-        hold the leaf is refused by name.
-        """
-        return _run(partial(core.beta_normal, uri, path, along=along,
-                            indices=indices))
-
-    @server.tool(name='total_pressure')
-    def total_pressure(uri: str, path: Optional[str] = None,
-                       along: Optional[str] = None,
-                       indices: Optional[dict] = None):
-        """The total pressure p = n_e k_B T_e + n_i k_B T_i of a case.
-
-        Read off the leaf the case holds for it; the answer names the path
-        that read it, the values, the points and the mean, max and min. A
-        case that does not hold the leaf is refused by name.
-        """
-        return _run(partial(core.total_pressure, uri, path, along=along,
-                            indices=indices))
+        gesture = gestureOf('derived_quantity', {'quantity': quantity})
+        args = {field: value for field, value in (
+            ('uri', uri), ('n_e_path', n_e_path), ('ip_path', ip_path),
+            ('area_path', area_path), ('path', path), ('along', along),
+            ('indices', indices), ('indices_ip', indices_ip),
+            ('indices_area', indices_area))
+            if value is not None}
+        unknown = unknownParameters(gesture, args)
+        if unknown:
+            raise ValueError(unknownParameterRefusal(gesture, unknown))
+        missing = missingParameters(gesture, args)
+        if missing:
+            raise ValueError(missingParameterRefusal(gesture, missing))
+        spelled = argumentsForMember(gesture, args)
+        return _run(partial(getattr(core, gesture), **spelled))
 
     @server.tool(name='campaign')
     def campaign(cases: list, path: str, at: Optional[int] = None,

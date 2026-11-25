@@ -212,13 +212,14 @@ the same descriptions. The tools, in the order the faces group them:
        ``get_signal`` answers, so what is measured and what a figure of the same
        leaf draws are one read; see :ref:`physical_bricks`.
    * - what a case says
-     - ``greenwald``, ``beta_normal``, ``total_pressure``
-     - the derived quantities of one case: ``f_G = n_e / n_G`` over the three
-       leaves the caller names, and the normalised beta and the total pressure
-       **read off the leaf the case keeps them in** -- never computed here. The
-       answer names the path it read, the points, and the mean, peak and floor.
-       A case that does not hold the leaf is refused by name, never with a
-       plausible-looking value.
+     - ``derived_quantity``
+     - one tool for the three numbers a case is judged on, and ``quantity``
+       says which one: ``greenwald`` is ``f_G = n_e / n_G`` over the three
+       leaves the caller names, and ``beta_normal`` and ``total_pressure``
+       are the case's own numbers **read off the leaf the case keeps them
+       in** -- never computed here. The answer names the path it read, the
+       points, and the mean, peak and floor. A case that does not hold the
+       leaf is refused by name, never with a plausible-looking value.
    * - a campaign of shots
      - ``campaign``, ``campaign_report``
      - the trend of one leaf across a series of shots, in the order named: one

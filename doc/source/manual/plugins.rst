@@ -624,8 +624,9 @@ The window answers the **mean, the peak and the floor** of the series over the
 time it is held, with how many points were read and the path they came from. For
 the Greenwald fraction it answers the fraction and the limit at the first instant
 the three leaves read, and names the three paths so a different ``n_e`` or a
-different area can be asked for through the ``greenwald`` tool, which takes the
-three leaves as arguments and answers the whole series.
+different area can be asked for through
+``derived_quantity(quantity="greenwald")``, which takes the three leaves as
+arguments and answers the whole series.
 
 The trend across the shots of a session
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
