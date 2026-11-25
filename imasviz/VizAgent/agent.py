@@ -32,7 +32,7 @@ from imasviz.VizAgent.tools import (
     SYSTEM_INSTRUCTIONS,
     CHAT_INSTRUCTIONS,
     TOOLS,
-    TOOL_PARAMETERS,
+    unknownParameterRefusal,
     unknownParameters,
 )
 
@@ -982,7 +982,11 @@ class AgentLoop(QObject):
         parameter that is not there and the ones that are, so the model
         can correct the call. This is what a bare ``TypeError`` from
         Python would not do: it says "unexpected keyword argument", not
-        which ones are expected.
+        which ones are expected. And when a neighbour of the same group
+        (``tools.FAMILIES``) does take the stray, the refusal names that
+        neighbour: a ``columns`` put on ``plot_one`` is a table asked with
+        a single quantity's call, and pointing at ``plot_table`` is the
+        short way back.
 
         And the destructive ones -- the three that erase bookkeeping,
         ``close_window`` / ``close_case`` / ``new_session`` -- are asked,
@@ -1001,12 +1005,7 @@ class AgentLoop(QObject):
                 'the tool "%s" is not a gesture of this session' % name)
         unknown = unknownParameters(name, args or {})
         if unknown:
-            allowed = ', '.join(sorted(
-                TOOL_PARAMETERS[name].get('properties', {})))
-            raise ValueError(
-                '"%s" is not a parameter of the %s tool: it takes %s. '
-                'Answer with the parameters the tool names.'
-                % (unknown[0], name, allowed))
+            raise ValueError(unknownParameterRefusal(name, unknown))
         if (name in DESTRUCTIVE_GESTURES
                 and requested_by == 'model'
                 and not _userAskedForAClosure(user_prompt)):
