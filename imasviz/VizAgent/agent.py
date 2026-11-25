@@ -889,7 +889,7 @@ class AgentLoop(QObject):
             'it named; otherwise do the work -- %s '
             'with into_figure_key to add the curve, '
             'transform_curve(operation=...) for a transform, '
-            'set_axis_range / set_log_scale / invert_axis '
+            'configure_axes(operation=...) '
             'for the axes -- or read it back with curve_stats, and '
             'answer only from what those calls return.'
             % (keys, callSpelling('plot_one')))

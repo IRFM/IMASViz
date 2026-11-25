@@ -37,11 +37,13 @@ The three that answer it now:
   again over the pictures it holds now). In the GUI the same resize is the
   count box beside the start slider. Past the axis the bound holds: the extent
   of the axis, named, not a slip past it; a window not read across an axis
-  holds one picture, not a window, and its refusal points at ``set_axis_range``.
+  holds one picture, not a window, and its refusal points at
+  ``configure_axes(operation="range")``.
 * **the rows of the band** -- ``set_slice_index`` poses one of them, named, at
   an index in its extent (the window re-reads the one it is posed at; the
   answer is the state the band holds). The axis the window already shows is
-  no row of the band: the refusal says so and points at ``set_image_window``;
+  no row of the band: the refusal says so and points at
+  ``configure_axes(operation="image_window")``;
   a row the band does not hold: the ones it does, named; an index past the
   extent: the bound that holds it.
 
@@ -387,12 +389,12 @@ def test_a_single_picture_has_no_window_to_move(core):
         session.set_image_window('Image2', start=0)
     message = str(excinfo.value)
     assert 'one picture, not a window' in message
-    assert 'set_axis_range' in message, \
-        'the refusal must name the gesture that answers this shape'
+    assert 'configure_axes(operation="range")' in message, \
+        'the refusal must name the call that answers this shape'
 
     with pytest.raises(ValueError) as excinfo:
         session.set_image_window('Image2', count=2)
-    assert 'set_axis_range' in str(excinfo.value)
+    assert 'configure_axes(operation="range")' in str(excinfo.value)
 
 
 @pytest.mark.ui
@@ -455,7 +457,7 @@ def test_a_row_the_band_does_not_hold_is_refused_with_the_rest(core):
 
 
 @pytest.mark.ui
-def test_the_axis_already_on_screen_is_refused_toward_set_image_window(core):
+def test_the_axis_already_on_screen_is_refused_toward_the_image_window(core):
     """The axis the pictures are laid across is on screen, one picture per
     element: asking for a row of it is asking for what the window shows,
     and the gesture that moves the window it shows is the one the refusal
@@ -467,8 +469,8 @@ def test_the_axis_already_on_screen_is_refused_toward_set_image_window(core):
     message = str(excinfo.value)
     assert 'time_slice' in message, \
         'the refusal must name the axis the window reads across'
-    assert 'set_image_window' in message, \
-        'the refusal must name the gesture that moves the window'
+    assert 'configure_axes(operation="image_window")' in message, \
+        'the refusal must name the call that moves the window'
 
 
 @pytest.mark.ui
@@ -660,6 +662,6 @@ def test_the_strip_refuses_a_slice_row_for_an_axis_it_draws(strip_case):
         session.set_slice_index(key, 'time', 0)
     message = str(excinfo.value)
     assert 'channel' in message
-    assert 'set_image_window' in message
-    assert 'set_axis_range' in message, \
+    assert 'configure_axes(operation="image_window")' in message
+    assert 'configure_axes(operation="range")' in message, \
         'the refusal must point at the span of the axis the report asked for'

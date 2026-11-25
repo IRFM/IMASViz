@@ -185,14 +185,16 @@ the same descriptions. The tools, in the order the faces group them:
        stand** to :file:`~/.imasviz/exports`. The tree, the leaf and the case
        are unchanged by every one of them.
    * - the axes and the slices of a window
-     - ``set_axis_range``, ``set_image_window``, ``set_slice_index``,
-       ``set_log_scale``, ``invert_axis``
-     - the range of a figure, pinned by name and number (a picture window takes
-       the same span on each of its pictures); the **window of pictures** --
-       moved with ``start``, resized with ``count``; one row of a slider band
-       posed at a named index, in the words the band spells that row; a log
-       axis, refused where the values cross zero; an axis turned around. A table
-       and a stacked window are refused by name, and so is a row a band does
+     - ``configure_axes``
+     - one tool, and ``operation`` says which of the five moves is meant:
+       ``range`` pins the span of a figure by name and number (a picture
+       window takes the same span on each of its pictures),
+       ``image_window`` sets the **window of pictures** -- moved with
+       ``start``, resized with ``count``; ``slice_index`` poses one row of
+       a slider band at a named index, in the words the band spells that
+       row; ``log`` dresses an axis, refused where the values cross zero;
+       ``invert`` turns one around. A table and a stacked window are
+       refused by name, and so is a row a band does
        not hold -- naming the rows it does.
    * - the physics of a signal
      - ``detect_events``, ``clear_event_marks``, ``events_report``,

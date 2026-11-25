@@ -489,96 +489,76 @@ TOOLS = [
         }, 'required': ['figure_key', 'operation'],
            'additionalProperties': False},
     ),
+    # One name for the five things moved on a window, because the ask is
+    # « what of this window do I move »: its span, the band of pictures it
+    # sits on, one row of its sliders, one of its axes on a log scale, one
+    # of them turned around. `operation` answers which, and what each one
+    # takes is still checked per action -- an `index` put on "log" is
+    # refused by naming the operation that takes it.
     _tool(
-        'set_axis_range',
-        'The window (the range) of a figure\'s axes, by name and number: '
-        'pin `xmin`/`xmax` together, `ymin`/`ymax` together, or both; '
-        '`auto=true` clears the pins and re-fits. A curve figure takes one '
-        'axis set; a picture window takes the same span on each of its '
-        'pictures, and a time zoom of a strip whose abscissa is its time '
-        'is the `x` range, in the seconds the time axis holds. A partial '
-        'pair is refused (a range is two bounds); a table or stacked '
-        'window is refused by name.',
+        'configure_axes',
+        'Move one thing a window draws to: `operation` picks it. "range" '
+        'pins the span of its axes (`xmin`/`xmax` and/or `ymin`/`ymax`, a '
+        'pair at a time -- a range is two bounds; `auto=true` clears the '
+        'pins and re-fits). "image_window" moves (`start`) or resizes '
+        '(`count`) the window a picture window sits on, its pictures '
+        're-read in place and the colour scale a hand settled left where '
+        'it is. "slice_index" poses one row of a slider band at `index`, '
+        'the row named as the band spells it (`axis`). "log" makes an axis '
+        'log (`x`/`y` true) or linear (false), refused where the values '
+        'cross zero. "invert" turns one around. A parameter of another '
+        'operation is refused by naming the one that takes it, and a table '
+        'or a stacked window is refused by name.',
         {'type': 'object', 'properties': {
             'figure_key': {'type': 'string'},
-            'xmin': {'type': ['number', 'null']},
-            'xmax': {'type': ['number', 'null']},
-            'ymin': {'type': ['number', 'null']},
-            'ymax': {'type': ['number', 'null']},
-            'auto': {'type': 'boolean', 'default': False},
-        }, 'required': ['figure_key'], 'additionalProperties': False},
-    ),
-    _tool(
-        'set_image_window',
-        'The window a picture window\'s pictures sit on: moved with '
-        '`start` (where it sits on the axis it reads across; the pictures '
-        'are re-read in place, the scale and the band stay put) and resized '
-        'with `count` (how many pictures it holds; the scale a hand settled '
-        'is not moved off by the rebuild). Name at least one. The answer '
-        'carries the axis, the start, the count, the extent the axis '
-        'holds and the label of each picture the window shows, the time it '
-        'is in seconds when the axis is the time. Refused by name: a window '
-        'that is not a picture window (the shape it holds, named), a '
-        'picture window that holds one picture, not a window of them (the '
-        'span of that one is set_axis_range), and an ask that names '
-        'neither bound.',
-        {'type': 'object', 'properties': {
-            'figure_key': {'type': 'string'},
+            'operation': {
+                'type': 'string',
+                'enum': ['range', 'image_window', 'slice_index', 'log',
+                         'invert'],
+                'description': 'what is moved: the span of the axes, the '
+                               'band of pictures, one slider row, a log '
+                               'axis, an axis turned around'},
+            'xmin': {'type': ['number', 'null'],
+                     'description': '"range": the low bound of the '
+                                    'abscissa, with `xmax`'},
+            'xmax': {'type': ['number', 'null'],
+                     'description': '"range": the high bound of the '
+                                    'abscissa, with `xmin`'},
+            'ymin': {'type': ['number', 'null'],
+                     'description': '"range": the low bound of the '
+                                    'ordinate, with `ymax`'},
+            'ymax': {'type': ['number', 'null'],
+                     'description': '"range": the high bound of the '
+                                    'ordinate, with `ymin`'},
+            'auto': {'type': ['boolean', 'null'],
+                     'default': False,
+                     'description': '"range": true clears the pins and '
+                                    're-fits the window to what it holds'},
             'start': {'type': ['integer', 'null'],
-                      'description': 'where the window sits on the axis '
-                                     'it reads across (0-based element)'},
+                      'description': '"image_window": where the window '
+                                     'sits on the axis it reads across '
+                                     '(0-based element)'},
             'count': {'type': ['integer', 'null'],
-                      'description': 'how many pictures the window '
-                                     'holds (1 up to the extent of '
-                                     'the axis)'},
-        }, 'required': ['figure_key'], 'additionalProperties': False},
-    ),
-    _tool(
-        'set_slice_index',
-        'A row of the slider band of a figure, posed at a named index: '
-        '`axis` the row in the words the band spells it (an array of '
-        'structures by its name -- `time_slice`, `profiles_2d` -- or the '
-        'coordinate it carries), `index` the element it is posed at. The '
-        'window re-reads the one the row is posed at, the other rows of '
-        'the band stay where they are; the answer carries the rows of the '
-        'band, the index the one moved is posed at and its extent. It '
-        'addresses a curve figure that pins an axis and an image window '
-        'that does; a table and a stacked window are refused by name, and '
-        'so is a row the band does not hold (the rows it does, named), and '
-        'an index past the extent the row holds (the bound it holds, '
-        'named). A picture window whose pictures sit on the axis the '
-        'gesture names holds no row for it, and the refusal names '
-        'set_image_window (start and count of that window) as the '
-        'gesture that answers the question the ask is asking.',
-        {'type': 'object', 'properties': {
-            'figure_key': {'type': 'string'},
-            'axis': {'type': 'string'},
-            'index': {'type': 'integer'},
-        }, 'required': ['figure_key', 'axis', 'index'],
-         'additionalProperties': False},
-    ),
-    _tool(
-        'set_log_scale',
-        'A log axis, by name: `x`/`y` each `true` for log, `false` for '
-        'linear; name at least one. A log turned on where the values cross '
-        'zero or below is refused by name (the picture would hide them); '
-        'transform_curve(operation="shift") to clear them is the answer.',
-        {'type': 'object', 'properties': {
-            'figure_key': {'type': 'string'},
-            'x': {'type': ['boolean', 'null']},
-            'y': {'type': ['boolean', 'null']},
-        }, 'required': ['figure_key'], 'additionalProperties': False},
-    ),
-    _tool(
-        'invert_axis',
-        'Invert (flip) an axis: `x=true`/`y=true` turn one around so the '
-        'negative direction is the other way; `false` puts it back. Name at '
-        'least one. Inversion and range are independent.',
-        {'type': 'object', 'properties': {
-            'figure_key': {'type': 'string'},
-            'x': {'type': ['boolean', 'null']},
-            'y': {'type': ['boolean', 'null']},
-        }, 'required': ['figure_key'], 'additionalProperties': False},
+                      'description': '"image_window": how many pictures '
+                                     'the window holds (1 up to the '
+                                     'extent of the axis)'},
+            'axis': {'type': ['string', 'null'],
+                     'description': '"slice_index": the row, in the words '
+                                    'the band spells it -- an array of '
+                                    'structures by its name (`time_slice`, '
+                                    '`profiles_2d`) or the coordinate it '
+                                    'carries'},
+            'index': {'type': ['integer', 'null'],
+                      'description': '"slice_index": the element that row '
+                                     'is posed at'},
+            'x': {'type': ['boolean', 'null'],
+                  'description': '"log"/"invert": the abscissa -- true to '
+                                 'turn it, false to put it back'},
+            'y': {'type': ['boolean', 'null'],
+                  'description': '"log"/"invert": the ordinate -- true to '
+                                 'turn it, false to put it back'},
+        }, 'required': ['figure_key', 'operation'],
+           'additionalProperties': False},
     ),
     _tool(
         'curve_stats',
@@ -1845,6 +1825,40 @@ ACTION_PARAMETERS = {
     'remove_curve': ({
         'figure_key': {'type': 'string'},
         'curve': {'type': ['string', 'integer', 'null']},
+    }, ('figure_key',)),
+    # The five moves of `configure_axes`. Four of them ask the figure and
+    # answer themselves; the fifth asks a row of a band, and that row is
+    # the whole question -- hence an `axis` and an `index` required of
+    # "slice_index" and strangers on every other operation. `x`/`y` are
+    # spelled the same by "log" and "invert" because they answer the same
+    # thing there: which of the two axes the move is made on.
+    'set_axis_range': ({
+        'figure_key': {'type': 'string'},
+        'xmin': {'type': ['number', 'null']},
+        'xmax': {'type': ['number', 'null']},
+        'ymin': {'type': ['number', 'null']},
+        'ymax': {'type': ['number', 'null']},
+        'auto': {'type': ['boolean', 'null'], 'default': False},
+    }, ('figure_key',)),
+    'set_image_window': ({
+        'figure_key': {'type': 'string'},
+        'start': {'type': ['integer', 'null']},
+        'count': {'type': ['integer', 'null']},
+    }, ('figure_key',)),
+    'set_slice_index': ({
+        'figure_key': {'type': 'string'},
+        'axis': {'type': ['string', 'null']},
+        'index': {'type': ['integer', 'null']},
+    }, ('figure_key', 'axis', 'index')),
+    'set_log_scale': ({
+        'figure_key': {'type': 'string'},
+        'x': {'type': ['boolean', 'null']},
+        'y': {'type': ['boolean', 'null']},
+    }, ('figure_key',)),
+    'invert_axis': ({
+        'figure_key': {'type': 'string'},
+        'x': {'type': ['boolean', 'null']},
+        'y': {'type': ['boolean', 'null']},
     }, ('figure_key',)),
     'plot_report': ({
         'figure_key': {'type': 'string'},

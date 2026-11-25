@@ -2073,8 +2073,8 @@ class McpGuiCore:
                     'The window "%s" is a figure of curves: it holds traces, '
                     'not a window of pictures, so there is no window to move '
                     'or resize on it, and the span of its axes is the one '
-                    'set_axis_range pins. Name the figure the pictures were '
-                    'drawn in.' % figure_key)
+                    'configure_axes(operation="range") pins. Name the '
+                    'figure the pictures were drawn in.' % figure_key)
             raise ValueError(
                 'The window "%s" is not an image window: it is not a figure '
                 'of pictures, so there is no window of them to move or '
@@ -2088,7 +2088,8 @@ class McpGuiCore:
                 'The window "%s" holds one picture, not a window of them: '
                 'it was not read across an axis, so there is no window to '
                 'move or resize, and the span of the one it holds is what '
-                'set_axis_range pins on the axis it drew.' % figure_key)
+                'configure_axes(operation="range") pins on the axis it '
+                'drew.' % figure_key)
         controls = getattr(frame, 'framesControls', None)
         if controls is None:
             raise ValueError(
@@ -2229,7 +2230,8 @@ class McpGuiCore:
                 'The window "%s" holds no row for that axis: its '
                 'pictures are the axis it reads across (here %s), one '
                 'picture per element, side by side, and the window '
-                'they sit on is what set_image_window moves (start) '
+                'they sit on is what configure_axes'
+                '(operation="image_window") moves (start) '
                 'and resizes (count) -- a row of a band is not one '
                 'for an axis the window already shows.'
                 % (figure_key, word))
@@ -2272,8 +2274,10 @@ class McpGuiCore:
                     'axis that is on screen would move a window the '
                     'picture already shows. Its pictures are the axis the '
                     'window is read across (here %s), which is what '
-                    'set_image_window moves (start) and resizes (count); '
-                    'the span of the axis it drew is what set_axis_range '
+                    'configure_axes(operation="image_window") moves '
+                    '(start) and resizes (count); '
+                    'the span of the axis it drew is what '
+                    'configure_axes(operation="range") '
                     'pins, on each of its pictures.'
                     % (figure_key, fa_word or 'the strip'))
             raise ValueError(
@@ -2281,7 +2285,8 @@ class McpGuiCore:
                 'pins are none, so the axis the gesture names is not a '
                 'row of it, and the one it drew is on screen rather than '
                 'a control to move -- the span of the axes it drew is '
-                'what set_axis_range pins.' % figure_key)
+                'what configure_axes(operation="range") pins.'
+                % figure_key)
         if not word:
             raise ValueError(
                 'The axis of the row to move is named in the words the '
@@ -4859,7 +4864,8 @@ class McpGuiCore:
             raise ValueError(
                 'The window "%s" is a picture window that drew no picture, '
                 'and a range needs the drawn picture to sit on: draw the '
-                'quantity first, and the span is the one set_axis_range '
+                'quantity first, and the span is the one '
+                'configure_axes(operation="range") '
                 'pins.' % (figure_key or 'this window'))
         pgPlot = getattr(frame, 'pgPlotWidget', None)
         if pgPlot is None or not hasattr(pgPlot, 'getViewBox'):
@@ -4889,7 +4895,8 @@ class McpGuiCore:
                 'The window "%s" is a picture window: the log and inversion '
                 'gestures address the figure a single curve was drawn in, '
                 'and this one holds pictures, whose span is the one '
-                'set_axis_range pins. Name the figure the curve was drawn '
+                'configure_axes(operation="range") pins. Name the figure '
+                'the curve was drawn '
                 'in.' % (figure_key or 'this window'))
         pgPlot = getattr(frame, 'pgPlotWidget', None)
         if pgPlot is None or not hasattr(pgPlot, 'getViewBox'):
