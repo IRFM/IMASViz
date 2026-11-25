@@ -18,12 +18,12 @@ the one trace palette every curve frame wears — so the window it opens is one
 Two lines, both offered on the `equilibrium` branch and refused by name on any
 other:
 
-* *Surfaces de flux (début, milieu, fin)* — the flux surfaces of three instants
+* *Flux surfaces (begin, middle, end)* — the flux surfaces of three instants
   side by side, one frame a bound: first, middle and last slice of the case. The
   comparison the row exists for is what keeps the three frames comparable: the
   same levels, the same bounds, the same marks (boundary, axis, O-point,
   limiter) at each named instant.
-* *Équilibre à un instant (surface + profils)* — one instant: its flux surface,
+* *Equilibrium at an instant (surface + profiles)* — one instant: its flux surface,
   the eight radial profiles of the Equilibrium overview stacked under it, and
   the slice's global quantities said in the window title. The instant is asked
   through a dialog bounded to the case's own range, and answered in the user's
@@ -52,7 +52,7 @@ class equilibriumsurfaces(VizPlugin):
         self.ACTIONS = (
             QVizPluginAction(
                 0,
-                'Surfaces de flux (début, milieu, fin)...',
+                'Flux surfaces (begin, middle, end)...',
                 run=self._drawSurfaces,
                 description=('Draw the equilibrium the way the application '
                              'draws its figures: the flow surfaces of the '
@@ -60,7 +60,7 @@ class equilibriumsurfaces(VizPlugin):
                              'side by side, in one figure.')),
             QVizPluginAction(
                 1,
-                'Équilibre à un instant (surface + profils)...',
+                'Equilibrium at an instant (surface + profiles)...',
                 run=self._drawAtTime,
                 description=('Draw the equilibrium at one instant with its '
                              'radial profiles stacked under it. The same '
@@ -100,13 +100,13 @@ class equilibriumsurfaces(VizPlugin):
         lo = float(times[0])
         hi = float(times[-1])
         value, accepted = QInputDialog.getDouble(
-            None, 'Équilibre à un instant', 'Quelle heure (s) ?',
+            None, 'Equilibrium at an instant', 'What time (s)?',
             value=(lo + hi) / 2, minValue=lo, maxValue=hi)
         if not accepted:
             raise ValueError(
-                'equilibriumsurfaces: la question de l\'instant a été '
-                'annulée, et aucune figure n\'est ouverte sur une heure '
-                'qu\'on n\'a pas demandée.')
+                'equilibriumsurfaces: the question of the instant was '
+                'cancelled, and no figure is opened on a time that was '
+                'not asked for.')
         return float(value)
 
     # ------------------------------------------------------------ entry 0 / 1

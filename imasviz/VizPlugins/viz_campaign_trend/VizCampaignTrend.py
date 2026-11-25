@@ -62,7 +62,7 @@ def _campaign_run(context):
     from imasviz.VizAgent.core import McpGuiCore
     cases = _campaign_cases(context)
     if len(cases) < 2:
-        _show('Campagne',
+        _show('Campaign',
               'A trend needs at least 2 open cases; the session holds %d.'
               % len(cases), error=True)
         return
@@ -70,16 +70,16 @@ def _campaign_run(context):
     try:
         result = core.campaign(cases, _DEFAULT_PATH)
     except ValueError as err:
-        _show('Campagne', str(err), error=True)
+        _show('Campaign', str(err), error=True)
         return
     trend = result['trend']
-    lines = ['Campagne — %d jeu(x)' % len(cases), '',
+    lines = ['Campaign — %d case(s)' % len(cases), '',
              'direction : %s' % trend['direction'],
              'variation : %g' % trend['change'],
-             'pente     : %g / jeu' % trend['slope']]
+             'slope     : %g / case' % trend['slope']]
     for row in result['rows']:
         lines.append('  %s : %g' % (row['uri'], row['value']))
-    _show('Campagne', '\n'.join(lines))
+    _show('Campaign', '\n'.join(lines))
 
 
 def _campaign_report_run(context):
@@ -87,7 +87,7 @@ def _campaign_report_run(context):
     from imasviz.VizAgent.core import McpGuiCore
     cases = _campaign_cases(context)
     if len(cases) < 2:
-        _show('Campagne',
+        _show('Campaign',
               'A trend needs at least 2 open cases; the session holds %d.'
               % len(cases), error=True)
         return
@@ -95,10 +95,10 @@ def _campaign_report_run(context):
     try:
         result = core.campaign_report(cases, _DEFAULT_PATH)
     except ValueError as err:
-        _show('Campagne', str(err), error=True)
+        _show('Campaign', str(err), error=True)
         return
-    _show('Campagne',
-          'Rapport écrit dans :\n%s' % result['saved_to'])
+    _show('Campaign',
+          'Report written to:\n%s' % result['saved_to'])
 
 
 class VizCampaignTrend(VizPlugin):
@@ -110,9 +110,9 @@ class VizCampaignTrend(VizPlugin):
     them.
     """
     SCOPE = QVizPluginScope(APP)
-    LABEL = 'Campagne'
+    LABEL = 'Campaign'
     ACTIONS = (
-        QVizPluginAction(0, 'Tendance (%s)' % _DEFAULT_PATH.split('.')[-1],
+        QVizPluginAction(0, 'Trend (%s)' % _DEFAULT_PATH.split('.')[-1],
                          run=_campaign_run),
-        QVizPluginAction(1, 'Exporter le rapport', run=_campaign_report_run),
+        QVizPluginAction(1, 'Export the report', run=_campaign_report_run),
     )

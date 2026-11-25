@@ -76,7 +76,7 @@ class _NoDialogGuard(QObject):
     loop on the GUI thread**, so nothing else is served until someone presses a
     button -- and on the web surface nobody is there. Measured on the reference
     case, before the entry was changed to answer for itself, the `equilibrium`
-    surfaces entry opened `QInputDialog 'Équilibre à un instant'` and the caller
+    surfaces entry opened `QInputDialog 'Equilibrium at an instant'` and the caller
     answered `The GUI thread did not answer in 300 s`; the model asked again, and
     again, which is what reached the user as an endless loop, with
     `QPainter::end: Painter ended with 2 saved states` printed by that loop

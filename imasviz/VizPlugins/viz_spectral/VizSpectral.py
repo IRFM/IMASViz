@@ -19,8 +19,8 @@ arrays already on screen -- no re-read of the case. The run method delegates
 to `QVizSpectrumMenu._on`, which already handles the refusal dialog and the
 formatting of the result.
 
-The label "Sommets du spectre (top 5)" is what the line reads; the plugin
-itself says "Spectre" for the sub-menu, the same title `QVizSpectrumMenu.
+The label "Spectral peaks (top 5)" is what the line reads; the plugin
+itself says "Spectrum" for the sub-menu, the same title `QVizSpectrumMenu.
 addMenuEntry` used to give the `QMenu`.
 """
 
@@ -54,8 +54,8 @@ class VizSpectral(VizPlugin):
     the first argument to `QMenu` in `QVizSpectrumMenu.addMenuEntry`.
     """
     SCOPE = QVizPluginScope(FIGURE)
-    LABEL = 'Spectre'
+    LABEL = 'Spectrum'
     ACTIONS = (
-        QVizPluginAction(0, 'Sommets du spectre (top %d)' % TOP_PEAKS,
+        QVizPluginAction(0, 'Spectral peaks (top %d)' % TOP_PEAKS,
                          run=_spectrum_run),
     )

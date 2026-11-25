@@ -226,7 +226,7 @@ class AsksItsQuestionInADialog(VizPlugin):
     **nested event loop on the GUI thread**, and an offscreen session has nobody
     to press a button. Measured on the reference case before the `equilibrium`
     surfaces entry was changed to answer for itself, its
-    `QInputDialog 'Équilibre à un instant'` sat there until the caller answered
+    `QInputDialog 'Equilibrium at an instant'` sat there until the caller answered
     `The GUI thread did not answer in 300 s`, and the model asked again -- which
     is what reached the user as an endless loop, alongside a `QPainter::end:
     Painter ended with 2 saved states` that has never been reproduced alone.
@@ -672,7 +672,7 @@ def test_an_entry_that_asks_a_dialog_is_refused_when_answers_are_handed(
     """Nothing blocks, and the refusal names the question that was never asked.
 
     Measured before this guard, on the reference case and through the web
-    surface: the entry opened `QInputDialog 'Équilibre à un instant'`, the GUI
+    surface: the entry opened `QInputDialog 'Equilibrium at an instant'`, the GUI
     thread stayed inside that loop until the caller answered `The GUI thread did
     not answer in 300 s`, and the retries looked like an endless loop.
     """
@@ -970,8 +970,8 @@ def test_the_reference_case_offers_the_lines_for_equilibrium(qtbot):
     assert [(entry.pluginName, entry.number, entry.label)
             for entry in entries] == [
         ('equilibriumcharts', 0, 'Equilibrium overview...'),
-        ('equilibriumsurfaces', 0, 'Surfaces de flux (début, milieu, fin)...'),
-        ('equilibriumsurfaces', 1, 'Équilibre à un instant (surface + profils)...'),
+        ('equilibriumsurfaces', 0, 'Flux surfaces (begin, middle, end)...'),
+        ('equilibriumsurfaces', 1, 'Equilibrium at an instant (surface + profiles)...'),
         ('VizProfiles_plugin', 0, 'Plot what the equilibrium IDS holds...')]
 
 
@@ -1050,8 +1050,8 @@ def test_the_right_click_menu_of_a_node_offers_the_plugins_of_that_node(qtbot):
     assert shiboken6.isValid(plugins)
     assert [action.text() for action in plugins.actions()] == [
         'Equilibrium overview...',
-        'Surfaces de flux (début, milieu, fin)...',
-        'Équilibre à un instant (surface + profils)...',
+        'Flux surfaces (begin, middle, end)...',
+        'Equilibrium at an instant (surface + profiles)...',
         'Plot what the equilibrium IDS holds...']
 
 

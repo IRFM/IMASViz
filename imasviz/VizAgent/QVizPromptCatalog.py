@@ -24,8 +24,8 @@ Three rules the shape is built on:
   chosen, and the panel keeps the reference (``QVizAgentPanel.
   promptManager``) — a window no Python reference holds dies with the
   wrapper that made it.
-* **Filling is not running.** *Mettre dans la boîte* puts the filled
-  text in the panel's box; *Lancer* puts it there and asks it through the
+* **Filling is not running.** *Put in the box* puts the filled
+  text in the panel's box; *Run* puts it there and asks it through the
   panel's own run. There is no ``run_prompt`` gesture to ask (the agent
   would be answering a turn from inside a turn), and the window does not
   pretend there is one.
@@ -52,13 +52,13 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-# The panel is French and the source names come from the store's one
-# table (``prompts.CALLED`` and its three neighbours), in English. They
-# are data the user is entitled to read, not chrome to translate: a
-# second table of French copies is how the two would drift apart.
-SOURCE_PREFIX = 'venu de : '
+# The source names come from the store's one table (``prompts.CALLED``
+# and its three neighbours), in English. They are data the user is
+# entitled to read, not chrome to translate: a second table of copies is
+# how the two would drift apart.
+SOURCE_PREFIX = 'from: '
 
-NO_PROMPT = '(choisir un prompt du catalogue)'
+NO_PROMPT = '(choose a prompt from the catalogue)'
 
 
 class QVizPromptManager(QDialog):
@@ -84,7 +84,7 @@ class QVizPromptManager(QDialog):
         self._preview = {}       # hole -> the value the preview answered
         self._editing = None     # {'scope','id'} of the prompt being edited
 
-        self.setWindowTitle('Prompts du catalogue')
+        self.setWindowTitle('Catalogue prompts')
         self.resize(720, 560)
         self.setModal(False)
 
@@ -94,12 +94,12 @@ class QVizPromptManager(QDialog):
         row = QHBoxLayout()
         self.filterEdit = QLineEdit()
         self.filterEdit.setPlaceholderText(
-            'un mot du nom, de la description, de la catégorie')
+            'a word of the name, the description, the category')
         self.filterEdit.returnPressed.connect(self.refresh)
         row.addWidget(self.filterEdit)
         self.categoryBox = QComboBox()
         row.addWidget(self.categoryBox)
-        refresh = QPushButton('Rafraîchir')
+        refresh = QPushButton('Refresh')
         refresh.clicked.connect(self.refresh)
         row.addWidget(refresh)
         layout.addLayout(row)
@@ -115,7 +115,7 @@ class QVizPromptManager(QDialog):
         layout.addWidget(self.bodyView)
 
         # --- the holes --------------------------------------------------
-        layout.addWidget(QLabel('<b>Les valeurs demandées par ce prompt</b>'))
+        layout.addWidget(QLabel('<b>The values asked for by this prompt</b>'))
         self.valuesGrid = QWidget()
         self.valuesLayout = QGridLayout(self.valuesGrid)
         self.valuesLayout.setContentsMargins(0, 0, 0, 0)
@@ -127,19 +127,19 @@ class QVizPromptManager(QDialog):
         layout.addWidget(self.status)
 
         actions = QHBoxLayout()
-        self.putButton = QPushButton('Mettre dans la boîte')
+        self.putButton = QPushButton('Put in the box')
         self.putButton.clicked.connect(lambda: self._fill(run=False))
         actions.addWidget(self.putButton)
-        self.runButton = QPushButton('Lancer')
+        self.runButton = QPushButton('Run')
         actions.addWidget(self.runButton)
         self.runButton.clicked.connect(lambda: self._fill(run=True))
-        self.editButton = QPushButton('Modifier')
+        self.editButton = QPushButton('Edit')
         self.editButton.clicked.connect(self._openEdit)
         actions.addWidget(self.editButton)
-        self.deleteButton = QPushButton('Supprimer')
+        self.deleteButton = QPushButton('Delete')
         self.deleteButton.clicked.connect(self._delete)
         actions.addWidget(self.deleteButton)
-        self.newButton = QPushButton('Nouveau')
+        self.newButton = QPushButton('New')
         self.newButton.clicked.connect(self._newPrompt)
         actions.addWidget(self.newButton)
         actions.addStretch(1)
@@ -152,25 +152,25 @@ class QVizPromptManager(QDialog):
         self.descriptionEdit = QLineEdit()
         self.bodyEdit = QPlainTextEdit()
         self.bodyEdit.setPlaceholderText(
-            'le prompt, avec ses trous écrits {shot}, {figure}, {rho}…')
+            'the prompt, with its holes written {shot}, {figure}, {rho}…')
         self.variablesEdit = QLineEdit()
         self.variablesEdit.setPlaceholderText(
-            'valeurs par défaut (facultatif) : shot=54924; rho=0.8')
-        self.saveButton = QPushButton('Enregistrer')
+            'default values (optional): shot=54924; rho=0.8')
+        self.saveButton = QPushButton('Save')
         self.saveButton.clicked.connect(self._saveForm)
-        self.cancelButton = QPushButton('Annuler')
+        self.cancelButton = QPushButton('Cancel')
         self.cancelButton.clicked.connect(self.hideForm)
         self.hideForm()
         layout.addWidget(self.formTitle)
-        layout.addWidget(QLabel('nom'))
+        layout.addWidget(QLabel('name'))
         layout.addWidget(self.nameEdit)
-        layout.addWidget(QLabel('catégorie'))
+        layout.addWidget(QLabel('category'))
         layout.addWidget(self.categoryEdit)
         layout.addWidget(QLabel('description'))
         layout.addWidget(self.descriptionEdit)
-        layout.addWidget(QLabel('le prompt'))
+        layout.addWidget(QLabel('the prompt'))
         layout.addWidget(self.bodyEdit)
-        layout.addWidget(QLabel('défauts'))
+        layout.addWidget(QLabel('defaults'))
         layout.addWidget(self.variablesEdit)
         formRow = QHBoxLayout()
         formRow.addWidget(self.saveButton)
@@ -188,8 +188,8 @@ class QVizPromptManager(QDialog):
         made."""
         if self.core is None:
             raise ValueError(
-                'aucun agent ne porte le catalogue: cette fenêtre n\'a ' +
-                'personne à qui demander ses prompts.')
+                'no agent carries the catalogue: this window has no ' +
+                'one to ask for its prompts.')
         return getattr(self.core, gesture)(**args)
 
     def _refused(self, e):
@@ -221,7 +221,7 @@ class QVizPromptManager(QDialog):
         if word:
             args['query'] = word
         category = self.categoryBox.currentText()
-        chosen = category not in ('', '(toutes)')
+        chosen = category not in ('', '(all)')
         if chosen:
             args['category'] = category
         try:
@@ -233,16 +233,16 @@ class QVizPromptManager(QDialog):
         self.categoryBox.blockSignals(True)
         keep = self.categoryBox.currentText() if chosen else ''
         self.categoryBox.clear()
-        self.categoryBox.addItem('(toutes)')
+        self.categoryBox.addItem('(all)')
         for name in sorted(counts):
-            self.categoryBox.addItem(name or '(sans catégorie)')
+            self.categoryBox.addItem(name or '(no category)')
         self.categoryBox.setCurrentIndex(
-            max(0, self.categoryBox.findText(keep or '(toutes)')))
+            max(0, self.categoryBox.findText(keep or '(all)')))
         self.categoryBox.blockSignals(False)
 
         last = None
         for entry in answer['prompts']:
-            label = '%s — %s' % (entry['category'] or '(sans catégorie)',
+            label = '%s — %s' % (entry['category'] or '(no category)',
                                  entry['name'])
             if entry['description']:
                 label += '  ·  %s' % entry['description']
@@ -291,7 +291,7 @@ class QVizPromptManager(QDialog):
             self.valuesLayout.addWidget(edit, row, 1)
             self.valuesLayout.addWidget(
                 QLabel(SOURCE_PREFIX + known['source'] if known['value']
-                       else 'rien ne répond ce trou : écrivez la valeur'),
+                       else 'nothing answers this hole: write the value'),
                 row, 2)
         note = (detail.get('context') or {}).get('note')
         if note:
@@ -333,8 +333,8 @@ class QVizPromptManager(QDialog):
         refusal is the store's: it names the holes nothing answered, and
         nothing here picks a value in their place."""
         if not self._open:
-            self.status.setText('REFUSAL — choisissez un prompt de la '
-                                'liste : ses trous sont ce qui se remplit.')
+            self.status.setText('REFUSAL — choose a prompt from the '
+                                'list: its holes are what get filled.')
             return
         try:
             answer = self._ask('fill_prompt', name=self._open['id'],
@@ -348,7 +348,7 @@ class QVizPromptManager(QDialog):
         self.status.setText('%s — %s' % (
             answer['name'],
             ', '.join('{%s} (%s)' % (name, answer['values'][name]['source'])
-                      for name in sorted(filled)) or 'aucun trou à remplir'))
+                      for name in sorted(filled)) or 'no hole to fill'))
         text = answer['text']
         if self.onInsert:
             self.onInsert(text)
@@ -368,8 +368,8 @@ class QVizPromptManager(QDialog):
         self.descriptionEdit.setText('')
         self.bodyEdit.setPlainText('')
         self.variablesEdit.setText('')
-        self.showForm('<b>Nouveau prompt</b> — son nom devient l\'identifiant '
-                      'que le catalogue, les valeurs et les relances lisent')
+        self.showForm('<b>New prompt</b> — its name becomes the identifier '
+                      'that the catalogue, the values and the recalls read')
 
     def _openEdit(self):
         """The prompt on show, in the form: read back through
@@ -377,8 +377,8 @@ class QVizPromptManager(QDialog):
         is not a field an edit moves — a prompt under another name is a
         new prompt."""
         if not self._open:
-            self.status.setText('REFUSAL — modifiez un prompt choisi de la '
-                                'liste.')
+            self.status.setText('REFUSAL — edit a prompt chosen from the '
+                                'list.')
             return
         try:
             detail = self._ask('prompt_detail', name=self._open['id'],
@@ -395,21 +395,21 @@ class QVizPromptManager(QDialog):
         self.variablesEdit.setText('; '.join(
             '%s=%s' % (name, value)
             for name, value in sorted(detail['variables'].items()) if value))
-        self.showForm('<b>Modifier « %s »</b> — il garde l\'identifiant %s '
-                      'sous lequel ses valeurs sont rappelées'
+        self.showForm('<b>Edit "%s"</b> — it keeps the identifier %s '
+                      'under which its values are recalled'
                       % (detail['name'], detail['id']))
 
     def _saveForm(self):
         text = self.bodyEdit.toPlainText().strip()
         name = self.nameEdit.text().strip()
         if not text:
-            self.status.setText('REFUSAL — un prompt doit dire ce qu\'il '
-                                'demande : le texte nommé est vide.')
+            self.status.setText('REFUSAL — a prompt must say what it '
+                                'asks for: the named text is empty.')
             return
         if not name and not self._editing:
-            self.status.setText('REFUSAL — un prompt a besoin d\'un nom : '
-                                'c\'est ce que le catalogue affiche et ce '
-                                'que ses valeurs retiennent.')
+            self.status.setText('REFUSAL — a prompt needs a name: '
+                                'that is what the catalogue displays and '
+                                'what its values hold.')
             return
         variables = self.variablesEdit.text().strip()
         args = {
@@ -450,8 +450,8 @@ class QVizPromptManager(QDialog):
 
     def _delete(self):
         if not self._open:
-            self.status.setText('REFUSAL — supprimez un prompt choisi de la '
-                                'liste.')
+            self.status.setText('REFUSAL — delete a prompt chosen from the '
+                                'list.')
             return
         scope, prompt_id = self._open['scope'], self._open['id']
         try:
@@ -463,7 +463,7 @@ class QVizPromptManager(QDialog):
         self.bodyView.setPlainText('')
         self._open = None
         self.refresh()
-        self.status.setText('supprimé : %s (%s) — %s'
+        self.status.setText('deleted: %s (%s) — %s'
                             % (answer.get('deleted', prompt_id), scope,
                                answer.get('path', '')))
         if self.onChanged:

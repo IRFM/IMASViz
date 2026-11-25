@@ -14,7 +14,7 @@
 """The **Spectre** entry a figure of curves offers on its view box.
 
 `test_155` pins the math, `test_156` pins the tool surface. This pins the GUI
-face of the same, the sibling of the Événements entry (test_154): a real
+face of the same, the sibling of the Events entry (test_154): a real
 `QVizCurvePlot` built off-screen carries the sub-menu on its own view box, runs
 the spectrum on the curve that is already on screen (no re-read of the case),
 and keeps the pure layer's refusal voice -- a flat series is refused, and a
@@ -54,11 +54,11 @@ def test_the_entry_is_on_the_view_box_menu(qapp):
     frame = _frame(qapp)
     try:
         names = [a.text() for a in frame.pgPlotWidget.getViewBox().menu.actions()]
-        assert 'Spectre' in names
+        assert 'Spectrum' in names
         sub = [a.menu() for a in
                frame.pgPlotWidget.getViewBox().menu.actions()
-               if a.text() == 'Spectre'][0]
-        assert {a.text() for a in sub.actions()} == {'Sommets du spectre (top 5)'}
+               if a.text() == 'Spectrum'][0]
+        assert {a.text() for a in sub.actions()} == {'Spectral peaks (top 5)'}
     finally:
         frame.close()
         qapp.processEvents()
@@ -80,7 +80,7 @@ def test_the_entry_runs_on_the_curve_that_is_on_screen(qapp):
         assert answer['dominant']['frequency'] == pytest.approx(8.0 / n)
         # the window words are there for the handler, and name that peak
         text = frame.spectrumMenu._format(answer)
-        assert 'Dominant' in text and 'Pics :' in text
+        assert 'Dominant' in text and 'Peaks:' in text
     finally:
         frame.close()
         qapp.processEvents()

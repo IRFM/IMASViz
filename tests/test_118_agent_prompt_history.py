@@ -18,7 +18,7 @@ What it pins, scripted, off the reference case:
   not).
 * the panel -- the box lists the file's prompts newest first; selecting a
   line puts that prompt back in the input box; a run records its prompt
-  into the file and the box; and ``Effacer`` clears the input box and the
+  into the file and the box; and ``Clear`` clears the input box and the
   transcript but does not touch the history.
 
 ``HOME`` is pointed at a test folder for the whole file (the ``test_39*``

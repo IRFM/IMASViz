@@ -56,10 +56,10 @@ class VizEventDetection(VizPlugin):
     the first argument to `QMenu` in `QVizEventMarks.addMenuEntry`.
     """
     SCOPE = QVizPluginScope(FIGURE)
-    LABEL = 'Événements'
+    LABEL = 'Events'
     ACTIONS = (
         QVizPluginAction(0, 'ELM', run=_detect_run('elm')),
         QVizPluginAction(1, 'sawtooth', run=_detect_run('sawtooth')),
         QVizPluginAction(2, 'transition L-H', run=_detect_run('lh')),
-        QVizPluginAction(3, 'Retirer les marques', run=_clear_run),
+        QVizPluginAction(3, 'Remove the marks', run=_clear_run),
     )
