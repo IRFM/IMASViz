@@ -1543,6 +1543,133 @@ TOOL_PARAMETERS = {
 }
 
 
+# The groups the manual's tool table draws (manual/agentics.rst, "The one
+# core and the one tool set"), spelled next to the schemas so the two cannot
+# drift without a word: test_174 refuses a group naming a tool that is not
+# offered, a tool left out of every group, and a tool in two of them.
+#
+# A group is NOT a name the loop is offered: every tool is still offered by
+# its own name, and a group answers one question the flat schemas cannot --
+# which of the neighbouring tools a stray parameter belongs to. The 84
+# schemas repeat the same parameter words (``along`` 12 times, ``scope``
+# 13, ``figure_key`` 18), so a parameter the model put on the wrong tool of
+# a group is a far likelier mistake than a parameter it invented, and the
+# refusal that only lists what is *not* there leaves the model guessing.
+#
+# The day a group is offered under one name instead of its members, this is
+# the table that says which member answers which call, and the loop's guards
+# (``DESTRUCTIVE_GESTURES``, ``SHARED_JOURNAL_GESTURES``, ``_WORK_GESTURES``)
+# must keep being asked about the member's name, not the group's: a
+# ``manage_window(action='close')`` that reaches the guard as
+# ``manage_window`` is a closed window nobody asked for.
+FAMILIES = (
+    ('cases', ('open_case', 'list_cases', 'close_case')),
+    ('the IDSs', ('list_idss', 'list_case_idss', 'load_ids')),
+    ('the tree', ('search_nodes', 'describe_node', 'describe_ids',
+                  'list_quantities')),
+    ('the selection', ('select_signals', 'unselect_all', 'list_selection')),
+    ('the drawing', ('plot_one', 'plot_slice', 'plot_selection',
+                     'plot_table', 'plot_stacked', 'get_signal')),
+    ('the equilibrium', ('equilibrium_surfaces', 'equilibrium_at_time')),
+    ('the curves already drawn', ('scale_curve', 'shift_curve',
+                                  'normalize_curve', 'reset_curve',
+                                  'remove_curve', 'curve_stats',
+                                  'export_curve')),
+    ('the axes and the slices of a window',
+     ('set_axis_range', 'set_image_window', 'set_slice_index',
+      'set_log_scale', 'invert_axis')),
+    ('the physics of a signal', ('detect_events', 'clear_event_marks',
+                                 'events_report', 'spectrum',
+                                 'cross_correlation', 'spectrum_report')),
+    ('what a case says', ('greenwald', 'beta_normal', 'total_pressure')),
+    ('a campaign of shots', ('campaign', 'campaign_report')),
+    ('the windows', ('list_windows', 'show_window', 'hide_window',
+                     'close_window')),
+    ('the plugins', ('list_plugins', 'run_plugin')),
+    ('sessions and configurations', ('save_session', 'restore_session',
+                                     'new_session', 'list_sessions',
+                                     'list_configurations',
+                                     'select_from_configuration',
+                                     'save_selection',
+                                     'save_plot_configuration')),
+    ('the reports', ('plot_report', 'case_report', 'case_ids_report')),
+    ('the export', ('export_to_ids',)),
+    ('the screen', ('get_screenshot', 'focus_window')),
+    ('the log', ('get_logs',)),
+    ('the journals', ('search_journals', 'list_notes', 'read_note',
+                      'add_note', 'edit_note', 'delete_note',
+                      'journal_stats', 'reindex_journals')),
+    ('the documents corpus', ('list_documents', 'search_documents',
+                              'read_document', 'reindex_documents',
+                              'documents_stats')),
+    ('the prompts', ('list_prompts', 'prompt_detail', 'fill_prompt',
+                     'save_prompt', 'edit_prompt', 'delete_prompt')),
+)
+
+_FAMILY_OF_TOOL = {name: label
+                   for label, members in FAMILIES
+                   for name in members}
+
+_FAMILY_MEMBERS = dict(FAMILIES)
+
+
+def familyOf(name):
+    """The group a tool belongs to, and None for a name that is not one."""
+    return _FAMILY_OF_TOOL.get(name)
+
+
+def siblingTaking(name, parameter):
+    """The other tools of ``name``'s group that do take ``parameter``.
+
+    Empty when the group has none -- the parameter is then one the model
+    invented, and the refusal must not send it off to a tool that does not
+    take it either. Empty for a name that is not a tool, and for a parameter
+    the tool itself takes: asking why ``get_signal`` takes ``time_index``
+    would be answering nothing.
+    """
+    label = _FAMILY_OF_TOOL.get(name)
+    if label is None:
+        return []
+    if parameter in TOOL_PARAMETERS[name].get('properties', {}):
+        return []
+    return [other for other in _FAMILY_MEMBERS[label]
+            if other != name
+            and parameter in TOOL_PARAMETERS[other].get('properties', {})]
+
+
+def unknownParameterRefusal(name, unknown):
+    """The loop's words for an argument the tool does not take.
+
+    ``unknown`` is what ``unknownParameters`` answered; the first name is
+    the one put on trial. The refusal names the stray and the parameters
+    that are -- a Python ``TypeError`` says "unexpected keyword argument",
+    which does not tell the model what to answer with -- and then, when a
+    neighbour in the same group takes the stray, names that neighbour:
+    ``columns`` on ``plot_one`` is a table asked with a single quantity's
+    call, and the short way back is the tool that takes it.
+    """
+    schema = TOOL_PARAMETERS.get(name, {})
+    allowed = sorted(schema.get('properties', {}))
+    if allowed:
+        text = ('"%s" is not a parameter of the %s tool: it takes %s. '
+                'Answer with the parameters the tool names.'
+                % (unknown[0], name, ', '.join(allowed)))
+    else:
+        text = ('"%s" is not a parameter of the %s tool, which takes no '
+                'parameter at all. Answer with no arguments.'
+                % (unknown[0], name))
+    siblings = siblingTaking(name, unknown[0])
+    if siblings:
+        if len(siblings) == 1:
+            text += (' "%s" is a parameter of %s: ask that tool if that is '
+                     'the gesture you mean.' % (unknown[0], siblings[0]))
+        else:
+            text += (' "%s" is a parameter of %s: ask one of those if that '
+                     'is the gesture you mean.'
+                     % (unknown[0], ', '.join(siblings)))
+    return text
+
+
 def unknownParameters(name, args):
     """The names in ``args`` that the tool ``name`` does not take.
 
