@@ -139,9 +139,10 @@ def test_document_chunks_are_addressed_by_their_rel(docsFolder):
 
 
 def test_reindex_is_incremental_and_purges_the_left_overs(docsFolder):
-    """The one a ``reindex_documents`` answers: the folder in step with the
-    store. What it keeps (unchanged), what it writes (moved or new), what
-    it purges (gone from the folder), and the count the store holds after —
+    """The one ``manage_documents(action="reindex")`` answers: the folder in
+    step with the store. What it keeps (unchanged), what it writes (moved or
+    new), what it purges (gone from the folder), and the count the store
+    holds after —
     and it is idempotent on an unchanged folder (a second run writes
     nothing new)."""
     first = rag_docs.reindex(embedder=None)
@@ -232,9 +233,9 @@ def test_search_is_guarded_when_the_embedder_moved(docsFolder, monkeypatch):
 
 
 def test_docs_stats_names_the_corpus_state(docsFolder):
-    """The one a ``documents_stats`` answer: how many documents and chunks
-    the corpus holds, its ``embed_sig``, its ``dim``, and how long the read
-    is (the ``source_type``, the ``path`)."""
+    """The one ``manage_documents(action="stats")`` answers: how many
+    documents and chunks the corpus holds, its ``embed_sig``, its ``dim``,
+    and how long the read is (the ``source_type``, the ``path`)."""
     rag_docs.reindex(embedder=None)
     s = rag_docs.stats()
     assert s['documents'] == 2
@@ -245,9 +246,9 @@ def test_docs_stats_names_the_corpus_state(docsFolder):
 
 
 def test_read_document_gives_the_full_text(docsFolder):
-    """The one a ``read_document`` answers: the full text of the document
-    the ``rel`` names, read back from the disk the corpus holds (the same
-    text a search hit would rank, without its chunk bound)."""
+    """The one ``manage_documents(action="read")`` answers: the full text of
+    the document the ``rel`` names, read back from the disk the corpus holds
+    (the same text a search hit would rank, without its chunk bound)."""
     text = rag_docs.readDocument('tuning.md')
     assert 'plasma' in text.lower()
     assert 'calibration' not in text.lower()

@@ -1092,58 +1092,57 @@ def buildServer(core, dispatcher, name='imasviz'):
         spelled = argumentsForMember(gesture, args)
         return _run(partial(getattr(core, gesture), **spelled))
 
-    @server.tool(name='list_documents')
-    def list_documents():
-        """The documents the in-app agent reads for its own RAG over the
-        user's own writing: the markdown, text, and PDF files the folder
-        AgentDocsDir names holds (the name, the size, the date, and the
-        relative path a search answers by). An empty corpus (a folder with
-        no document) is an answer; a corpus with no folder named is a
-        refusal that names it."""
-        return _run(partial(core.list_documents))
+    # ----------------------------------------------------------- documents
 
-    @server.tool(name='read_document')
-    def read_document(rel: str):
-        """The full text of one document of the corpus, by its relative
-        path (the one a search_documents hit names). Not in the corpus is
-        a refusal by name, naming the ones it does read. The one to ask
-        when a search hit is the one the reader wants to read in full."""
-        return _run(partial(core.read_document, rel))
+    @server.tool(name='manage_documents')
+    def manage_documents(
+            action: Literal['list', 'search', 'read', 'reindex', 'stats'],
+            query: Optional[str] = None,
+            limit: Optional[int] = None,
+            rel: Optional[str] = None):
+        """The corpus of documents the agent reads for itself, and `action`
+        picks the ask.
 
-    @server.tool(name='reindex_documents')
-    def reindex_documents():
-        """Put the documents corpus in step with its index: the run asks of
-        this after the user has added a document to the corpus folder, or
-        when a search comes back `guarded` (the index was written under an
-        embeddings endpoint the run is no longer under, its vectors are in
-        a different space than the query). It keeps the rows it already
-        has, re-embeds the ones that moved, and drops the ones that left
-        the folder; the answer names how many it kept, wrote, and dropped,
-        and whether the run vectorized this pass or kept the text for the
-        keyword."""
-        return _run(partial(core.reindex_documents))
+        "list" answers the markdown, text and PDF files the folder
+        AgentDocsDir names (the name, the size, the date, and the `rel` a
+        search answers by). An empty corpus -- a folder with no document --
+        is an answer; a corpus with no folder named is a refusal that
+        names it.
 
-    @server.tool(name='search_documents')
-    def search_documents(query: str, limit: Optional[int] = None):
-        """The in-app agent's RAG over the documents corpus: the ranked
-        chunks of the user's own markdown, text, and PDF files (one hit
-        per chunk, the document, the chunk, a snippet). The one to ask
-        when the question is about the user's own writing or the corpus
-        the AgentDocsDir folder holds. The answer names the method it
-        ranked with (hybrid / embeddings / keyword / empty), and when a
-        store was written under another embeddings endpoint it is
-        `guarded` and the keyword alone stands -- reindex_documents is
-        the one that sets them in step."""
-        kwargs = {'limit': limit} if limit is not None else {}
-        return _run(partial(core.search_documents, query, **kwargs))
+        "search" ranks the chunks of those files, one hit per chunk: the
+        document `rel`, the chunk, a snippet. It is the ask when the
+        question is about the user's own writing. The answer names the
+        method it ranked with (hybrid / embeddings / keyword / empty); a
+        store written under another embeddings endpoint is `guarded`, its
+        vectors standing in a different space than the query, and the
+        keyword alone ranks.
 
-    @server.tool(name='documents_stats')
-    def documents_stats():
-        """The state of the documents corpus: how many documents and
-        chunks it holds, the embeddings endpoint and model it was written
-        under, and when it was built -- the one to ask when the answer to
-        "can the agent read my notes/documents" is "it is not indexed "
-        yet" or "it was indexed under another endpoint"."""
-        return _run(partial(core.documents_stats))
+        "read" gives one document whole, by the `rel` a hit names -- the
+        ask when a hit is worth reading entire. Not in the corpus is a
+        refusal by name, naming the ones it does read.
+
+        "reindex" puts the corpus in step with its store: after a document
+        was added to the folder, or when a search comes back `guarded`. It
+        keeps what it has, re-embeds what moved, drops what left the
+        folder, and answers how many documents and chunks it kept, wrote
+        and dropped.
+
+        "stats" names how many documents and chunks the corpus holds, the
+        embeddings endpoint and model it was written under, and when it was
+        built -- the answer when "can the agent read my documents" is "it
+        is not indexed yet".
+        """
+        gesture = gestureOf('manage_documents', {'action': action})
+        args = {field: value for field, value in (
+            ('query', query), ('limit', limit), ('rel', rel))
+            if value is not None}
+        unknown = unknownParameters(gesture, args)
+        if unknown:
+            raise ValueError(unknownParameterRefusal(gesture, unknown))
+        missing = missingParameters(gesture, args)
+        if missing:
+            raise ValueError(missingParameterRefusal(gesture, missing))
+        spelled = argumentsForMember(gesture, args)
+        return _run(partial(getattr(core, gesture), **spelled))
 
     return server

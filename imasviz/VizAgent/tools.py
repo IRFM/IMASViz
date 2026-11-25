@@ -1157,74 +1157,57 @@ TOOLS = [
                       'description': '"add" and "edit": the note\'s title'},
         }, 'required': ['action'], 'additionalProperties': False},
     ),
+    # One name for the corpus of documents the agent reads for itself: what
+    # it holds, what it answers to a question, one document of it whole, the
+    # store put in step with the folder, and its state. The discriminant is
+    # `action`: no member of the group takes a word of its own (test_175
+    # refuses a discriminant a member already answers for itself). `rel`
+    # keeps the spelling the answers already use: a search hit names the
+    # document it came from by that word, so the read asks with it.
     _tool(
-        'list_documents',
-        'The documents the in-app agent reads for its own RAG: the '
-        'markdown, text, and PDF files the folder AgentDocsDir names '
-        'holds (the name, the size, the date, the relative path a '
-        'search answers by). An answer is the corpus as named (a '
-        'folder with no document is an answer, and a folder not named '
-        'is a refusal that names it -- the same shape a shared-journal '
-        'without its folder answers).',
-        {'type': 'object', 'properties': {},
-         'additionalProperties': False},
-    ),
-    _tool(
-        'read_document',
-        'The full text of one document of the corpus, by its relative '
-        'path (the one a search_documents hit names). Not in the corpus '
-        'is a refusal by name, naming the ones it does read; a document '
-        'it does not read is the same. The one to ask when a search hit '
-        'is the one the reader wants to read in full.',
+        'manage_documents',
+        'The corpus of documents the in-app agent reads for its own RAG -- '
+        'the markdown, text and PDF files the folder AgentDocsDir names -- '
+        'and `action` says which ask. "list": the corpus as named (the '
+        'name, the size, the date, the `rel` a search answers by); a folder '
+        'with no document is an answer and a folder not named is a refusal '
+        'that names it, the same shape a shared journal without its folder '
+        'answers. "search": the ranked chunks of those files, one hit per '
+        'chunk -- the document `rel`, the chunk, a snippet -- the ask when '
+        'the question is about the user\'s own writing; `query` is what to '
+        'look for and `limit` how many chunks come back, 8 left out. The '
+        'answer names the `method` it ranked with (hybrid / embeddings / '
+        'keyword / empty); a store written under another embedding endpoint '
+        'is `guarded`, its vectors stand in a different space than the '
+        'query, the keyword alone ranks, and "reindex" is what sets the two '
+        'in step. "read": one document whole, by the `rel` a hit names -- '
+        'the ask when a hit is worth reading entire; not in the corpus is a '
+        'refusal naming the ones it does read, and so is a document it '
+        'cannot read. "reindex": the corpus in step with its store, after a '
+        'document was added to the folder or after the embedding endpoint '
+        'changed; it keeps what it has, embeds what moved, drops what left '
+        'the folder, and answers how many documents and chunks it kept, '
+        'wrote and dropped and whether this pass vectorized. "stats": how '
+        'many documents and chunks the corpus holds, the endpoint and model '
+        'it was written under, and when it was built -- the answer to "can '
+        'the agent read my documents" when it is "not indexed yet" or '
+        '"indexed under another endpoint". A corpus the run cannot read '
+        'is refused by name in every one of the five.',
         {'type': 'object', 'properties': {
+            'action': {'type': 'string',
+                       'enum': ['list', 'search', 'read', 'reindex',
+                                'stats']},
+            'query': {'type': 'string',
+                      'description': '"search": what to look for; asked of '
+                                     'no other action'},
+            'limit': {'type': ['integer', 'null'],
+                      'description': '"search": how many chunks come back; '
+                                     '8 when left out'},
             'rel': {'type': 'string',
-                    'description': 'the relative path of the document '
-                                   'under the corpus folder'},
-        }, 'required': ['rel'], 'additionalProperties': False},
-    ),
-    _tool(
-        'reindex_documents',
-        'Put the documents corpus in step with its index: the run asks '
-        'of this when the user has added a document to the corpus '
-        'folder, when the embedding endpoint has changed (a store '
-        'written under another endpoint is guarded -- its vectors are '
-        'in a different space than the query), or when the index is '
-        'empty. It walks the documents the corpus reads, keeps the ones '
-        'it already has, re-embeds the ones that moved, and drops the '
-        'ones that left the folder. The answer names how many documents '
-        'and chunks it kept, wrote, dropped, and whether the run '
-        'vectorized this pass or kept the text for the keyword.',
-        {'type': 'object', 'properties': {},
-         'additionalProperties': False},
-    ),
-    _tool(
-        'search_documents',
-        'The in-app agent\'s RAG over the documents corpus: the ranked '
-        'chunks of the user\'s own markdown, text, and PDF files '
-        '(one hit per chunk, the document, the chunk, a snippet). The '
-        'one to ask when the question is about the user\'s own '
-        'writing, documents, or the corpus the AgentDocsDir folder '
-        'holds. The answer names the method it ranked with '
-        '(hybrid / embeddings / keyword / empty), and when a store was '
-        'written under another embedding endpoint it is "guarded" and '
-        'the keyword alone stands -- reindex_documents is the one that '
-        'sets them in step.',
-        {'type': 'object', 'properties': {
-            'query': {'type': 'string'},
-            'limit': {'type': 'integer',
-                      'description': 'how many chunks to answer; '
-                                     'left out, 8'},
-        }, 'required': ['query'], 'additionalProperties': False},
-    ),
-    _tool(
-        'documents_stats',
-        'The state of the documents corpus: how many documents and '
-        'chunks it holds, the embedding endpoint and model it was '
-        'written under, and when it was built. The one to ask when the '
-        'answer to "can the agent read my notes/documents" is "it is '
-        'not indexed yet" or "it was indexed under another endpoint".',
-        {'type': 'object', 'properties': {},
-         'additionalProperties': False},
+                    'description': '"read": the document under the corpus '
+                                   'folder, spelled as a search hit names '
+                                   'it'},
+        }, 'required': ['action'], 'additionalProperties': False},
     ),
     # One name for the prompt catalogue, because the six asks are one
     # object looked at, filled, filed, changed and taken away. The
@@ -1935,6 +1918,21 @@ ACTION_PARAMETERS = {
         'figure_key': {'type': 'string'},
         'name': {'type': 'string'},
     }, ('uri', 'figure_key', 'name')),
+    # The documents corpus. Only "search" and "read" ask for a word of
+    # their own: the corpus is one folder, so the three asks that walk it
+    # need nothing, and `query` -- which no other action takes -- belongs
+    # to the rank alone. `rel` is the spelling the answers already use for
+    # a document, so the read asks a hit back with the word it came by.
+    'list_documents': ({}, ()),
+    'search_documents': ({
+        'query': {'type': 'string'},
+        'limit': {'type': ['integer', 'null']},
+    }, ('query',)),
+    'read_document': ({
+        'rel': {'type': 'string'},
+    }, ('rel',)),
+    'reindex_documents': ({}, ()),
+    'documents_stats': ({}, ()),
 }
 
 # The few names a merged group offers under a different spelling than the

@@ -338,18 +338,19 @@ the same descriptions. The tools, in the order the faces group them:
        **guarded** because it was written under an embeddings endpoint this
        run is no longer under.
    * - the documents corpus
-     - ``list_documents``, ``search_documents``, ``read_document``,
-       ``reindex_documents``, ``documents_stats``
-     - the agent's own reading of **the user's writing**: the markdown, text
-       and (when the reader is importable) PDF files under
-       :code:`AgentDocsDir` in the preferences. A search answers ranked
-       **chunks** -- one hit per chunk, with the document, the chunk and a
-       snippet -- and names the method it ranked with; ``read_document`` gives
-       the full text of one document by the relative path a hit named;
-       ``list_documents`` is the corpus as named; ``documents_stats`` is its
-       state, which is where "it is not indexed yet" and "it was indexed under
-       another endpoint" are answered; ``reindex_documents`` sets the corpus
-       and its index back in step. A corpus with no folder named is refused by
+     - ``manage_documents``
+     - one tool for the corpus the agent *reads*, and its ``action`` says
+       which of the five is meant: ``list``, ``search``, ``read``,
+       ``reindex``, ``stats``. The agent's own reading of **the user's
+       writing**: the markdown, text and (when the reader is importable)
+       PDF files under :code:`AgentDocsDir` in the preferences. A search
+       answers ranked **chunks** -- one hit per chunk, with the document's
+       ``rel``, the chunk and a snippet -- and names the method it ranked
+       with; ``read`` gives the full text of one document by the ``rel`` a
+       hit named; ``list`` is the corpus as named; ``stats`` is its state,
+       which is where "it is not indexed yet" and "it was indexed under
+       another endpoint" are answered; ``reindex`` sets the corpus and its
+       index back in step. A corpus with no folder named is refused by
        name, naming the folder it would have read (:ref:`agentics_documents`).
 
 .. _agentics_documents:
@@ -365,8 +366,9 @@ corpus is the agent's memory of it.
 
 The corpus is indexed, not reread on every question: each document is cut into
 chunks and the chunks are stored in the same index the two journals use, so
-``search_documents`` answers the chunks that carry the answer rather than a file
-name, and ``read_document`` is the one to ask when a hit is worth reading whole.
+``manage_documents(action="search")`` answers the chunks that carry the answer
+rather than a file name, and ``manage_documents(action="read")`` is the one to
+ask when a hit is worth reading whole.
 Ranking follows the same rule as the journals (:ref:`agentics_journal_llm`): by
 **embeddings** when the embeddings endpoint is named and answers, by **words**
 while it is not, and the answer says which -- ``hybrid``, ``embeddings``,
@@ -375,14 +377,15 @@ while it is not, and the answer says which -- ``hybrid``, ``embeddings``,
 Two states are worth reading before concluding the corpus does not work:
 
 - **an empty index**: a document added to the folder announces itself to nobody.
-  ``reindex_documents`` walks the folder, keeps what it has, embeds what moved
-  and drops what left; ``documents_stats`` names how many documents and chunks
+  ``manage_documents(action="reindex")`` walks the folder, keeps what it has,
+  embeds what moved and drops what left;
+  ``manage_documents(action="stats")`` names how many documents and chunks
   stand, under which endpoint and model, and when that was built.
 - **a guarded index**: an index written under one embeddings endpoint and read
   under another is kept out of the ranking -- its vectors live in a different
   space than the query does -- and the search falls back to words, naming the
-  guard. A fresh ``reindex_documents`` under the endpoint of the run is what
-  clears it.
+  guard. A fresh ``manage_documents(action="reindex")`` under the endpoint of
+  the run is what clears it.
 
 A folder that is not named is a refusal that names the line missing; it is not a
 search that quietly answers nothing, and the journals keep answering beside it.
