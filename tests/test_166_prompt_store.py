@@ -349,7 +349,9 @@ def test_a_write_over_a_prompt_the_catalogue_holds_is_refused(store):
     refused = pytest.raises(ValueError, store.add_prompt, 'deux',
                             name='Profils 1D bis', prompt_id='profils-1d')
     assert 'already holds a prompt "profils-1d"' in str(refused.value)
-    assert 'edit_prompt' in str(refused.value)
+    # The way back is spelled as a face may type it: the old name is refused
+    # on its own now, so a refusal naming it would answer a dead call.
+    assert 'manage_prompt(action="edit")' in str(refused.value)
 
 
 def test_a_prompt_with_nothing_to_ask_is_refused(store):

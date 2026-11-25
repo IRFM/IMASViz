@@ -904,14 +904,16 @@ The two catalogues are the two the journals answer by:
   (:ref:`agentics_prompts_shared`) -- an AFS directory the writers of the
   node reach, so a prompt one writer filed is on the menu of the others.
 
-The read: ``list_prompts`` (the catalogue, by category and by name, narrowed
-by ``category`` or a word of ``query``, and answering how many prompts each
-category holds), ``prompt_detail`` (one prompt whole: its text and, for each
-of its holes, the value it would take today and **where that value comes
-from**), and the write: ``save_prompt`` (a new file, the id being the slug of
-its name), ``edit_prompt`` (one of the prompts, changed in place -- it keeps
-the id its values were remembered under) and ``delete_prompt`` (one of them,
-and the values remembered for it, gone).
+The catalogue answers one tool, ``manage_prompt``, whose ``action`` says
+which ask is meant. The read: ``action="list"`` (the catalogue, by category
+and by name, narrowed by ``category`` or a word of ``query``, and answering
+how many prompts each category holds) and ``action="detail"`` (one prompt
+whole: its text and, for each of its holes, the value it would take today
+and **where that value comes from**). The write: ``action="save"`` (a new
+file, the id being the slug of its name), ``action="edit"`` (one of the
+prompts, changed in place -- it keeps the id its values were remembered
+under) and ``action="delete"`` (one of them, and the values remembered for
+it, gone).
 
 The holes are filled by four sources, in that order, and the answer names
 which one answered each:
@@ -932,10 +934,11 @@ application made up for it -- which is the whole reason filling is a separate
 ask from running.
 
 Filling is not running. There is no ``run_prompt`` gesture, and no face
-pretends there is one: ``fill_prompt`` answers the text, and the face asks it
-as its own turn -- the panel puts it in its box and *Tourner* runs it, the
-page puts it in its box or sends it through its *Run*, the client runs it on
-the line. A prompt of the catalogue is the user's own ask, and the turn it
+pretends there is one: ``manage_prompt(action="fill")`` answers the text,
+and the face asks it as its own turn -- the panel puts it in its box and
+*Tourner* runs it, the page puts it in its box or sends it through its
+*Run*, the client runs it on the line. A prompt of the catalogue is the
+user's own ask, and the turn it
 starts is the turn the transcript shows.
 
 The four faces, and the catalogue each asks of the same two folders:
@@ -952,27 +955,28 @@ The four faces, and the catalogue each asks of the same two folders:
 - the **client** (*viz_cli*): ``/prompt`` (the catalogue), ``/prompt list``,
   ``/prompt show``, ``/prompt run`` -- which asks the holes it cannot answer
   on the line, never in a dialog -- and ``/prompt save``;
-- the **loop** itself: the six tools above, so that *relance le prompt sur
-  les instabilités* is a question asked of what the user filed, not a
-  sentence the model invents for it.
+- the **loop** itself: the one tool above with its six actions, so that
+  *relance le prompt sur les instabilités* is a question asked of what the
+  user filed, not a sentence the model invents for it.
 
 The refusals, all named: a hole none of the four sources answers names the
 holes; a second prompt filed under an id the catalogue holds is refused, and
-the refusal names ``edit_prompt`` as the way to change the one it is; a hole
-declared and never opened by the text is refused by name, because a hole
-nobody is ever asked for is a declaration of nothing; an id two prompts carry
-as their display name names both ids and asks which one; and a shared
+the refusal names ``manage_prompt(action="edit")`` as the way to change the
+one it is; a hole declared and never opened by the text is refused by name,
+because a hole nobody is ever asked for is a declaration of nothing; an id
+two prompts carry as their display name names both ids and asks which one;
+and a shared
 catalogue with no folder named costs **its own half** of a listing -- the
 personal prompts still answer, with the reason in ``catalogues_unavailable``
 -- while one write that names ``shared`` and gets no folder is refused,
 because a write silently filed in the personal folder is a prompt its author
 believes shared.
 
-``save_prompt`` into the shared catalogue, like a note written to the shared
-journal, is a line other people read: the loop runs it when the request asks
-for it in the user's own words, not because a turn drew a figure worth
-keeping. The same goes for ``delete_prompt``, which takes away a file the
-user wrote.
+``manage_prompt(action="save", scope="shared")``, like a note written to the
+shared journal, is a line other people read: the loop runs it when the request
+asks for it in the user's own words, not because a turn drew a figure worth
+keeping. The same goes for ``manage_prompt(action="delete")``, which takes
+away a file the user wrote.
 
 .. _agentics_llm:
 

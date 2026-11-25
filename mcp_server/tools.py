@@ -1029,6 +1029,72 @@ def buildServer(core, dispatcher, name='imasviz'):
         spelled = argumentsForMember(gesture, args)
         return _run(partial(getattr(core, gesture), **spelled))
 
+    # ------------------------------------------------------------- prompts
+
+    @server.tool(name='manage_prompt')
+    def manage_prompt(
+            action: Literal['list', 'detail', 'fill', 'save', 'edit',
+                            'delete'],
+            name: Optional[str] = None,
+            scope: Optional[str] = None,
+            text: Optional[str] = None,
+            category: Optional[str] = None,
+            description: Optional[str] = None,
+            variables: Optional[Union[dict, str]] = None,
+            prompt_id: Optional[str] = None,
+            values: Optional[dict] = None,
+            query: Optional[str] = None,
+            limit: Optional[int] = None,
+    ):
+        """The catalogue of prompts the user wrote once and asks again:
+        `action` picks the ask.
+
+        "list" answers the prompts -- id, name, category, one-line
+        description, and the holes each opens. `category` and `query` narrow
+        it and `categories` answers how many prompts each category holds. The
+        personal catalogue is under ~/.imasviz/prompts and the shared one
+        under the folder SharedPromptsDir names; an unnamed shared folder
+        costs its own half of the list, named in `catalogues_unavailable`.
+        Ask of it when the user says "relance le prompt ..." and you do not
+        know the wording they filed.
+
+        "detail" answers one prompt whole (its body with its holes open, and
+        what each hole would be answered from right now) and remembers
+        nothing. "fill" answers the prompt with its holes filled and runs
+        nothing: a hole is filled from the first source that answers it --
+        what you name in `values`, what was typed last time, what this
+        session knows, what the file declares -- and a hole none of them
+        answers is a refusal naming the holes. Take the `text` it answers and
+        ask it as the user asked it: filling is not running.
+
+        "save" files a new prompt (`text` with its holes spelled `{name}`,
+        `variables` read off the text when left out). "edit" changes one in
+        place, keeping the id its remembered values were written under -- a
+        field left out keeps the value it held; a NEW prompt is "save".
+        "delete" takes a prompt and its remembered values off the disk.
+
+        `scope` is WHICH catalogue -- `personal`, or `shared` (a line the
+        team reads, which the user has to ask for in their own words) -- and
+        left out it asks both. Filing, changing and deleting are asked for in
+        the user's own words: a turn that merely drew a figure is not an ask
+        to file its wording.
+        """
+        gesture = gestureOf('manage_prompt', {'action': action})
+        args = {field: value for field, value in (
+            ('name', name), ('scope', scope), ('text', text),
+            ('category', category), ('description', description),
+            ('variables', variables), ('prompt_id', prompt_id),
+            ('values', values), ('query', query), ('limit', limit))
+            if value is not None}
+        unknown = unknownParameters(gesture, args)
+        if unknown:
+            raise ValueError(unknownParameterRefusal(gesture, unknown))
+        missing = missingParameters(gesture, args)
+        if missing:
+            raise ValueError(missingParameterRefusal(gesture, missing))
+        spelled = argumentsForMember(gesture, args)
+        return _run(partial(getattr(core, gesture), **spelled))
+
     @server.tool(name='list_documents')
     def list_documents():
         """The documents the in-app agent reads for its own RAG over the

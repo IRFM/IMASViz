@@ -580,7 +580,7 @@ class PromptStore:
             raise ValueError(
                 'The %s catalogue already holds a prompt "%s" (in %s): '
                 'name this one differently, or edit the one it is — '
-                'edit_prompt changes a prompt in place.'
+                'manage_prompt(action="edit") changes a prompt in place.'
                 % (scope, prompt_id, path))
         declared = _declarationOf(variables, body)
         rendered = _renderPrompt(name, (category or '').strip(),

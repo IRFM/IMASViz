@@ -14,21 +14,22 @@
 """The prompt catalogue on the page -- and the route that does not exist.
 
 The catalogue has no route of its own: the page's Prompts section is
-``POST /api/tool {name, args}`` with one of the six tool names, exactly the
-call the agent's own tools make, so the page, the panel, the CLI and the
-model read and write one catalogue. ``viz_web/server.py`` grows no endpoint
+``POST /api/tool {name, args}`` naming ``manage_prompt`` with an ``action``
+for one of the six gestures, exactly the call the agent's own tools make, so
+the page, the panel, the CLI and the model read and write one catalogue.
+``viz_web/server.py`` grows no endpoint
 for it and ``WebSession`` no method: ``callGesture`` runs
-``AgentLoop._dispatch``, which resolves the name on the core and refuses by
-name an argument the tool does not offer. Hence the requests here are driven
+``AgentLoop._dispatch``, which resolves the action on the core and refuses by
+name an argument that action does not take. Hence the requests here are driven
 the way ``test_120`` drives them -- the request from a worker that does not
 pump, ``qapp`` pumped from this thread -- because a gesture goes through the
 GUI-thread dispatcher and a thread that never pumps gets the 300 s answer.
 
 What is pinned:
 
-* the **page** carries the section, its two asks, and the six tool names it
-  spells -- a name the page spells that no tool offers is a click that
-  answers nothing;
+* the **page** carries the section, its two asks, and the one name with the
+  six actions it spells -- a name the page spells that no tool offers is a
+  click that answers nothing;
 * the **listing** a reload of that section gets: the lines, the category
   counts, and the ``context`` saying what this session would answer for free;
 * the **preview** of one prompt: its body and, per hole, where today's value
@@ -60,8 +61,13 @@ CASE_URI = ('imas:hdf5?path='
 PAGE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                     'viz_web', 'static', 'index.html')
 
-PROMPT_TOOLS = ('list_prompts', 'prompt_detail', 'fill_prompt', 'save_prompt',
-                'edit_prompt', 'delete_prompt')
+# What the page asks the catalogue with: one name, and the action inside it.
+CATALOGUE_TOOL = 'manage_prompt'
+PROMPT_ACTIONS = ('list', 'detail', 'fill', 'save', 'edit', 'delete')
+# The six gestures stay vocabulary -- the core's method names, and the words
+# a saved prompt or an older transcript may still spell.
+PROMPT_GESTURES = ('list_prompts', 'prompt_detail', 'fill_prompt',
+                   'save_prompt', 'edit_prompt', 'delete_prompt')
 
 
 class _Source:
@@ -137,15 +143,20 @@ def _pumped(qapp, work):
 
 
 class _Page:
-    """The page's two asks: a tool by name, and a route."""
+    """The page's two asks: the catalogue under its one name, and a route."""
 
     def __init__(self, http, qapp):
         self.http = http
         self.qapp = qapp
 
-    def tool(self, name, args=None):
+    def tool(self, action, args=None):
+        """The ask the page makes: one name, and the action inside it. A
+        member name posted here is a call refused before it reaches the core,
+        so the test asks the way the page does."""
         return _pumped(self.qapp, lambda: self.http.post(
-            '/api/tool', json={'name': name, 'args': args or {}}))
+            '/api/tool',
+            json={'name': CATALOGUE_TOOL,
+                  'args': dict(args or {}, action=action)}))
 
     def get(self, path):
         return _pumped(self.qapp, lambda: self.http.get(path))
@@ -178,19 +189,23 @@ def test_the_page_holds_a_catalogue_section():
     assert '<h2>Prompts</h2>' in page
 
 
-def test_the_page_asks_the_catalogue_by_its_six_tool_names():
+def test_the_page_asks_the_catalogue_by_its_one_name_and_its_six_actions():
     """A page that spells a name no tool offers is a click that answers
-    nothing, and the loop's refusal is all the user ever sees. The two
-    writes share one ask: the page picks which one by what it is editing."""
+    nothing, and the loop's refusal is all the user ever sees. Since the
+    merge the page has ONE name to spell and six actions to put in it; the
+    two writes share one ask, the page picking which one by what it is
+    editing."""
     page = open(PAGE, encoding='utf-8').read()
-    for name in PROMPT_TOOLS:
-        assert ("'%s'" % name) in page, 'the page never spells %s' % name
-    assert "var tool = promptsEditing ? 'edit_prompt' : 'save_prompt';" \
-        in page
-    assert 'notesFetch(tool, args)' in page
-    asked = [one for one in PROMPT_TOOLS if ("notesFetch('%s'" % one) in page]
-    assert asked == ['list_prompts', 'prompt_detail', 'fill_prompt',
-                     'delete_prompt']
+    assert ("notesFetch('%s'" % CATALOGUE_TOOL) in page
+    for spelling in ("{ action: 'list' }", "{ action: 'detail',",
+                     "{ action: 'fill',", "{ action: 'delete',",
+                     "var action = promptsEditing ? 'edit' : 'save';",
+                     'args.action = action;'):
+        assert spelling in page, 'the page never asks %s' % spelling
+    # A member name left on the page is a call the loop refuses before the
+    # core: the six gestures are vocabulary, not asks.
+    left = [one for one in PROMPT_GESTURES if ("'%s'" % one) in page]
+    assert left == [], 'the page still spells a merged-away name: %s' % left
 
 
 def test_the_page_fills_the_box_and_can_run_what_it_filled():
@@ -216,14 +231,14 @@ def test_the_page_names_where_each_value_came_from():
 
 def test_the_listing_is_the_catalogue_the_store_reads(home, tmp_path, qapp):
     page = _web(tmp_path, qapp)
-    filed = page.tool('save_prompt',
+    filed = page.tool('save',
                       {'name': 'Profils 1D', 'text': 'trace {ids} de {shot}',
                        'category': 'profils', 'description': 'une ligne',
                        'variables': 'ids=core_profiles; shot='})
     assert filed.status_code == 200
-    page.tool('save_prompt', {'name': 'Bilan', 'text': 'le bilan'})
+    page.tool('save', {'name': 'Bilan', 'text': 'le bilan'})
 
-    answer = page.tool('list_prompts')
+    answer = page.tool('list')
     assert answer.status_code == 200
     result = answer.json()['result']
     assert result['total'] == 2
@@ -239,13 +254,13 @@ def test_the_listing_is_the_catalogue_the_store_reads(home, tmp_path, qapp):
 def test_a_narrowed_listing_and_a_cut_one_are_both_said(home, tmp_path, qapp):
     page = _web(tmp_path, qapp)
     for n in range(3):
-        page.tool('save_prompt', {'name': 'Prompt %d' % n,
-                                  'text': 'un %d' % n})
+        page.tool('save', {'name': 'Prompt %d' % n,
+                           'text': 'un %d' % n})
     names = [one['name'] for one in
-             page.tool('list_prompts', {'query': 'Prompt 2'})
+             page.tool('list', {'query': 'Prompt 2'})
              .json()['result']['prompts']]
     assert names == ['Prompt 2']
-    cut = page.tool('list_prompts', {'limit': 1}).json()['result']
+    cut = page.tool('list', {'limit': 1}).json()['result']
     assert cut['total'] == 3 and len(cut['prompts']) == 1
     assert '1 of 3 prompts are answered' in cut['truncated']
 
@@ -255,10 +270,10 @@ def test_a_narrowed_listing_and_a_cut_one_are_both_said(home, tmp_path, qapp):
 def test_the_preview_says_where_todays_value_would_come_from(home, tmp_path,
                                                              qapp):
     page = _web(tmp_path, qapp)
-    page.tool('save_prompt', {'name': 'Trois trous',
-                              'text': 'trace {ids} de {shot} à {rho}',
-                              'variables': 'ids=core_profiles; shot='})
-    detail = page.tool('prompt_detail', {'name': 'Trois trous'})
+    page.tool('save', {'name': 'Trois trous',
+                       'text': 'trace {ids} de {shot} à {rho}',
+                       'variables': 'ids=core_profiles; shot='})
+    detail = page.tool('detail', {'name': 'Trois trous'})
     assert detail.status_code == 200
     result = detail.json()['result']
     assert result['text'] == 'trace {ids} de {shot} à {rho}'
@@ -272,7 +287,7 @@ def test_the_preview_says_where_todays_value_would_come_from(home, tmp_path,
 def test_the_preview_of_a_name_the_catalogue_does_not_hold_is_a_refusal(
         home, tmp_path, qapp):
     page = _web(tmp_path, qapp)
-    answer = page.tool('prompt_detail', {'name': 'inexistant'})
+    answer = page.tool('detail', {'name': 'inexistant'})
     assert answer.status_code == 400
     assert 'no prompt "inexistant"' in answer.json()['error']
 
@@ -281,10 +296,10 @@ def test_the_preview_of_a_name_the_catalogue_does_not_hold_is_a_refusal(
 
 def test_the_fill_puts_the_open_shot_in_the_text(home, tmp_path, qapp):
     page = _web(tmp_path, qapp)
-    page.tool('save_prompt', {'name': 'Spectro',
-                              'text': 'le spectrogramme du {shot}',
-                              'variables': 'shot='})
-    answer = page.tool('fill_prompt', {'name': 'Spectro'})
+    page.tool('save', {'name': 'Spectro',
+                       'text': 'le spectrogramme du {shot}',
+                       'variables': 'shot='})
+    answer = page.tool('fill', {'name': 'Spectro'})
     assert answer.status_code == 200
     result = answer.json()['result']
     assert result['text'] == 'le spectrogramme du 54924'
@@ -295,13 +310,13 @@ def test_two_open_cases_are_said_rather_than_one_of_them_guessed(home, tmp_path,
                                                                 qapp):
     page = _web(tmp_path, qapp,
                 uris=(CASE_URI, CASE_URI.replace('54924', '112932')))
-    page.tool('save_prompt', {'name': 'Spectro',
-                              'text': 'le spectrogramme du {shot}',
-                              'variables': 'shot='})
-    answer = page.tool('fill_prompt', {'name': 'Spectro'})
+    page.tool('save', {'name': 'Spectro',
+                       'text': 'le spectrogramme du {shot}',
+                       'variables': 'shot='})
+    answer = page.tool('fill', {'name': 'Spectro'})
     assert answer.status_code == 400
     assert 'nobody answered' in answer.json()['error']
-    context = page.tool('list_prompts').json()['result']['context']
+    context = page.tool('list').json()['result']['context']
     assert '2 cases are open' in context['note']
     assert 'shot' not in context
 
@@ -309,16 +324,16 @@ def test_two_open_cases_are_said_rather_than_one_of_them_guessed(home, tmp_path,
 def test_a_hole_nobody_answered_refuses_the_fill_from_the_page(home, tmp_path,
                                                               qapp):
     page = _web(tmp_path, qapp)
-    page.tool('save_prompt', {'name': 'Rho', 'text': 'trace à {rho}'})
-    answer = page.tool('fill_prompt', {'name': 'Rho'})
+    page.tool('save', {'name': 'Rho', 'text': 'trace à {rho}'})
+    answer = page.tool('fill', {'name': 'Rho'})
     assert answer.status_code == 400
     assert '{rho}' in answer.json()['error']
     # Typed from the form, the same fill answers.
-    filled = page.tool('fill_prompt', {'name': 'Rho',
-                                       'values': {'rho': '0.4'}})
+    filled = page.tool('fill', {'name': 'Rho',
+                                'values': {'rho': '0.4'}})
     assert filled.status_code == 200
     assert filled.json()['result']['text'] == 'trace à 0.4'
-    again = page.tool('prompt_detail', {'name': 'Rho'}).json()['result']
+    again = page.tool('detail', {'name': 'Rho'}).json()['result']
     assert again['values']['rho'] == {'value': '0.4',
                                       'source': 'the last value you typed '
                                                 'for this prompt'}
@@ -329,7 +344,7 @@ def test_a_hole_nobody_answered_refuses_the_fill_from_the_page(home, tmp_path,
 def test_a_turn_of_the_page_can_be_filed_read_back_edited_and_deleted(
         home, tmp_path, qapp):
     page = _web(tmp_path, qapp)
-    filed = page.tool('save_prompt',
+    filed = page.tool('save',
                       {'name': 'Comparaison',
                        'text': 'compare {ids} de {case} avec la figure '
                                '{figure}',
@@ -338,27 +353,27 @@ def test_a_turn_of_the_page_can_be_filed_read_back_edited_and_deleted(
     assert filed['holes'] == ['ids', 'case', 'figure']
     assert filed['variables'] == {'ids': '', 'case': '', 'figure': ''}
 
-    edited = page.tool('edit_prompt',
+    edited = page.tool('edit',
                        {'name': 'Comparaison', 'text': 'compare {ids}',
                         'variables': 'ids=core_profiles'})
     assert edited.status_code == 200
     assert edited.json()['result']['id'] == filed['id']
     assert edited.json()['result']['holes'] == ['ids']
 
-    gone = page.tool('delete_prompt', {'name': 'Comparaison'})
+    gone = page.tool('delete', {'name': 'Comparaison'})
     assert gone.json()['result'] == {'deleted': filed['id'],
                                      'scope': 'personal', 'path': filed['path']}
-    assert page.tool('list_prompts').json()['result']['prompts'] == []
+    assert page.tool('list').json()['result']['prompts'] == []
 
 
 def test_a_shared_write_the_node_cannot_answer_is_refused_where_the_page_reads_it(
         home, tmp_path, qapp):
     page = _web(tmp_path, qapp)
-    answer = page.tool('save_prompt', {'name': 'Équipe', 'text': 'un',
-                                       'scope': 'shared'})
+    answer = page.tool('save', {'name': 'Équipe', 'text': 'un',
+                                'scope': 'shared'})
     assert answer.status_code == 400
     assert 'SharedPromptsDir' in answer.json()['error']
-    assert page.tool('list_prompts').json()['result']['prompts'] == []
+    assert page.tool('list').json()['result']['prompts'] == []
 
 
 # ------------------------------------------------------------------- the guards
@@ -368,12 +383,18 @@ def test_a_parameter_the_tool_does_not_offer_is_refused_before_the_core(
     """The tool schema is the contract: the page cannot reach a core method
     with a word the tool never offered."""
     page = _web(tmp_path, qapp)
-    answer = page.tool('fill_prompt', {'name': 'x', 'coucou': 'y'})
+    answer = page.tool('fill', {'name': 'x', 'coucou': 'y'})
     assert answer.status_code == 400
     assert 'coucou' in answer.json()['error']
 
 
-def test_the_six_names_are_the_tools_the_page_is_offered(home, tmp_path, qapp):
+def test_the_catalogue_is_the_one_name_the_page_is_offered(home, tmp_path,
+                                                           qapp):
+    """What `/api/tools` answers is what the page may spell: the merged name,
+    and none of the six gestures it stands for."""
     page = _web(tmp_path, qapp)
     offered = {one['name'] for one in page.get('/api/tools').json()['tools']}
-    assert set(PROMPT_TOOLS) <= offered
+    assert CATALOGUE_TOOL in offered
+    for gesture in PROMPT_GESTURES:
+        assert gesture not in offered, \
+            '%s is on the wire although it is an action now' % gesture

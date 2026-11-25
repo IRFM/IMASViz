@@ -1239,141 +1239,109 @@ TOOLS = [
         {'type': 'object', 'properties': {},
          'additionalProperties': False},
     ),
+    # One name for the prompt catalogue, because the six asks are one
+    # object looked at, filled, filed, changed and taken away. The
+    # discriminant is `action`: no member takes one of its own (test_175
+    # refuses a discriminant a member already answers for itself). `scope`
+    # is not the discriminant here either -- it is WHICH catalogue, and
+    # four of the six members answer it for themselves.
     _tool(
-        'list_prompts',
-        'The prompt catalogue: the prompts the user wrote once and '
-        'keeps to ask again, each with its id, its name, its category, '
-        'its one-line description and the holes it opens. The personal '
-        'catalogue is under ~/.imasviz/prompts and the shared one under '
-        'the folder SharedPromptsDir names (an unnamed shared folder '
-        'costs its own half of the list, named in '
+        'manage_prompt',
+        'The catalogue of prompts the user wrote once and keeps to ask '
+        'again -- `action` picks the ask. "list": the prompts, each with '
+        'its id, its name, its category, its one-line description and '
+        'the holes it opens; `category` and `query` narrow it and '
+        '`categories` answers how many prompts each category holds. The '
+        'personal catalogue is under ~/.imasviz/prompts and the shared '
+        'one under the folder SharedPromptsDir names (an unnamed shared '
+        'folder costs its own half of the list, named in '
         'catalogues_unavailable -- the personal prompts still answer). '
-        '`category` and `query` narrow it, and `categories` answers how '
-        'many prompts each category holds. Ask of it when the user says '
-        '"relance le prompt …" / "run my usual X" and you do not know '
-        'the wording they filed.',
+        'Ask of it when the user says "relance le prompt ..." or "run my '
+        'usual X" and you do not know the wording they filed. "detail": '
+        'one prompt whole -- its body with its holes still open, and '
+        '`values`: what each hole would be answered from right now (what '
+        'the user typed last time, what this session knows, what the '
+        'file declares) and null for the ones that still need a value. '
+        '`name` is the id or the display name; a name two prompts carry '
+        'is refused naming their ids. Asking this remembers nothing: it '
+        'is the look, not the typing. "fill": the prompt as it will be '
+        'asked, its holes filled, and nothing run. A hole is filled from '
+        'the first source that answers it -- what you name in `values`, '
+        'what was typed last time for that prompt, what this session '
+        'knows (its open case: case, uri, shot, run, database; its one '
+        'open window: figure), what the file declares -- and the answer '
+        'says which one it was. A hole none of them answers is a refusal '
+        'naming the holes: a prompt is never sent with {shot} in it and '
+        'never sent with a guess. Take the `text` this answers and ask '
+        'it as the user asked it -- filling is not running. "save": one '
+        'prompt into the catalogue, named and described, so the next run '
+        'does not type it again; `text` is the prompt as it is asked, '
+        'with its holes spelled {name}, and `variables` left out is read '
+        'off the text (every hole it opens, asked for on every run), a '
+        'hole declared and never opened being refused by name. The user '
+        'asks for this in their own words ("garde ce prompt", '
+        '"enregistre-le") -- a turn that merely drew a figure is not an '
+        'ask to file its wording, and `scope="shared"` files it in the '
+        'folder the team reads, which is a line others see. "edit": one '
+        'prompt of the catalogue '
+        'changed in place, keeping the id the pages, the sessions and the '
+        'remembered values read it under. A field you leave out keeps the '
+        'one the prompt held, a field you name replaces it, an empty one '
+        'clears it -- the body excepted, which an edit cannot empty; a '
+        'new prompt is "save". "delete": one prompt out of the '
+        'catalogue, and the values that were remembered for it. Not '
+        'there is a refusal naming the ids the catalogue holds. This '
+        'takes a file the user wrote off the disk: it is asked for in '
+        'their own words, not decided for them. `scope` is WHICH '
+        'catalogue, not which ask -- left out, both are asked.',
         {'type': 'object', 'properties': {
+            'action': {'type': 'string',
+                       'enum': ['list', 'detail', 'fill', 'save', 'edit',
+                                'delete']},
+            'name': {'type': 'string',
+                     'description': 'the id or the display name of the '
+                                    'prompt; asked of the five asks but '
+                                    '"list", which is what `query` '
+                                    'narrows'},
             'scope': {'type': ['string', 'null'],
                       'enum': ['personal', 'shared'],
                       'description': 'the one catalogue to ask of; left '
                                      'out, both are asked'},
+            'text': {'type': ['string', 'null'],
+                     'description': '"save": the prompt, holes spelled '
+                                    '{name}. "edit": its new body, the '
+                                    'one it held when left out'},
             'category': {'type': ['string', 'null'],
-                         'description': 'the prompts that name this '
-                                        'category; compared without '
-                                        'minding the case'},
-            'query': {'type': ['string', 'null'],
-                      'description': 'a word of the name, the '
-                                     'description, the category or the '
-                                     'id'},
-            'limit': {'type': 'integer', 'default': 100},
-        }, 'additionalProperties': False},
-    ),
-    _tool(
-        'prompt_detail',
-        'One prompt of the catalogue, whole: its body with its holes '
-        'still open, and `values` -- what each hole would be answered '
-        'from right now (what the user typed last time, what this '
-        'session knows, what the file declares) and null for the ones '
-        'that still need a value. `name` is the id or the display name; '
-        'a name two prompts carry is refused naming their ids. Asking '
-        'this remembers nothing: it is the look, not the typing.',
-        {'type': 'object', 'properties': {
-            'name': {'type': 'string',
-                     'description': 'the id or the display name of the '
-                                    'prompt'},
-            'scope': {'type': ['string', 'null'],
-                      'enum': ['personal', 'shared']},
-        }, 'required': ['name'], 'additionalProperties': False},
-    ),
-    _tool(
-        'fill_prompt',
-        'The prompt as it will be asked, its holes filled -- and '
-        'nothing run. A hole is filled from the first source that '
-        'answers it: what you name in `values`, what was typed last '
-        'time for that prompt, what this session knows (its open case: '
-        'case, uri, shot, run, database; its one open window: figure), '
-        'what the file declares -- and the answer says which one it '
-        'was. A hole none of them answers is a refusal naming the '
-        'holes: a prompt is never sent with {shot} in it and never '
-        'sent with a guess. Take the `text` this answers and ask it as '
-        'the user asked it -- filling is not running.',
-        {'type': 'object', 'properties': {
-            'name': {'type': 'string'},
+                         'description': '"list": the prompts that name '
+                                        'this category, compared without '
+                                        'minding the case. "save" and '
+                                        '"edit": the category to put'},
+            'description': {'type': ['string', 'null'],
+                            'description': '"save" and "edit": one line '
+                                           'saying what it asks, for the '
+                                           'reader of the list'},
+            'variables': {'type': ['object', 'string', 'null'],
+                          'description': '"save" and "edit": hole -> '
+                                         'default, as an object or as the '
+                                         '"a=1; b=" line the file spells; '
+                                         'left out, read off the text'},
+            'prompt_id': {'type': ['string', 'null'],
+                          'description': '"save": the file name to file '
+                                         'it under; left out, the slug of '
+                                         'the name'},
             'values': {'type': ['object', 'null'],
                        'additionalProperties': {'type': 'string'},
-                       'description': 'the hole -> the value to use '
-                                      'this time, for the holes the '
+                       'description': '"fill": the hole -> the value to '
+                                      'use this time, for the holes the '
                                       'session does not answer'},
-            'scope': {'type': ['string', 'null'],
-                      'enum': ['personal', 'shared']},
-        }, 'required': ['name'], 'additionalProperties': False},
-    ),
-    _tool(
-        'save_prompt',
-        'One prompt into the catalogue, named and described, so the '
-        'next run does not type it again. `text` is the prompt as it '
-        'is asked, with its holes spelled {name}; `variables` left out '
-        'is read off the text (every hole it opens, asked for on every '
-        'run), and a hole declared and never opened is refused by name. '
-        'The user asks for this in their own words ("garde ce prompt", '
-        '"enregistre-le") -- a turn that merely drew a figure is not an '
-        'ask to file its wording. scope=shared writes into the folder '
-        'the team reads, which is a line others see: it is asked for in '
-        'the user\'s own words too.',
-        {'type': 'object', 'properties': {
-            'name': {'type': 'string',
-                     'description': 'the name the catalogue lists it by'},
-            'text': {'type': 'string',
-                     'description': 'the prompt, holes spelled {name}'},
-            'category': {'type': ['string', 'null']},
-            'description': {'type': ['string', 'null'],
-                            'description': 'one line saying what it '
-                                           'asks, for the reader of '
-                                           'the list'},
-            'variables': {'type': ['object', 'string', 'null'],
-                          'description': 'hole -> default, as an '
-                                         'object or as the "a=1; b=" '
-                                         'line the file spells; left '
-                                         'out, read off the text'},
-            'scope': {'type': 'string', 'enum': ['personal', 'shared'],
-                      'default': 'personal'},
-            'prompt_id': {'type': ['string', 'null'],
-                          'description': 'the file name to file it '
-                                         'under; left out, the slug of '
-                                         'the name'},
-        }, 'required': ['name', 'text'], 'additionalProperties': False},
-    ),
-    _tool(
-        'edit_prompt',
-        'One prompt of the catalogue, changed in place: it keeps the id '
-        'the pages, the sessions and the remembered values read it '
-        'under. A field you leave out keeps the one the prompt held, a '
-        'field you name replaces it, an empty one clears it -- the body '
-        'excepted, which an edit cannot empty. A new prompt is '
-        'save_prompt, not this one.',
-        {'type': 'object', 'properties': {
-            'name': {'type': 'string'},
-            'text': {'type': ['string', 'null'],
-                     'description': 'the new body; left out, the one '
-                                    'the prompt held'},
-            'category': {'type': ['string', 'null']},
-            'description': {'type': ['string', 'null']},
-            'variables': {'type': ['object', 'string', 'null']},
-            'scope': {'type': ['string', 'null'],
-                      'enum': ['personal', 'shared']},
-        }, 'required': ['name'], 'additionalProperties': False},
-    ),
-    _tool(
-        'delete_prompt',
-        'One prompt out of the catalogue, and the values that were '
-        'remembered for it. Not there is a refusal naming the ids the '
-        'catalogue holds. This takes a file the user wrote off the disk: '
-        'it is asked for in their own words, not decided for them.',
-        {'type': 'object', 'properties': {
-            'name': {'type': 'string'},
-            'scope': {'type': ['string', 'null'],
-                      'enum': ['personal', 'shared']},
-        }, 'required': ['name'], 'additionalProperties': False},
+            'query': {'type': ['string', 'null'],
+                      'description': '"list": a word of the name, the '
+                                     'description, the category or the '
+                                     'id'},
+            'limit': {'type': ['integer', 'null'],
+                      'description': '"list": how many prompts come back; '
+                                     '100 when left out'},
+        }, 'required': ['action'], 'additionalProperties': False},
     ),
 ]
 
@@ -1901,6 +1869,53 @@ ACTION_PARAMETERS = {
         'figure_key': {'type': ['string', 'null']},
         'name': {'type': ['string', 'null']},
     }, ('uri', 'path')),
+    # The catalogue of prompts. `list` is the one ask that takes no `name`:
+    # it is the ask that goes looking for one, so its row is the only one
+    # with no required parameter, and `query` -- which no other action takes
+    # -- is how it is narrowed.
+    'list_prompts': ({
+        'scope': {'type': ['string', 'null'], 'enum': ['personal',
+                                                       'shared']},
+        'category': {'type': ['string', 'null']},
+        'query': {'type': ['string', 'null']},
+        'limit': {'type': 'integer', 'default': 100},
+    }, ()),
+    'prompt_detail': ({
+        'name': {'type': 'string'},
+        'scope': {'type': ['string', 'null'], 'enum': ['personal',
+                                                       'shared']},
+    }, ('name',)),
+    'fill_prompt': ({
+        'name': {'type': 'string'},
+        'values': {'type': ['object', 'null'],
+                   'additionalProperties': {'type': 'string'}},
+        'scope': {'type': ['string', 'null'], 'enum': ['personal',
+                                                       'shared']},
+    }, ('name',)),
+    'save_prompt': ({
+        'name': {'type': 'string'},
+        'text': {'type': 'string'},
+        'category': {'type': ['string', 'null']},
+        'description': {'type': ['string', 'null']},
+        'variables': {'type': ['object', 'string', 'null']},
+        'scope': {'type': 'string', 'enum': ['personal', 'shared'],
+                  'default': 'personal'},
+        'prompt_id': {'type': ['string', 'null']},
+    }, ('name', 'text')),
+    'edit_prompt': ({
+        'name': {'type': 'string'},
+        'text': {'type': ['string', 'null']},
+        'category': {'type': ['string', 'null']},
+        'description': {'type': ['string', 'null']},
+        'variables': {'type': ['object', 'string', 'null']},
+        'scope': {'type': ['string', 'null'], 'enum': ['personal',
+                                                       'shared']},
+    }, ('name',)),
+    'delete_prompt': ({
+        'name': {'type': 'string'},
+        'scope': {'type': ['string', 'null'], 'enum': ['personal',
+                                                       'shared']},
+    }, ('name',)),
 }
 
 # The few names a merged group offers under a different spelling than the
