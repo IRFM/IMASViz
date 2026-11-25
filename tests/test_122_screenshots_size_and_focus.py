@@ -248,10 +248,11 @@ def test_focus_window_refuses_a_name_the_session_does_not_hold(qtbot):
         core.focus_window('Banana')
     assert 'Banana' in str(excinfo.value)
     # The refusal is about a figure key, not a case URI: it must not steer
-    # the model to open_case first (which it cannot fix, since the name is
-    # not a case URI).
-    assert 'open_case' not in str(excinfo.value), \
-        'the refusal for a figure key must not say "open it with open_case"'
+    # the model to the case-opening call first (which it cannot fix, since
+    # the name is not a case URI).
+    assert 'manage_case' not in str(excinfo.value), \
+        'the refusal for a figure key must not steer the model to the ' \
+        'case-opening call'
 
 
 def test_focus_window_refusal_names_the_open_figure_keys(qtbot):
@@ -274,8 +275,9 @@ def test_focus_window_refusal_names_the_open_figure_keys(qtbot):
     message = str(excinfo.value)
     # The real key is named in the refusal.
     assert 'Plot1' in message, 'the refusal must name the open figure key'
-    # And it does not say "open_case" (the name is a figure key, not a case).
-    assert 'open_case' not in message
+    # And it does not steer to the case (the name is a figure key, not a
+    # case URI), whatever the case-opening call is spelled as today.
+    assert 'manage_case' not in message
 
 
 def test_focus_window_refuses_a_size_that_is_not_pixels(qtbot):

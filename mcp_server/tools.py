@@ -44,8 +44,8 @@ INSTRUCTIONS = """IMASViz, the ITER/CEA visualization front-end for IMAS plasma-
 cases, driven by name and answered by name.
 
 How to work with it:
-1. open_case(uri) -- the data dictionary is asked of the case when you do
-   not name one;
+1. manage_case(action='open', uri) -- the data dictionary is asked of the
+   case when you do not name one;
 2. list_idss(uri) tells which IDSs the case holds and which occurrences;
 3. load_ids(uri, ids_name, occurrence) builds the tree branch;
 4. search_nodes(uri, query) names the leaves in every spelling the tree
@@ -61,7 +61,8 @@ How to work with it:
    equilibrium(action='at_time') puts one instant's surface with its
    radial profiles in one window, the global quantities of the slice
    coming back in the answer;
-6. state is read with list_selection (what the case holds selected),
+6. state is read with manage_selection(action='list') (what the case
+   holds selected),
    describe_node (what one node holds: documentation, units, size, the
    finite minimum and maximum, the nan and inf counts, a bounded
    preview), describe_ids (what the data dictionary says about an IDS:
@@ -132,28 +133,38 @@ def buildServer(core, dispatcher, name='imasviz'):
 
     # ------------------------------------------------------------------ cases
 
-    @server.tool(name='open_case')
-    def open_case(uri: str, dd_version: Optional[str] = None):
-        """Open one IMAS case by URI (imas:hdf5?path=..., or an UDA URI).
+    @server.tool(name='manage_case')
+    def manage_case(action: Literal['open', 'list', 'close'],
+                    uri: Optional[str] = None,
+                    dd_version: Optional[str] = None):
+        """The cases this session works on, and `action` picks the ask.
 
-        `dd_version` pins the data dictionary the case is read at; left
-        out, the case is asked which one its own IDSs were written with,
-        because a case stored under another major version is refused at
-        every read otherwise.
+        'open': one IMAS case by URI (imas:hdf5?path=..., or an UDA URI);
+        `dd_version` pins the data dictionary the case is read at, and
+        left out the case is asked which one its own IDSs were written
+        with, because a case stored under another major version is refused
+        at every read otherwise. 'list': the cases open, with their loaded
+        occurrences. 'close': one open case, its view, its windows and its
+        bookkeeping, for good. `uri` is Optional because "list" names no
+        case; a word the asked action does not take is refused by name
+        instead of travelling to the core.
         """
-        return _run(partial(core.open_case, uri, dd_version=dd_version))
-
-    @server.tool(name='list_cases')
-    def list_cases():
-        """The cases open in this session, with their loaded occurrences."""
-        # The SDK answers a top-level list as one content block per
-        # element; the list is a value under a name, not the answer.
-        return {'cases': _run(core.list_cases)}
-
-    @server.tool(name='close_case')
-    def close_case(uri: str):
-        """Close one open case: its view, its windows, its bookkeeping."""
-        return _run(partial(core.close_case, uri))
+        gesture = gestureOf('manage_case', {'action': action})
+        args = {field: value for field, value in (
+            ('uri', uri), ('dd_version', dd_version)) if value is not None}
+        unknown = unknownParameters(gesture, args)
+        if unknown:
+            raise ValueError(unknownParameterRefusal(gesture, unknown))
+        missing = missingParameters(gesture, args)
+        if missing:
+            raise ValueError(missingParameterRefusal(gesture, missing))
+        spelled = argumentsForMember(gesture, args)
+        answer = _run(partial(getattr(core, gesture), **spelled))
+        if gesture == 'list_cases':
+            # The SDK answers a top-level list as one content block per
+            # element; the list is a value under a name, not the answer.
+            return {'cases': answer}
+        return answer
 
     # -------------------------------------------------------------------- ids
 

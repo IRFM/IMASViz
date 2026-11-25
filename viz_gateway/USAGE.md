@@ -142,8 +142,9 @@ Pour un **script** ou une **API**, on garde l'en-tête `Authorization: Bearer
 `POST /login` avec un corps JSON `{"token": "..."}` pour récupérer le
 cookie.
 
-Puis, depuis l'app, tout est transité dans l'ordre : la page, `list_cases`,
-`open_case`, le flux `POST /api/agent`, les gestures d'outils.
+Puis, depuis l'app, tout est transité dans l'ordre : la page,
+`manage_case(action="list")`, `manage_case(action="open")`, le flux
+`POST /api/agent`, les gestures d'outils.
 
 Exemple en `curl` :
 
@@ -153,12 +154,12 @@ TOKEN=$(python3 -c "import json,os;print(json.load(open(os.path.expanduser('~/.i
 # 1. List what's open (empty at start)
 curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8760/api/tool \
     -X POST -H 'content-type: application/json' \
-    -d '{"name":"list_cases","args":{}}'
+    -d '{"name":"manage_case","args":{"action":"list"}}'
 
 # 2. Open a case (adjust the URI to the one you mean)
 curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8760/api/tool \
     -X POST -H 'content-type: application/json' \
-    -d '{"name":"open_case","args":{"uri":"imas:hdf5?path=/…/west/3/54924/0","dd_version":"3.35.0"}}'
+    -d '{"name":"manage_case","args":{"action":"open","uri":"imas:hdf5?path=/…/west/3/54924/0","dd_version":"3.35.0"}}'
 
 # 3. Ask the agent for a line about it
 curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8760/api/agent \

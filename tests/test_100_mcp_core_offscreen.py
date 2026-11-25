@@ -40,7 +40,9 @@ import re
 import pytest
 
 from imasviz.VizAgent.tools import (argumentsForMember, gestureOf,
-                                    resolveCall, unknownParameterRefusal,
+                                    missingParameterRefusal,
+                                    missingParameters, resolveCall,
+                                    unknownParameterRefusal,
                                     unknownParameters)
 from mcp_server.core import McpGuiCore
 
@@ -121,6 +123,65 @@ def test_a_case_that_is_not_open_is_refused_by_name(core):
     session, _home = core
     with pytest.raises(ValueError, match='is not open in this session'):
         session.list_idss('imas:hdf5?path=/no/such/case')
+
+
+def test_the_case_calls_a_turn_types_answer_the_three_gestures(core):
+    """The three asks about the cases answer one name, and its `action`
+    says which. Nothing here asks a gesture of the session: the case the
+    ids before this one opened is the one the rest of the module works on,
+    and a probe that ran the close would take it away. What is pinned is
+    the seam -- the word a turn types and the gesture it reaches, and the
+    refusals a wrong word meets, each naming the call that does answer the
+    gesture it means.
+
+    The last block is the one a merge cannot get wrong in silence: a turn
+    that types the old name is refused, and the refusal has to name the
+    call that replaced it, or the next turn types the old one again.
+    """
+    session, _home = core
+    for action, member in (('open', 'open_case'), ('list', 'list_cases'),
+                           ('close', 'close_case')):
+        assert gestureOf('manage_case', {'action': action}) == member
+        name, spelled = resolveCall('manage_case',
+                                    {'action': action, 'uri': CASE_URI})
+        assert name == member
+        assert 'action' not in spelled, \
+            'the discriminant would reach %s as a stray parameter' % member
+
+    # A `dd_version` beside "list" is a word of the open ask. The group
+    # schema has to declare it, since "open" needs it; only the row of the
+    # action can say it is a stray here -- and "list" takes nothing at all,
+    # which the refusal says out loud before it names the call that does
+    # take the word.
+    stray = unknownParameters('list_cases',
+                              {'uri': CASE_URI, 'dd_version': '3.35.0'})
+    assert stray == ['dd_version', 'uri'], stray
+    text = unknownParameterRefusal('list_cases', stray)
+    assert 'takes no parameter at all' in text, text
+    assert 'manage_case(action="list")' in text, text
+    assert 'manage_case(action="open")' in text, text
+
+    # And a "close" that names no case is an incomplete call, refused
+    # before the core is asked. The guard that decides whether a close may
+    # run at all is asked about the gesture behind the call (`close_case`
+    # in `DESTRUCTIVE_GESTURES`), which `test_135` pins end to end.
+    missing = missingParameters('close_case', {})
+    assert missing == ['uri']
+    refusal = missingParameterRefusal('close_case', missing)
+    assert 'manage_case(action="close", uri)' in refusal, refusal
+
+    for member, action in (('open_case', 'open'), ('list_cases', 'list'),
+                           ('close_case', 'close')):
+        with pytest.raises(ValueError) as refused:
+            resolveCall(member, {})
+        # The head of the call, with the action that means this gesture;
+        # the parameters that follow are the row's own, pinned above.
+        assert 'manage_case(action="%s"' % action in str(refused.value), \
+            refused.value
+
+    # The probe asked nothing of the session, so the case stands as the
+    # ids before it left it.
+    assert [entry['uri'] for entry in session.list_cases()] == [CASE_URI]
 
 
 # -------------------------------------------------------------------- load

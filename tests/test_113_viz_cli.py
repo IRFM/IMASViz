@@ -159,7 +159,8 @@ def buildSession(qapp, tmp_path, llm=None, shots=None, max_turns=8):
 
 def toolCall():
     return LLMResponse(content='',
-                       tool_calls=[{'name': 'list_cases', 'args': {}}],
+                       tool_calls=[{'name': 'manage_case',
+                                    'args': {'action': 'list'}}],
                        finish_reason='tool_calls')
 
 
@@ -259,12 +260,12 @@ def test_mcp_answers_endpoint_models_and_every_tool(qapp, tmp_path, capsys):
 
 def test_mcp_one_gesture_and_the_refusal_of_another(qapp, tmp_path):
     session, _ = buildSession(qapp, tmp_path)
-    execute(parse('/mcp open_case'), session)
+    execute(parse('/mcp manage_case'), session)
     try:
         execute(parse('/mcp banana'), session)
     except ValueError as e:
         assert 'banana' in str(e)
-        assert 'open_case' in str(e)     # the answer names what it does hold
+        assert 'manage_case' in str(e)   # the answer names what it does hold
     else:
         raise AssertionError('an unknown gesture must be refused by name')
 

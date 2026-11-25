@@ -39,7 +39,9 @@ IDS_NAME = 'equilibrium'
 EQUILIBRIUM_OCCURRENCES = [0, 1, 2, 3]
 
 EXPECTED_TOOLS = {
-    'open_case', 'list_cases', 'close_case',
+    # The three asks about the cases of the session answer one name, with
+    # `action` saying which, as they do on the loop face.
+    'manage_case',
     'list_idss', 'load_ids', 'inspect_tree',
     # The three asks about the selection answer one name, as they do on the
     # loop face.
@@ -186,7 +188,8 @@ def _payload(result):
 
 
 def _openCase(session):
-    return session.call_tool('open_case', {
+    return session.call_tool('manage_case', {
+        'action': 'open',
         'uri': CASE_URI, 'dd_version': CASE_DATA_DICTIONARY_VERSION})
 
 
@@ -195,7 +198,7 @@ def _listIdss(session, uri):
 
 
 def _listCases(session):
-    return session.call_tool('list_cases', {})
+    return session.call_tool('manage_case', {'action': 'list'})
 
 
 def _getLogs(session):
@@ -221,7 +224,8 @@ def test_the_transport_lists_every_tool_and_says_the_method(mcpSession):
     names = {tool.name for tool in listed.tools}
     assert EXPECTED_TOOLS <= names, names
     assert 'imasviz' in (init.serverInfo.name or '').lower(), init.serverInfo
-    assert 'open_case' in (init.instructions or ''), (init.instructions or '')[:80]
+    instructions = init.instructions or ''
+    assert 'manage_case' in instructions, instructions[:80]
 
 
 def test_open_case_comes_back_over_the_wire(mcpSession):

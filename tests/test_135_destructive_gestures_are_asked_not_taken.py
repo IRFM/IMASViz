@@ -203,10 +203,14 @@ def test_an_asked_new_session_runs_and_clears_the_memory(agent_kwargs):
 def test_an_unasked_close_case_is_refused_and_the_case_stands(agent_kwargs):
     """The third of the three, the one that takes the whole case and its
     own figures: the same refusal, on the same request that does not
-    name it."""
+    name it. The closure is asked the way the cases group answers it
+    (`manage_case(action="close")`) -- the guard decides on the GESTURE
+    behind that call, so a scripted call to the member name would be
+    refused for naming a tool that is no longer offered and would leave
+    the gate unexercised."""
     core = ClosingCore()
     llm = FakeLLMClient(_oneTool(
-        'close_case', {'uri': 'imas:hdf5?path=/fake'},
+        'manage_case', {'action': 'close', 'uri': 'imas:hdf5?path=/fake'},
         'Le cas est encore ouvert, je ne l’ai pas refermé.'))
     agent = AgentLoop(core=core, llm=llm, dispatcher=FakeDispatcher(),
                       **agent_kwargs)
@@ -215,7 +219,8 @@ def test_an_unasked_close_case_is_refused_and_the_case_stands(agent_kwargs):
         'a close_case on a request that does not ask for it does not ' \
         'run: %r' % core.closed
     assert errors == [None]
-    assert 'REFUSAL' in joined and 'close_case' in joined
+    assert ('REFUSAL' in joined
+            and 'manage_case(action="close")' in joined)
 
 
 # ------------------------------------------------------------ the button

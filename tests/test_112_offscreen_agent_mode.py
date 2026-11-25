@@ -99,8 +99,10 @@ def test_happy_path_saves_the_figures_and_the_transcript(qapp, tmp_path):
     event pump."""
     args = buildArgs(tmp_path)
     llm = FakeLLMClient([
-        LLMResponse(content='', tool_calls=[{'name': 'list_cases', 'args': {}}],
-                    finish_reason='tool_calls'),
+        LLMResponse(
+            content='',
+            tool_calls=[{'name': 'manage_case', 'args': {'action': 'list'}}],
+            finish_reason='tool_calls'),
         LLMResponse(content='The case is open and the figure is drawn.',
                     finish_reason='stop'),
     ])
@@ -118,7 +120,7 @@ def test_happy_path_saves_the_figures_and_the_transcript(qapp, tmp_path):
     assert case_files == []
     transcript = (shots / 'transcript.txt').read_text()
     assert 'The case is open and the figure is drawn.' in transcript
-    assert 'list_cases' in transcript
+    assert 'manage_case' in transcript
 
 
 def test_extra_shots_save_the_interface_beside_the_figures(qapp, tmp_path):
@@ -132,8 +134,10 @@ def test_extra_shots_save_the_interface_beside_the_figures(qapp, tmp_path):
     from mcp_server.agent_mode import extrasFromFlag
     args = buildArgs(tmp_path, extra=['--extra-shots', 'app,case-views'])
     llm = FakeLLMClient([
-        LLMResponse(content='', tool_calls=[{'name': 'list_cases', 'args': {}}],
-                    finish_reason='tool_calls'),
+        LLMResponse(
+            content='',
+            tool_calls=[{'name': 'manage_case', 'args': {'action': 'list'}}],
+            finish_reason='tool_calls'),
         LLMResponse(content='The case is open and the figure is drawn.',
                     finish_reason='stop'),
     ])
@@ -191,7 +195,8 @@ def test_max_turns_is_the_limit_and_names_it(qapp, tmp_path):
     from imasviz.VizAgent.llm_client import LLMResponse as Resp
     args = buildArgs(tmp_path, extra=['--max-turns', '2'])
     llm = FakeLLMClient([
-        Resp(content='', tool_calls=[{'name': 'list_cases', 'args': {}}],
+        Resp(content='',
+             tool_calls=[{'name': 'manage_case', 'args': {'action': 'list'}}],
              finish_reason='tool_calls')
         for _ in range(6)
     ])

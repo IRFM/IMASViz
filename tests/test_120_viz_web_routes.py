@@ -346,7 +346,9 @@ def test_agent_turn_that_writes_no_report_names_none(qapp, tmp_path, monkeypatch
     key is what it had to guess at before this."""
     monkeypatch.setenv('HOME', str(tmp_path / 'home'))
     llm = ScriptedLLM([
-        LLMResponse(tool_calls=[{'name': 'list_cases', 'args': {}}], content=''),
+        LLMResponse(tool_calls=[{'name': 'manage_case',
+                                 'args': {'action': 'list'}}],
+                    content=''),
         LLMResponse(content='Le cas est ouvert.', finish_reason='stop'),
     ])
     session, _ = build(qapp, tmp_path, llm=llm)

@@ -103,7 +103,7 @@ def _run(agent, prompt):
 def _make_call_and_answer():
     call = LLMResponse(
         content='',
-        tool_calls=[{'name': 'list_cases', 'args': {}}],
+        tool_calls=[{'name': 'manage_case', 'args': {'action': 'list'}}],
         finish_reason='tool_calls')
     final = LLMResponse(
         content='Here are the cases you asked for.',
@@ -178,7 +178,7 @@ def test_hide_runs_tools_but_hides_the_traffic(qapp, agent_kwargs):
     assert errors == [None]
     assert 'list_cases' in core.called, \
         'hide still runs the agent\'s gesture'
-    assert 'list_cases' not in joined, \
+    assert 'manage_case' not in joined, \
         'hide cuts the tool traffic from the transcript'
     assert 'Here are the cases you asked for.' in joined, \
         'the final answer still reaches the user'
@@ -198,7 +198,7 @@ def test_verbose_shows_the_traffic(qapp, agent_kwargs):
     joined, errors = _run(agent, 'list the cases')
     assert errors == [None]
     assert 'list_cases' in core.called, 'verbose still runs the agent\'s gesture'
-    assert 'list_cases' in joined, 'verbose shows the tool traffic'
+    assert 'manage_case' in joined, 'verbose shows the tool traffic'
     assert 'Here are the cases you asked for.' in joined
 
 

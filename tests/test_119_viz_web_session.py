@@ -308,7 +308,9 @@ def test_a_turn_captures_what_it_drew_or_asked_and_only_that(qapp, tmp_path):
         LLMResponse(content='La figure est tracée, et l''interface.',
                     finish_reason='stop'),
         # Second: nothing is drawn and nothing is asked.
-        LLMResponse(tool_calls=[{'name': 'list_cases', 'args': {}}], content=''),
+        LLMResponse(tool_calls=[{'name': 'manage_case',
+                                 'args': {'action': 'list'}}],
+                    content=''),
         LLMResponse(content='Le cas est ouvert.', finish_reason='stop'),
         # Third: the capture of the older figure is asked.
         LLMResponse(tool_calls=[
@@ -384,7 +386,9 @@ def test_a_turn_that_writes_no_report_names_none(qapp, tmp_path, monkeypatch):
     from -- not a missing key the page would have to guess at."""
     monkeypatch.setenv('HOME', str(tmp_path / 'home'))
     llm = FakeLLMClient([
-        LLMResponse(tool_calls=[{'name': 'list_cases', 'args': {}}], content=''),
+        LLMResponse(tool_calls=[{'name': 'manage_case',
+                                 'args': {'action': 'list'}}],
+                    content=''),
         LLMResponse(content='Le cas est ouvert.', finish_reason='stop'),
     ])
     session, core = build(qapp, tmp_path, llm=llm)
@@ -423,7 +427,9 @@ def test_max_turns_stops_the_loop_and_names_it(qapp, tmp_path):
     (here 6, four more than the limit of 2, so a loop that does not stop
     would run them off and the record would carry no error at all)."""
     llm = FakeLLMClient(
-        [LLMResponse(tool_calls=[{'name': 'list_cases', 'args': {}}], content='')
+        [LLMResponse(tool_calls=[{'name': 'manage_case',
+                                  'args': {'action': 'list'}}],
+                     content='')
          for _ in range(6)])
     session, core = build(qapp, tmp_path, llm=llm, max_turns=2)
     record = inWorker(lambda: session.runTurn('une demande qui ne s''arrête pas'), qapp)
@@ -433,7 +439,7 @@ def test_max_turns_stops_the_loop_and_names_it(qapp, tmp_path):
     assert len(llm.responses) == 4
     # The last action -- the gesture that ran when the budget ran out -- is
     # named in the stop, so the run reads as delivered-and-limited, not failed.
-    assert 'list_cases' in record['error']
+    assert 'manage_case' in record['error']
 
 
 def test_the_context_survives_between_two_turns(qapp, tmp_path):
@@ -442,9 +448,13 @@ def test_the_context_survives_between_two_turns(qapp, tmp_path):
     `test_113` pins the same rule for the REPL; this pins it for the session
     the page drives."""
     llm = FakeLLMClient([
-        LLMResponse(tool_calls=[{'name': 'list_cases', 'args': {}}], content=''),
+        LLMResponse(tool_calls=[{'name': 'manage_case',
+                                 'args': {'action': 'list'}}],
+                    content=''),
         LLMResponse(content='Premier : le cas est ouvert.', finish_reason='stop'),
-        LLMResponse(tool_calls=[{'name': 'list_cases', 'args': {}}], content=''),
+        LLMResponse(tool_calls=[{'name': 'manage_case',
+                                 'args': {'action': 'list'}}],
+                    content=''),
         LLMResponse(content='Deuxieme : toujours le meme cas.', finish_reason='stop'),
     ])
     session, core = build(qapp, tmp_path, llm=llm)

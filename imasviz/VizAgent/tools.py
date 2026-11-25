@@ -19,7 +19,7 @@ SYSTEM_INSTRUCTIONS = """You are the IMASViz assistant for ITER/CEA plasma-fusio
 You control the GUI strictly through the provided tools.
 
 ### MANDATORY WORKFLOW
-1. `open_case(uri)` -> Open the shot.
+1. `manage_case(action="open", uri)` -> Open the shot.
 2. `list_case_idss(uri)` -> Check which IDSs and occurrences actually exist in the case.
 3. `load_ids(uri, ids_name, occurrence)` -> Load the required IDS into the tree.
 4. `inspect_tree(action="search")` or `inspect_tree(action="quantities")` -> Find exact leaf paths.
@@ -37,7 +37,7 @@ You control the GUI strictly through the provided tools.
   - `path`: Specific member of a structure array (e.g., `magnetics.flux_loop[2].flux.data`). To plot two members together, call `plot(mode="single")` twice using `into_figure_key` on the second call—never put `flux_loop` in `indices`.
 - **MULTIPLE FAMILIES:** When asked to plot two different families (e.g., probes then flux loops), create two separate figures unless the user explicitly asks to overlay them ("sur la même figure" / "on the same figure").
 - **WINDOWS & FOCUS:** Do NOT call `manage_window(action="focus")` or `manage_window(action="show")` automatically after plotting. Only call them if the user explicitly asks to bring a window to the front.
-- **DESTRUCTIVE & SHARED ACTIONS:** Never call `manage_window(action="close")`, `close_case`, `manage_session(action="new")`, or write with `scope="shared"` (`manage_note`, the prompt tools) unless the user explicitly asks for it in their prompt.
+- **DESTRUCTIVE & SHARED ACTIONS:** Never call `manage_window(action="close")`, `manage_case(action="close")`, `manage_session(action="new")`, or write with `scope="shared"` (`manage_note`, the prompt tools) unless the user explicitly asks for it in their prompt.
 - **AMBIGUITY:** If a user request is ambiguous (e.g., "sonde 2" when multiple probes exist), list the exact paths found by `inspect_tree(action="search")` and ask the user to choose.
 
 ### RESPONSE FORMAT
@@ -92,29 +92,31 @@ def _tool(name, description, parameters):
 
 
 TOOLS = [
+    # The three asks about the cases of the session. They share one thing
+    # -- the case, named by its URI -- and "list" names none, so the group
+    # requires only its discriminant and the rows of `ACTION_PARAMETERS`
+    # say that "open" and "close" are nothing without the URI they mean.
+    # The guard is asked about the gesture `close_case`, never about this
+    # name: `manage_case(action="close")` is a call, not a permission.
     _tool(
-        'open_case',
-        'Open one IMAS case by URI (imas:hdf5?path=..., or an UDA URI). '
-        '`dd_version` pins the data dictionary the case is read at; left '
-        'out, the case is asked which one its own IDSs were written with.',
+        'manage_case',
+        'The cases this session works on, and `action` says which ask. '
+        '"open": open one IMAS case by URI (imas:hdf5?path=..., or an UDA '
+        'URI) -- `dd_version` pins the data dictionary the case is read at, '
+        'and left out the case is asked which one its own IDSs were '
+        'written with. "list": the cases open, with their loaded '
+        'occurrences. "close": one open case, its view, its windows and '
+        'its bookkeeping, for good.',
         {'type': 'object', 'properties': {
-            'uri': {'type': 'string',
-                    'description': 'The case URI, e.g. imas:hdf5?path=...'},
+            'action': {'type': 'string', 'enum': ['open', 'list',
+                                                  'close']},
+            'uri': {'type': ['string', 'null'],
+                    'description': '"open" and "close": the case URI, e.g. '
+                                   'imas:hdf5?path=...'},
             'dd_version': {'type': ['string', 'null'],
-                           'description': 'Data dictionary version pin'},
-        }, 'required': ['uri'], 'additionalProperties': False},
-    ),
-    _tool(
-        'list_cases',
-        'The cases open in this session, with their loaded occurrences.',
-        {'type': 'object', 'properties': {}, 'additionalProperties': False},
-    ),
-    _tool(
-        'close_case',
-        'Close one open case: its view, its windows, its bookkeeping.',
-        {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-        }, 'required': ['uri'], 'additionalProperties': False},
+                           'description': '"open": data dictionary version '
+                                          'pin'},
+        }, 'required': ['action'], 'additionalProperties': False},
     ),
     _tool(
         'list_idss',
@@ -1542,6 +1544,21 @@ for _name, (_label, _discriminator, _actions, _order) in _OFFERS.items():
 # schema of its group: an action taking a parameter the group's schema does
 # not declare is a call the model is never told it may make.
 ACTION_PARAMETERS = {
+    # The three asks about the cases. The group can require its
+    # discriminant alone -- "list" names no case at all -- so these rows are
+    # what says that "open" and "close" without a `uri` are incomplete, and
+    # that a `dd_version` beside "list" is a word that went to the wrong ask.
+    'open_case': ({
+        'uri': {'type': 'string',
+                'description': 'the case URI, e.g. imas:hdf5?path=...'},
+        'dd_version': {'type': ['string', 'null'],
+                       'description': 'the data dictionary version to pin '
+                                      'the case at'},
+    }, ('uri',)),
+    'list_cases': ({}, ()),
+    'close_case': ({
+        'uri': {'type': 'string'},
+    }, ('uri',)),
     # What the tree of a case says about itself. `query` belongs to the
     # rank alone, and `ids_name` is optional for that one only: it narrows a
     # search that stands without it, while "ids" and "quantities" are

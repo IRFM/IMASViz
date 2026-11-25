@@ -231,13 +231,18 @@ def test_a_parameter_no_neighbour_takes_invents_no_neighbour():
 
 
 def test_a_tool_that_takes_nothing_says_so():
-    """``list_cases`` takes no argument: "it takes " is not an answer, and
-    the model needs to hear that no argument is the right one. The
-    neighbours of its group that do take the stray are named, because a
-    ``uri`` put on ``list_cases`` usually means one of them."""
+    """``manage_case(action="list")`` takes no argument: "it takes " is not
+    an answer, and the model needs to hear that no argument is the right
+    one. The neighbours of its group that do take the stray are named,
+    because a ``uri`` put on a list usually means one of them -- named as
+    the calls this group is offered by, never as the gestures behind them,
+    which is what the two member names below answer."""
     text = unknownParameterRefusal('list_cases', ['uri'])
     assert 'takes no parameter at all' in text, text
-    assert 'open_case' in text and 'close_case' in text
+    assert 'manage_case(action="open")' in text
+    assert 'manage_case(action="close")' in text
+    assert 'open_case' not in text and 'close_case' not in text, \
+        'the refusal named a name the model is no longer offered'
     assert siblingTaking('list_cases', 'uri') == ['open_case', 'close_case']
 
 

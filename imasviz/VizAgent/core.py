@@ -5170,7 +5170,7 @@ class McpGuiCore:
                             for frame in self.api.DTVframeList]
                 raise ValueError(
                     'The case %r is not open in this session (it holds: %s). '
-                    'Open it with open_case first.'
+                    'Open it with manage_case(action="open") first.'
                     % (uri, ', '.join('"%s"' % u for u in openUris)
                        or 'nothing'))
         logs = []
@@ -5194,7 +5194,7 @@ class McpGuiCore:
                     for view in self.api.DTVlist]
         raise ValueError(
             'The case %r is not open in this session (it holds: %s). '
-            'Open it with open_case first.'
+            'Open it with manage_case(action="open") first.'
             % (uri, ', '.join('"%s"' % u for u in openUris) or 'nothing'))
 
     def lastLogLine(self, view=None):

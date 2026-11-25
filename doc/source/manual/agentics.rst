@@ -131,9 +131,14 @@ the same descriptions. The tools, in the order the faces group them:
      - the tools
      - what they answer
    * - cases
-     - ``open_case``, ``list_cases``, ``close_case``
-     - open one case by URI (an HDF5 path, or an UDA URI), the cases open and
-       the occurrences each one holds, close one for good.
+     - ``manage_case``
+     - one tool for the cases the session works on, and ``action`` says
+       which ask: ``open`` opens one case by URI (an HDF5 path, or an UDA
+       URI), ``dd_version`` pinning the data dictionary it is read at --
+       left out, the case is asked which one its own IDSs were written
+       with; ``list`` answers the cases open and the occurrences each one
+       holds; ``close`` takes one open case, its view, its windows and its
+       bookkeeping away for good.
    * - the IDSs
      - ``list_idss``, ``list_case_idss``, ``load_ids``
      - every IDS the data dictionary declares, the short list of the IDS the
