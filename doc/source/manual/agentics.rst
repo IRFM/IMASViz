@@ -152,10 +152,15 @@ the same descriptions. The tools, in the order the faces group them:
        ``quantities`` the filled tensors of an occurrence grouped by the
        array of structures that drives them.
    * - the selection
-     - ``select_signals``, ``unselect_all``, ``list_selection``
-     - put paths into the case selection as clicks would (a path the tree does
-       not hold is refused by name and the selection is left as it was), empty
-       it, read it back.
+     - ``manage_selection``
+     - one tool for the case selection, and ``action`` says which ask:
+       ``select`` puts the named paths in as the tree clicks would (a path
+       the tree does not hold is refused by name and nothing is put in, and
+       ``additive=false`` empties the selection first), ``clear`` empties
+       it -- answering how many were dropped -- and ``list`` reads it back
+       in the order it was put in, path, data name, IDS and occurrence of
+       each; an empty selection answers ``count: 0``, which is an answer
+       and not a refusal.
    * - the drawing
      - ``plot``, ``get_signal``
      - one tool, and ``mode`` says which drawing is meant: ``single`` puts one
@@ -520,9 +525,9 @@ Two figures, two ways (and two ways only):
   figure holds is not touched when stacking -- which is what the four identical
   curves of the old bug would have been, all of them answering the last value
   the slider was set to.
-- **Select first, draw after.** :code:`select_signals` then
-  :code:`plot(mode="selection", uri)`: one selection, one figure per figure
-  kind the selection calls for.
+- **Select first, draw after.** :code:`manage_selection` asked with
+  ``action`` ``select`` and the paths, then :code:`plot(mode="selection",
+  uri)`: one selection, one figure per figure kind the selection calls for.
 
 What a superposition is **not**: two different structures (two probes, then two
 loops) is **two** figures, not four in one. The structure is already fixed by

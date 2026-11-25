@@ -40,8 +40,10 @@ EQUILIBRIUM_OCCURRENCES = [0, 1, 2, 3]
 
 EXPECTED_TOOLS = {
     'open_case', 'list_cases', 'close_case',
-    'list_idss', 'load_ids', 'inspect_tree', 'select_signals',
-    'unselect_all', 'list_selection',
+    'list_idss', 'load_ids', 'inspect_tree',
+    # The three asks about the selection answer one name, as they do on the
+    # loop face.
+    'manage_selection',
     'plot',
     'get_signal',
     # The one tool of the equilibrium reads -- a different thing from the

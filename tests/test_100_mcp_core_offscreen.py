@@ -39,6 +39,9 @@ import re
 
 import pytest
 
+from imasviz.VizAgent.tools import (argumentsForMember, gestureOf,
+                                    resolveCall, unknownParameterRefusal,
+                                    unknownParameters)
 from mcp_server.core import McpGuiCore
 
 from conftest import (CASE_DATA_DICTIONARY_VERSION, CASE_URI,
@@ -233,6 +236,51 @@ def test_list_selection_answers_what_the_case_holds_selected(core):
         assert entry['ids'] == IDS_NAME
         assert entry['occurrence'] == 0
         assert entry['path'], entry
+
+
+def test_the_spelling_a_turn_types_reaches_the_selection_it_means(core):
+    """One name for the three asks about the selection, and `action` says
+    which gesture runs.
+
+    The name a turn types is resolved BEFORE the core is asked, so the seam
+    is pinned here on the case rather than only on the table: the three
+    actions reach the three gestures, the typed word does not travel with
+    them, and a word that belongs to another action of the same call is
+    refused without the core being asked at all. The old three names come
+    back as a refusal naming the call that took their place.
+    """
+    session, _home = core
+    for action, member in (('select', 'select_signals'),
+                           ('clear', 'unselect_all'),
+                           ('list', 'list_selection')):
+        assert gestureOf('manage_selection', {'action': action}) == member
+
+    typed = {'action': 'select', 'uri': CASE_URI,
+             'paths': [TIME_PATH, IP_PATH]}
+    member, args = resolveCall('manage_selection', typed)
+    assert member == 'select_signals'
+    assert 'action' not in args, 'the discriminant does not reach Python'
+
+    session.unselect_all(CASE_URI)
+    answer = session.select_signals(**argumentsForMember(member, args))
+    assert answer['selection_size'] == 2
+
+    # `paths` is a parameter of "select" alone: the group's schema declares
+    # it, the action's row is what knows it is a stray here.
+    stray = {'uri': CASE_URI, 'paths': [TIME_PATH]}
+    assert unknownParameters('list_selection', stray) == ['paths']
+    text = unknownParameterRefusal('list_selection', ['paths'])
+    assert 'manage_selection(action="list")' in text, text
+    assert 'manage_selection(action="select")' in text, \
+        'the refusal names the action that does take it: %s' % text
+
+    with pytest.raises(ValueError) as raised:
+        resolveCall('list_selection', {'uri': CASE_URI})
+    assert 'manage_selection(action="list", uri)' in str(raised.value)
+
+    # The selection is what the last gesture left it, and the read answers
+    # it under either spelling.
+    assert session.list_selection(CASE_URI)['count'] == 2
 
 
 def test_describe_node_is_the_documentation_of_the_tree(core):

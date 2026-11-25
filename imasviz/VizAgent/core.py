@@ -290,7 +290,8 @@ def axesAddressing(axesSpec, along=None, indices=None):
                 'is that one member alone -- there is no slider over the '
                 'other members of the family. For another member, use its '
                 'own path (with into_figure_key to share the figure, or '
-                'select_signals + plot(mode="selection") for a selection).'
+                'manage_selection(action="select") then '
+                'plot(mode="selection") for a selection).'
                 % (word, axis.index, axesSpec.dataPath or axesSpec.idsName or '?'))
         _checkExtent(axis, (indices or {})[key])
 
@@ -1118,9 +1119,10 @@ class McpGuiCore:
             'move to a different index. A family member is named by its own '
             'path, not by indices: for another member, draw its own path with '
             'plot(mode="single") (with into_figure_key to put it in this '
-            'figure) or select_signals the two members and '
-            'plot(mode="selection"). Change the call; repeating '
-            'the refused one will not help.' % (path, word, word))
+            'figure) or manage_selection(action="select") the two '
+            'members and plot(mode="selection"). Change the call; '
+            'repeating the refused one will not help.'
+            % (path, word, word))
 
     def _timeBase(self, view, node):
         """The dynamic time array's own time values, or None.

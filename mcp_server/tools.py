@@ -49,8 +49,8 @@ How to work with it:
 2. list_idss(uri) tells which IDSs the case holds and which occurrences;
 3. load_ids(uri, ids_name, occurrence) builds the tree branch;
 4. search_nodes(uri, query) names the leaves in every spelling the tree
-   holds -- the paths select_signals, plot and get_signal take are
-   any of those spellings;
+   holds -- the paths manage_selection(action='select'), plot and
+   get_signal take are any of those spellings;
 5. plot draws, and its `mode` says which drawing: 'single' one quantity
    into the figure its axes call for, 'slice' one value at an instant,
    'selection' what the case holds selected, 'table' one panel per
@@ -254,29 +254,41 @@ def buildServer(core, dispatcher, name='imasviz'):
             return {'matches': answer}
         return answer
 
-    @server.tool(name='select_signals')
-    def select_signals(uri: str, paths: list, additive: bool = True):
-        """Put the named paths into the case selection, as clicks would.
+    # The three asks about the selection, under one name: what is selected,
+    # what to put in, and to empty it. `additive` is Optional and not True
+    # here because a parameter the action does not take is a refusal, and a
+    # default would answer "clear" and "list" with a stray word.
+    @server.tool(name='manage_selection')
+    def manage_selection(action: Literal['select', 'clear', 'list'],
+                         uri: str, paths: Optional[list] = None,
+                         additive: Optional[bool] = None):
+        """What the case selection holds, and `action` picks the ask.
 
-        A path the tree does not hold is refused by name, and the
-        selection is left as it was; `additive=False` clears it first.
+        "select" puts the named `paths` into the selection, as the tree's
+        clicks would -- any of the spellings a search hit answers, and one
+        the tree does not hold is refused by name, nothing put in.
+        `additive=false` empties the selection first (it is true).
+
+        "clear" empties it, answering how many were dropped.
+
+        "list" answers it in the order it was put in: the path, the data
+        name, the IDS and the occurrence of each. Empty is an answer,
+        `count: 0` -- not a refusal.
+
+        The selection is what `plot(mode="selection")` draws.
         """
-        return _run(partial(core.select_signals, uri, paths,
-                            additive=additive))
-
-    @server.tool(name='unselect_all')
-    def unselect_all(uri: str):
-        """Empty the case selection; the answer says how many were dropped."""
-        return _run(partial(core.unselect_all, uri))
-
-    @server.tool(name='list_selection')
-    def list_selection(uri: str):
-        """The case's current selection, in the order it was put in.
-
-        The path, the data name, the IDS and the occurrence of each;
-        empty is an answer, count 0 -- not a refusal.
-        """
-        return _run(partial(core.list_selection, uri))
+        gesture = gestureOf('manage_selection', {'action': action})
+        args = {field: value for field, value in (
+            ('uri', uri), ('paths', paths), ('additive', additive))
+            if value is not None}
+        unknown = unknownParameters(gesture, args)
+        if unknown:
+            raise ValueError(unknownParameterRefusal(gesture, unknown))
+        missing = missingParameters(gesture, args)
+        if missing:
+            raise ValueError(missingParameterRefusal(gesture, missing))
+        spelled = argumentsForMember(gesture, args)
+        return _run(partial(getattr(core, gesture), **spelled))
 
     # -------------------------------------------------------------- plotting
 

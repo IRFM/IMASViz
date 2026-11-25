@@ -205,32 +205,32 @@ TOOLS = [
                                     'hit names it'},
         }, 'required': ['action', 'uri'], 'additionalProperties': False},
     ),
+    # The three asks about one object: what the case has selected. They
+    # answer the same case and two of them take nothing but it, so the
+    # question a turn answers is « what do I do with the selection », not
+    # « which of these three functions ». What each action takes is written
+    # per action (`ACTION_PARAMETERS`): the group schema cannot require
+    # `paths` of "select" alone and refuse it of the other two.
     _tool(
-        'select_signals',
-        'Put the named paths into the case selection, as clicks would. '
-        'A path the tree does not hold is refused by name. '
-        '`additive=False` clears the selection first.',
+        'manage_selection',
+        'What the case selection holds and what to do with it, and '
+        '`action` says which ask. "select": put the named `paths` in, as '
+        'the tree clicks would -- one the tree does not hold is refused by '
+        'name and nothing is put in. "clear": empty it, answering how many '
+        'were dropped. "list": the selection in the order it was put in -- '
+        'path, data name, IDS and occurrence of each; empty is an answer, '
+        'count 0, not a refusal.',
         {'type': 'object', 'properties': {
+            'action': {'type': 'string', 'enum': ['select', 'clear',
+                                                  'list']},
             'uri': {'type': 'string'},
-            'paths': {'type': 'array', 'items': {}},
-            'additive': {'type': 'boolean', 'default': True},
-        }, 'required': ['uri', 'paths'], 'additionalProperties': False},
-    ),
-    _tool(
-        'unselect_all',
-        'Empty the case selection; the answer says how many were dropped.',
-        {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-        }, 'required': ['uri'], 'additionalProperties': False},
-    ),
-    _tool(
-        'list_selection',
-        'The current selection of the case, in the order it was put in: '
-        'the path, the data name, the IDS and the occurrence of each. '
-        'Empty is an answer, count 0 -- not a refusal.',
-        {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-        }, 'required': ['uri'], 'additionalProperties': False},
+            'paths': {'type': 'array', 'items': {},
+                      'description': '"select": the leaves, in any '
+                                     'spelling a search hit answers'},
+            'additive': {'type': 'boolean', 'default': True,
+                         'description': '"select": false empties the '
+                                        'selection before the paths go in'},
+        }, 'required': ['action', 'uri'], 'additionalProperties': False},
     ),
     # One name for the five ways a quantity is drawn, because the question
     # the model is answering is « under what shape do I draw this », not
@@ -247,9 +247,10 @@ TOOLS = [
         '-- a curve figure for one axis to draw, a picture window for two. '
         '"slice" draws one `path` at one `time`, the value the Access Layer '
         'answers at that instant. "selection" draws what the case '
-        'selection holds (`select_signals` first). "table" lays one panel '
-        'per `paths` in a Table Plot View. "stacked" stacks `paths`, one '
-        'panel per quantity, in one window. The answer carries the figure '
+        'selection holds (`manage_selection(action="select")` first). '
+        '"table" lays one panel per `paths` in a Table Plot View. '
+        '"stacked" stacks `paths`, one panel per quantity, in one window. '
+        'The answer carries the figure '
         'key and `curves`, the exact list of the curves the figure holds '
         'after the call: a claim that a curve is on that figure stands on '
         'that list, not on memory of the call.',
@@ -1566,6 +1567,21 @@ ACTION_PARAMETERS = {
         'ids_name': {'type': 'string'},
         'occurrence': {'type': 'integer', 'default': 0},
     }, ('uri', 'ids_name')),
+    # The three asks about the selection. `uri` is the one thing they share
+    # and the group requires it; `paths` and `additive` belong to "select"
+    # alone, and a "list" that carries them is a call whose word went to the
+    # wrong action -- which is what these rows answer, refusal by name.
+    'select_signals': ({
+        'uri': {'type': 'string'},
+        'paths': {'type': 'array', 'items': {}},
+        'additive': {'type': 'boolean', 'default': True},
+    }, ('uri', 'paths')),
+    'unselect_all': ({
+        'uri': {'type': 'string'},
+    }, ('uri',)),
+    'list_selection': ({
+        'uri': {'type': 'string'},
+    }, ('uri',)),
     'plot_one': ({
         'uri': {'type': 'string'},
         'path': {'type': 'string'},
