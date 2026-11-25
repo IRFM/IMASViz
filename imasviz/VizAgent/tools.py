@@ -37,7 +37,7 @@ You control the GUI strictly through the provided tools.
   - `path`: Specific member of a structure array (e.g., `magnetics.flux_loop[2].flux.data`). To plot two members together, call `plot(mode="single")` twice using `into_figure_key` on the second call—never put `flux_loop` in `indices`.
 - **MULTIPLE FAMILIES:** When asked to plot two different families (e.g., probes then flux loops), create two separate figures unless the user explicitly asks to overlay them ("sur la même figure" / "on the same figure").
 - **WINDOWS & FOCUS:** Do NOT call `manage_window(action="focus")` or `manage_window(action="show")` automatically after plotting. Only call them if the user explicitly asks to bring a window to the front.
-- **DESTRUCTIVE & SHARED ACTIONS:** Never call `manage_window(action="close")`, `close_case`, `new_session`, or write with `scope="shared"` (`manage_note`, the prompt tools) unless the user explicitly asks for it in their prompt.
+- **DESTRUCTIVE & SHARED ACTIONS:** Never call `manage_window(action="close")`, `close_case`, `manage_session(action="new")`, or write with `scope="shared"` (`manage_note`, the prompt tools) unless the user explicitly asks for it in their prompt.
 - **AMBIGUITY:** If a user request is ambiguous (e.g., "sonde 2" when multiple probes exist), list the exact paths found by `search_nodes` and ask the user to choose.
 
 ### RESPONSE FORMAT
@@ -913,91 +913,78 @@ TOOLS = [
         }, 'required': ['uri', 'plugin', 'entry'],
          'additionalProperties': False},
     ),
+    # One name for the run as a thing kept: written, put back, cleared, and
+    # the files beside it that a run is made of. The discriminant is
+    # `action`: no member of the group takes a word of its own (test_175
+    # refuses a discriminant a member already answers for itself), and
+    # `name` could not be one -- it is a SESSION file for "save"/"restore"
+    # and a CONFIGURATION file for the three asks that read or write one. So
+    # the parameters are told apart in their own blocks, the same way the
+    # rows of `ACTION_PARAMETERS` tell them apart when a call is checked.
     _tool(
-        'save_session',
-        'Write the session as the application writes it. '
-        '`name` is a file under the configuration folder, `path` a full '
-        'file name.',
+        'manage_session',
+        'The run kept and read back, and `action` says which ask. "save": '
+        'the whole screen as the application writes it -- the cases, the '
+        'loads, the selection, the windows and what a hand styled on them. '
+        '"restore": one of those sessions put back: the cases open, the '
+        'loads replayed, the figures and plugin windows drawn the way the '
+        'file named them, and the answer names the cases that came back. '
+        '"new": one clean session WITHOUT saving -- every case view and '
+        'every figure of this session is closed and nothing is written, so '
+        'the sessions the user saved on disk (`last_session` among them) '
+        'and the reports stay where they are; it answers how many windows '
+        'it closed. This is the *New session* of the *File* menu, asked the '
+        'way the page asks it, and like that menu\'s close it is a gesture '
+        'the user asks for out loud: a request that names no clean slate is '
+        'a refusal, not a reset. "list_sessions": the .vsess files the '
+        'configuration folder holds, as the application lists them. '
+        '"list_configurations": the plot (.pcfg) and selection (.lsp) files '
+        'in that folder, `kind` narrowing to one of the two -- a kind the '
+        'application does not answer is refused by name, "session" among '
+        'them, the sessions being "list_sessions". "apply": one saved '
+        'configuration put on a case: its quantities selected, the IDSs the '
+        'case would need and does not hold loaded first the way the menu '
+        'does it, a .lsp read as a .pcfg; it answers how many were '
+        'selected, and a name the folder does not hold is refused naming '
+        'the ones it does. "save_selection": the case\'s current selection '
+        'written out as a .lsp, one quantity per selected node -- nothing '
+        'selected is refused by name. "save_plot_configuration": one Table '
+        'Plot View written out as a .pcfg, the quantities of its panels and '
+        'the place each held -- any other window is refused by name, and '
+        'list_windows names the ones that hold panels.',
         {'type': 'object', 'properties': {
-            'name': {'type': ['string', 'null']},
-            'path': {'type': ['string', 'null']},
-        }, 'additionalProperties': False},
-    ),
-    _tool(
-        'restore_session',
-        'Put a session back: the cases open, the loads replayed, the '
-        'figures and plugin windows drawn the way the file named them.',
-        {'type': 'object', 'properties': {
-            'name': {'type': ['string', 'null']},
-            'path': {'type': ['string', 'null']},
-        }, 'additionalProperties': False},
-    ),
-    _tool(
-        'new_session',
-        'One clean session, WITHOUT saving: every case view and every '
-        'figure of this session is closed, and nothing is written -- '
-        'the sessions the user saved on disk (`last_session` and the '
-        'saved ones) are untouched, and the reports stay. Use it when '
-        'the user asks for a "nouvelle session"/"clean slate": the '
-        'figures they drew are the ones this gesture loses, and it '
-        'answers by name how many it closed. It is the *New session* '
-        'of the application\'s *File* menu, asked the way the page '
-        'asks it.',
-        {'type': 'object', 'properties': {},
-         'required': [], 'additionalProperties': False},
-    ),
-    _tool(
-        'list_sessions',
-        'The sessions the configuration folder holds (the .vsess files '
-        'next to the plot and selection configurations), as the '
-        'application lists them.',
-        {'type': 'object', 'properties': {}, 'additionalProperties': False},
-    ),
-    _tool(
-        'list_configurations',
-        'The plot configurations (.pcfg) and the selection configurations '
-        '(.lsp) the configuration folder holds. `kind` narrows to one of '
-        'the two kinds; a kind the application does not answer is '
-        'refused by name.',
-        {'type': 'object', 'properties': {
+            'action': {'type': 'string',
+                       'enum': ['save', 'restore', 'new', 'list_sessions',
+                                'list_configurations', 'apply',
+                                'save_selection',
+                                'save_plot_configuration']},
+            'name': {'type': ['string', 'null'],
+                     'description': 'The file the ask is about. "save" and '
+                                    '"restore": a session under the '
+                                    'configuration folder ("save" settles '
+                                    'on a name of its own when left out). '
+                                    '"apply", "save_selection" and '
+                                    '"save_plot_configuration": the '
+                                    'configuration, .lsp as .pcfg, with no '
+                                    'extension spelled. Required of those '
+                                    'three.'},
+            'path': {'type': ['string', 'null'],
+                     'description': '"save" and "restore": a full file '
+                                    'name, instead of a name in the '
+                                    'configuration folder'},
             'kind': {'type': ['string', 'null'],
-                     'enum': ['plot', 'selection']},
-        }, 'additionalProperties': False},
-    ),
-    _tool(
-        'select_from_configuration',
-        'Apply one saved configuration: select in the case the '
-        'quantities it names (.lsp as .pcfg), loading first the IDSs the '
-        'case would need and does not hold. Answers how many were '
-        'selected; a name the folder does not hold is refused by name, '
-        'naming the ones it does.',
-        {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-            'name': {'type': 'string'},
-        }, 'required': ['uri', 'name'], 'additionalProperties': False},
-    ),
-    _tool(
-        'save_selection',
-        'Write the current selection of the case out as a .lsp, one '
-        'quantity per selected node. Nothing selected is refused by '
-        'name; the name goes through the guard the application applies '
-        'in its own dialog.',
-        {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-            'name': {'type': 'string'},
-        }, 'required': ['uri', 'name'], 'additionalProperties': False},
-    ),
-    _tool(
-        'save_plot_configuration',
-        'Write one Table Plot View out as a .pcfg: the quantities of its '
-        'panels, and the place each panel held. A window that is not a '
-        'Table Plot View is refused by name.',
-        {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-            'figure_key': {'type': 'string'},
-            'name': {'type': 'string'},
-        }, 'required': ['uri', 'figure_key', 'name'],
-         'additionalProperties': False},
+                     'enum': ['plot', 'selection'],
+                     'description': '"list_configurations": one kind only; '
+                                    'left out, both are answered'},
+            'uri': {'type': ['string', 'null'],
+                    'description': 'The case the ask is made on, for '
+                                   '"apply", "save_selection" and '
+                                   '"save_plot_configuration"; required of '
+                                   'those three'},
+            'figure_key': {'type': ['string', 'null'],
+                           'description': '"save_plot_configuration": the '
+                                          'Table Plot View to write out'},
+        }, 'required': ['action'], 'additionalProperties': False},
     ),
     _tool(
         'generate_report',
@@ -1519,8 +1506,8 @@ FAMILIES = (
             ('save', 'save_session'),
             ('restore', 'restore_session'),
             ('new', 'new_session'),
-            ('list', 'list_sessions'),
-            ('configurations', 'list_configurations'),
+            ('list_sessions', 'list_sessions'),
+            ('list_configurations', 'list_configurations'),
             ('apply', 'select_from_configuration'),
             ('save_selection', 'save_selection'),
             ('save_plot_configuration', 'save_plot_configuration'))),
@@ -1916,6 +1903,38 @@ ACTION_PARAMETERS = {
         'scope': {'type': ['string', 'null'], 'enum': ['personal',
                                                        'shared']},
     }, ('name',)),
+    # The run kept and read back. Nothing here can be required of the group
+    # itself: "save" needs no name (it settles on one of its own) and "new"
+    # asks nothing, while "apply" and the two saves are nothing without
+    # theirs. `name` is a SESSION file for the two session asks and a
+    # CONFIGURATION file for the three that name one -- the one word the
+    # offer keeps, since the action already says which of the two it is.
+    'save_session': ({
+        'name': {'type': ['string', 'null']},
+        'path': {'type': ['string', 'null']},
+    }, ()),
+    'restore_session': ({
+        'name': {'type': ['string', 'null']},
+        'path': {'type': ['string', 'null']},
+    }, ()),
+    'new_session': ({}, ()),
+    'list_sessions': ({}, ()),
+    'list_configurations': ({
+        'kind': {'type': ['string', 'null'], 'enum': ['plot', 'selection']},
+    }, ()),
+    'select_from_configuration': ({
+        'uri': {'type': 'string'},
+        'name': {'type': 'string'},
+    }, ('uri', 'name')),
+    'save_selection': ({
+        'uri': {'type': 'string'},
+        'name': {'type': 'string'},
+    }, ('uri', 'name')),
+    'save_plot_configuration': ({
+        'uri': {'type': 'string'},
+        'figure_key': {'type': 'string'},
+        'name': {'type': 'string'},
+    }, ('uri', 'figure_key', 'name')),
 }
 
 # The few names a merged group offers under a different spelling than the

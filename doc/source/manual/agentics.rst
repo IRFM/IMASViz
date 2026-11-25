@@ -265,20 +265,29 @@ the same descriptions. The tools, in the order the faces group them:
        since ``equilibriumsurfaces`` entry 0 *is* ``equilibrium_surfaces`` and
        entry 1 *is* ``equilibrium_at_time``.
    * - sessions and configurations
-     - ``save_session``, ``restore_session``, ``new_session``,
-       ``list_sessions``, ``list_configurations``,
-       ``select_from_configuration``, ``save_selection``,
-       ``save_plot_configuration``
-     - the whole screen as the application writes it, put a session back the
-       way the gesture replays it, the sessions the folder holds, the plot
-       (``.pcfg``) and selection (``.lsp``) files, apply one of them (the
-       IDSs the case would need and does not hold are loaded first, the way
-       the menu does it), and the two saves. ``new_session`` is the *New
-       session* of the *File* menu asked the way the page asks it: every case
-       view and every figure of the run closed and **nothing written** -- the
-       sessions on disk and the reports stay where they are -- and it answers
-       how many windows it closed. Like the *Windows* menu's close, it is a
-       gesture the loop names out loud before it runs it.
+     - ``manage_session``
+     - the run kept and read back, and ``action`` says which of the eight is
+       meant. ``save`` writes the whole screen as the application writes it
+       -- the cases, the loads, the selection, the windows and what a hand
+       styled on them; ``restore`` puts one of those sessions back the way
+       the gesture replays it, naming the cases that came back. ``name`` is
+       a session file there, and a configuration file (``.lsp`` as
+       ``.pcfg``) for the three asks that name one. ``list_sessions`` answers
+       the ``.vsess`` files the folder holds and ``list_configurations`` the
+       plot and selection files, ``kind`` narrowing to one of the two kinds
+       -- a kind the application does not answer is refused by name,
+       ``session`` among them. ``apply`` selects on a case the quantities one
+       saved configuration names (the IDSs the case would need and does not
+       hold are loaded first, the way the menu does it), ``save_selection``
+       writes the case's selection out as a ``.lsp`` and
+       ``save_plot_configuration`` one Table Plot View out as a ``.pcfg``,
+       its panels and the places they held -- any other window is refused by
+       name. ``new`` is the *New session* of the *File* menu asked the way
+       the page asks it: every case view and every figure of the run closed
+       and **nothing written** -- the sessions on disk and the reports stay
+       where they are -- and it answers how many windows it closed. Like the
+       *Windows* menu's close, it is a gesture the loop names out loud before
+       it runs it.
    * - the reports
      - ``generate_report``
      - a self-contained HTML file on disk, and ``scope`` says which one is

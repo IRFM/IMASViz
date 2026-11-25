@@ -139,18 +139,19 @@ def test_the_same_close_is_run_once_the_request_asks_for_it(agent_kwargs):
 
 
 def test_an_unasked_new_session_is_refused_and_the_memory_stands(agent_kwargs):
-    """A `new_session` with no reset in the request refuses the same way,
-    and the loop's own memory -- the state `5dcd55a` cleared on an
-    allowed one -- survives the refused one: a reset that never ran is not
-    a slate cleared."""
+    """A `manage_session(action="new")` with no reset in the request
+    refuses the same way, and the loop's own memory -- the state `5dcd55a`
+    cleared on an allowed one -- survives the refused one: a reset that
+    never ran is not a slate cleared."""
     core = ClosingCore()
     loop = AgentLoop(core=core, llm=FakeLLMClient(_oneTool(
-        'new_session', {},
+        'manage_session', {'action': 'new'},
         'Je n’ai rien refermé, la session tient : les figures sont '
         'encore là.')),
         dispatcher=FakeDispatcher())
     loop.history = [{'role': 'user', 'content': 'trace la pression'}]
-    loop.transcriptLine.connect(lambda line: None)
+    lines = []
+    loop.transcriptLine.connect(lines.append)
     loop.askFinished.connect(lambda reason: None)
     loop.ask('montre-moi les figures ouvertes')
     assert core.closed == [], \
@@ -159,6 +160,11 @@ def test_an_unasked_new_session_is_refused_and_the_memory_stands(agent_kwargs):
     assert loop.history, \
         'a refused new session is not a clean slate: the loop still held ' \
         'the turns it served'
+    joined = ' '.join(lines)
+    assert 'manage_session(action="new")' in joined, \
+        'the guard decides on the gesture and speaks the CALL: a refusal ' \
+        'naming `new_session` sends the model to a name it is refused ' \
+        'for asking: %s' % joined
 
 
 def test_an_asked_new_session_runs_and_clears_the_memory(agent_kwargs):
@@ -166,10 +172,11 @@ def test_an_asked_new_session_runs_and_clears_the_memory(agent_kwargs):
     the loop's memory goes with it: the turns served before the reset are
     the clean slate, not the conversation about the reset itself (the
     loop keeps the turn it is in: the ask that ran the reset and the
-    answer it owes to it)."""
+    answer it owes to it). The call is the group's; what reaches the core
+    is the `new_session` the guard and the memory reset are keyed on."""
     core = ClosingCore()
     loop = AgentLoop(core=core, llm=FakeLLMClient(_oneTool(
-        'new_session', {}, 'La session est à neuf.')),
+        'manage_session', {'action': 'new'}, 'La session est à neuf.')),
         dispatcher=FakeDispatcher())
     # Two turns served before the reset: a request of the case and the
     # figure it drew. That is the memory the next turn must not be able
@@ -231,5 +238,6 @@ def test_the_button_path_asks_no_question(agent_kwargs):
                           requested_by='user')
     assert out == {'closed': 'Plot5'}, out
     assert core.closed == [('close_window', 'Plot5')], core.closed
-    out = agent._dispatch('new_session', {}, requested_by='user')
+    out = agent._dispatch('manage_session', {'action': 'new'},
+                          requested_by='user')
     assert core.closed[-1] == ('new_session', None), core.closed

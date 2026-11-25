@@ -797,65 +797,62 @@ def buildServer(core, dispatcher, name='imasviz'):
 
     # --------------------------------------------------------------- session
 
-    @server.tool(name='save_session')
-    def save_session(name: Optional[str] = None,
-                     path: Optional[str] = None):
-        """Write the session as the application writes it.
+    @server.tool(name='manage_session')
+    def manage_session(
+            action: Literal['save', 'restore', 'new', 'list_sessions',
+                            'list_configurations', 'apply', 'save_selection',
+                            'save_plot_configuration'],
+            name: Optional[str] = None,
+            path: Optional[str] = None,
+            kind: Optional[str] = None,
+            uri: Optional[str] = None,
+            figure_key: Optional[str] = None,
+    ):
+        """The run kept and read back: `action` picks the ask.
 
-        The cases, the loads, the selection, the windows and their
-        styling. `name` is a file under the configuration folder, `path`
-        a full file name; the answer is the file that holds it.
+        "save" writes the whole screen as the application writes it -- the
+        cases, the loads, the selection, the windows and what a hand styled
+        on them. `name` is a file under the configuration folder, `path` a
+        full file name; left out both, it is written under a name of its
+        own.
+
+        "restore" puts one of those sessions back: the cases open, the
+        loads replayed, the figures and plugin windows drawn the way the
+        file named them.
+
+        "new" is one clean session WITHOUT saving: every case view and
+        every figure of this session is closed and nothing is written, so
+        the sessions the user saved on disk and the reports stay where they
+        are. It answers how many windows it closed, and it is the *New
+        session* of the application's *File* menu: a client does not decide
+        to clear a run it was not asked to clear.
+
+        "list_sessions" answers the .vsess files the folder holds, and
+        "list_configurations" the plot (.pcfg) and selection (.lsp) files;
+        `kind` narrows the second to one kind, and a kind the application
+        does not answer is refused by name.
+
+        "apply" selects on a case the quantities one saved configuration
+        names -- a .lsp as a .pcfg -- loading first the IDSs the case would
+        need and does not hold, the way the menu does it. "save_selection"
+        writes the case's current selection out as a .lsp (nothing selected
+        is refused by name), and "save_plot_configuration" one Table Plot
+        View out as a .pcfg, its panels and the places they held -- any
+        other window is refused by name.
         """
-        return _run(partial(core.save_session, name=name, path=path))
-
-    @server.tool(name='restore_session')
-    def restore_session(name: Optional[str] = None,
-                        path: Optional[str] = None):
-        """Put a session back: the cases open, the loads replayed, the
-        figures and plugin windows drawn the way the file named them."""
-        return _run(partial(core.restore_session, name=name, path=path))
-
-    @server.tool(name='list_sessions')
-    def list_sessions():
-        """The sessions the configuration folder holds, as the dialog lists them."""
-        return {'sessions': _run(core.list_sessions)}
-
-    @server.tool(name='list_configurations')
-    def list_configurations(kind: Optional[str] = None):
-        """The plot (.pcfg) and selection (.lsp) configurations the folder holds.
-
-        `kind` narrows to one of the two kinds; a kind the application
-        does not answer is refused by name, 'session' among them.
-        """
-        return _run(partial(core.list_configurations, kind))
-
-    @server.tool(name='select_from_configuration')
-    def select_from_configuration(uri: str, name: str):
-        """Apply one saved configuration: select the quantities it names.
-
-        A .lsp as a .pcfg; the IDSs the case would need and does not
-        hold are loaded first, the way the menu does it. A name the
-        folder does not hold is refused by name, naming the ones it does.
-        """
-        return _run(partial(core.select_from_configuration, uri, name))
-
-    @server.tool(name='save_selection')
-    def save_selection(uri: str, name: str):
-        """Write the current selection of the case out as a .lsp.
-
-        Nothing selected is refused by name; the name goes through the
-        guard the application applies in its own dialog.
-        """
-        return _run(partial(core.save_selection, uri, name))
-
-    @server.tool(name='save_plot_configuration')
-    def save_plot_configuration(uri: str, figure_key: str, name: str):
-        """Write one Table Plot View out as a .pcfg, the panels and their places.
-
-        A window that is not a Table Plot View is refused by name.
-        """
-        return _run(partial(core.save_plot_configuration, uri,
-                            figure_key, name))
+        gesture = gestureOf('manage_session', {'action': action})
+        args = {field: value for field, value in (
+            ('name', name), ('path', path), ('kind', kind),
+            ('uri', uri), ('figure_key', figure_key))
+            if value is not None}
+        unknown = unknownParameters(gesture, args)
+        if unknown:
+            raise ValueError(unknownParameterRefusal(gesture, unknown))
+        missing = missingParameters(gesture, args)
+        if missing:
+            raise ValueError(missingParameterRefusal(gesture, missing))
+        spelled = argumentsForMember(gesture, args)
+        return _run(partial(getattr(core, gesture), **spelled))
 
     # --------------------------------------------------------------- reports
 

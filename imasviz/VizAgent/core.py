@@ -3478,7 +3478,8 @@ class McpGuiCore:
             raise ValueError(
                 '"%s" is not a configuration kind: the kinds this '
                 'application holds are plot and selection (the sessions '
-                'in the same folder are listed by list_sessions).'
+                'in the same folder are answered by '
+                'manage_session(action="list_sessions")).'
                 % kind)
         if kind is None:
             return {'plot': QVizConfigurationFile.listing('plot'),

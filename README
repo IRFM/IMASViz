@@ -219,11 +219,11 @@ them for the user.
 | Group | Tools |
 | --- | --- |
 | cases | `open_case`, `list_cases`, `close_case` |
-| tree | `list_idss`, `list_case_idss` (the IDS the case actually holds), `load_ids`, `search_nodes`, `describe_node`, `describe_ids`, `list_quantities`, `select_signals`, `unselect_all`, `list_selection`, `select_from_configuration` |
-| plotting | `plot` — one tool, and its `mode` picks the drawing: `single` (along the clock or a leaf coordinate, `time`/`time_interp` for a slice, `into_figure_key` to stack on an open figure), `slice` (one value at one instant, read by the Access Layer), `selection`, `table`, `stacked` — plus `get_signal`, `save_plot_configuration` |
+| tree | `list_idss`, `list_case_idss` (the IDS the case actually holds), `load_ids`, `search_nodes`, `describe_node`, `describe_ids`, `list_quantities`, `select_signals`, `unselect_all`, `list_selection` |
+| plotting | `plot` — one tool, and its `mode` picks the drawing: `single` (along the clock or a leaf coordinate, `time`/`time_interp` for a slice, `into_figure_key` to stack on an open figure), `slice` (one value at one instant, read by the Access Layer), `selection`, `table`, `stacked` — plus `get_signal` |
 | windows | `manage_window` — one tool, and its `action` picks the gesture: `list` (every window, in the order the menus draw them), `show`, `hide`, `close`, `focus` (bring a window to the front, at the size it holds — pixels only when named) |
 | plugins | `list_plugins`, `run_plugin` |
-| session | `save_session`, `restore_session`, `export_to_ids`, `list_sessions`, `list_configurations`, `save_selection` |
+| session | `manage_session` — one tool, and its `action` picks the ask: `save` (the whole screen as the application writes it), `restore` (the cases open again, the loads replayed, the windows drawn as the file named them), `new` (every case view and every figure closed, **nothing written** — the clean slate the *File* menu offers), `list_sessions` (the `.vsess` files), `list_configurations` (the `.pcfg` and `.lsp` files, `kind` narrowing to one), `apply` (one saved configuration selected on the case, the missing IDSs loaded first), `save_selection`, `save_plot_configuration` — plus `export_to_ids` |
 | inspection | `get_screenshot` (PNG of a window — a figure key it does not hold is refused by name), `get_logs` (the case log panel) |
 | reports | `generate_report` — one tool, and `scope` says which report: `plot` (a window of curves as self-contained HTML with stats), `case_loaded` (the whole loaded tree as HTML with stats), `case_ids` (the case itself: the IDSs it holds, the occurrences of each, what the session loaded) |
 

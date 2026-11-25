@@ -2126,10 +2126,11 @@ details.tool summary strong { color: var(--accent-strong); }
     });
     byId('clearBtn').addEventListener('click', clearAll);
     byId('themeBtn').addEventListener('click', toggleTheme);
-    // The clean slate: the `new_session` the agent dispatches, asked of
-    // the core by its same name on `/api/tool` -- `closeAll` under the
-    // hood, nothing saved. A gesture that closes every figure without
-    // leaving a session behind is asked once, by name, before it runs.
+    // The clean slate: the `manage_session(action="new")` the agent
+    // dispatches, asked of the core by the same call on `/api/tool` --
+    // `closeAll` under the hood, nothing saved. A gesture that closes
+    // every figure without leaving a session behind is asked once, by
+    // name, before it runs.
     byId('newSessionBtn').addEventListener('click', function () {
       // The click answers before it asks: a `confirm` its browser blocks
       // (kiosk, popup blocker) returns false with no dialog on screen, and
@@ -2154,7 +2155,8 @@ details.tool summary strong { color: var(--accent-strong); }
       }
       fetch('/api/tool', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'new_session', args: {} }),
+        body: JSON.stringify({ name: 'manage_session',
+                               args: { action: 'new' } }),
       }).then(function (r) {
         return r.json().catch(function () { return {}; });
       }).then(function (j) {

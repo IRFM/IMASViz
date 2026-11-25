@@ -591,9 +591,9 @@ class WebSession:
                         name, args or {}, requested_by='user'))
             except Exception as e:
                 return {'error': str(e), 'result': None}
-            # The page asks the close directly (the *New session* button
-            # is the one the loop's own `new_session` does not pass
-            # through `runTurn`): the gesture ran on the application
+            # The page asks the close directly: the *New session* button
+            # goes through this method, where the loop's own reset goes
+            # through `runTurn`. The gesture ran on the application
             # side, and the records keep the figure it closed as long as
             # they name it -- so the same mark the loop's turn applies
             # is applied here, or the reload of the page brings the
@@ -615,8 +615,14 @@ class WebSession:
                     key = sent.get('window')
                     if key:
                         self._markFiguresClosed([key])
-            elif name == 'new_session':
-                self._markFiguresClosed(close_all=True)
+            elif name == 'manage_session':
+                # The same reading for the sessions group: the page's
+                # *New session* button posts
+                # `manage_session(action="new")`, and the member behind
+                # that word -- the `new_session` the records used to be
+                # marked by -- is no longer a name the page is offered.
+                if (args or {}).get('action') == 'new':
+                    self._markFiguresClosed(close_all=True)
             return {'error': None, 'result': result}
 
     def llmFields(self):

@@ -189,6 +189,11 @@ def test_new_session_marks_every_capture_the_records_hold(qapp, tmp_path):
     screen rebuilds from on the reload, so the clean slate must be in
     them, or the reload brings the session back.
 
+    The page asks with the group's name and its `action`, the same way it
+    asks the close two tests above: `callGesture` answers every ask
+    through `resolveCall`, and the marker that empties the records is
+    keyed on the gesture behind that word, not on the word.
+
     (The turn that drew the capture keeps its transcript on disk:
     what leaves is the figure the record names, not the request it
     was the answer to.)"""
@@ -209,7 +214,8 @@ def test_new_session_marks_every_capture_the_records_hold(qapp, tmp_path):
     assert first['error'] is None
     assert sorted(first['image_files']) == ['00_app.png', 'SlicesPlot1.png']
 
-    out = inWorker(lambda: session.callGesture('new_session', {}), qapp)
+    out = inWorker(lambda: session.callGesture(
+        'manage_session', {'action': 'new'}), qapp)
     assert out['error'] is None
     assert core.list_windows() == [] or all(
         r['key'] is None for r in core.list_windows())
