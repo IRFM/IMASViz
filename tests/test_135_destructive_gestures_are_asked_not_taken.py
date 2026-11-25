@@ -89,14 +89,19 @@ def _oneTool(name, args, then):
 # ---------------------------------------------------------- the model path
 
 def test_an_unasked_close_window_is_refused_and_the_figure_stands(agent_kwargs):
-    """'trace la pression' names no closure. A model that calls
-    `close_window` on that turn is refused by name, the gesture never
-    runs, and the figure it named is still on the other side of the
-    refusal -- the "Plot2/Plot3 créées puis disparues" of the field is
-    this with no ask in between."""
+    """'trace la pression' names no closure. A model that closes a figure
+    on that turn is refused by name, the gesture never runs, and the figure
+    it named is still on the other side of the refusal -- the "Plot2/Plot3
+    créées puis disparues" of the field is this with no ask in between.
+
+    The close is asked the way the windows group answers it
+    (`manage_window(action="close")`): the guard decides on the GESTURE
+    behind that call, so a scripted call to the old member name would be
+    refused for naming a tool that is no longer offered and would leave the
+    destructive gate unexercised."""
     core = ClosingCore()
     llm = FakeLLMClient(_oneTool(
-        'close_window', {'key': 'Plot2'},
+        'manage_window', {'action': 'close', 'window': 'Plot2'},
         'Le tracage est ouvert (Plot1). Je n’ai pas fermé Plot2 : '
         'veux-tu que je le ferme ?'))
     agent = AgentLoop(core=core, llm=llm, dispatcher=FakeDispatcher(),
@@ -108,7 +113,8 @@ def test_an_unasked_close_window_is_refused_and_the_figure_stands(agent_kwargs):
     assert errors == [None], \
         'the answer is what reaches the user, not a crash on the guard'
     assert 'REFUSAL' in joined, 'the refusal is named, not a silence'
-    assert 'close_window' in joined, 'it names the gesture it refused'
+    assert 'manage_window(action="close")' in joined, \
+        'it names the call it refused, in the spelling the tool set offers'
     assert 'ask' in joined.lower(), \
         'the rule is stated: a closure is asked for, not taken'
 
@@ -117,10 +123,12 @@ def test_the_same_close_is_run_once_the_request_asks_for_it(agent_kwargs):
     """'ferme Plot2' IS the ask: the guard stands aside, the gesture runs,
     and the answer is let stand -- a refusal here would be the same
     failure in the other direction (a window the user asked to close,
-    still open because the loop second-guessed)."""
+    still open because the loop second-guessed). The call names the group;
+    what reaches the core is the member behind it, under the `key` its
+    gesture has always taken (`ACTION_RENAMES`)."""
     core = ClosingCore()
     llm = FakeLLMClient(_oneTool(
-        'close_window', {'key': 'Plot2'},
+        'manage_window', {'action': 'close', 'window': 'Plot2'},
         'Plot2 est fermée.'))
     agent = AgentLoop(core=core, llm=llm, dispatcher=FakeDispatcher(),
                       **agent_kwargs)
@@ -206,16 +214,20 @@ def test_an_unasked_close_case_is_refused_and_the_case_stands(agent_kwargs):
 # ------------------------------------------------------------ the button
 
 def test_the_button_path_asks_no_question(agent_kwargs):
-    """The page's New-session button and its per-figure close act
-    `callGesture` -> `AgentLoop._dispatch(requested_by='user')`: the
+    """The page's New-session button and a closure the user's own face asks
+    act `callGesture` -> `AgentLoop._dispatch(requested_by='user')`: the
     click IS the ask, and there is no user-prompt text to check. A guard
     that asks the button for a word it cannot give would be the refusal
     in the wrong direction, and a button that could not close a window is
-    a window it cannot take away."""
+    a window it cannot take away. The closure is spelled the way every
+    other face spells it -- the group's name and its `action` -- because
+    `_dispatch` answers a member asked on its own as a tool no longer
+    offered, whoever the caller is."""
     core = ClosingCore()
     agent = AgentLoop(core=core, llm=FakeLLMClient([]),
                       dispatcher=FakeDispatcher(), **agent_kwargs)
-    out = agent._dispatch('close_window', {'key': 'Plot5'},
+    out = agent._dispatch('manage_window',
+                          {'action': 'close', 'window': 'Plot5'},
                           requested_by='user')
     assert out == {'closed': 'Plot5'}, out
     assert core.closed == [('close_window', 'Plot5')], core.closed

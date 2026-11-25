@@ -226,14 +226,18 @@ the same descriptions. The tools, in the order the faces group them:
        all-equal values refuses in words. The report is the same answer as a
        page under :file:`~/.imasviz/reports`.
    * - the windows
-     - ``list_windows``, ``show_window``, ``hide_window``, ``close_window``,
-       ``focus_window``
-     - the session's windows in the order the menus draw them (kind, label,
-       key, on screen), put one back, take one off without deleting it, delete
-       one for good, and the "show me this" gesture: a window brought forward
-       (shown when off screen, raised when not), at the size it holds, and the
-       pixels only when they are named. Showing is the user's command, not
-       something the loop does after a draw: the figure is in the *Windows*
+     - ``manage_window``
+     - one tool, and ``action`` says which of the five is meant: ``list``
+       answers the session's windows in the order the menus draw them (kind,
+       label, key, on screen) and asks for no window; ``show`` puts one back
+       on the screen, ``hide`` takes one off without deleting it, ``close``
+       deletes one for good, and ``focus`` is the "show me this" gesture: a
+       window brought forward (shown when off screen, raised when not), at
+       the size it holds, and the pixels only when they are named. The window
+       is one word for all four -- ``window``, the application, a figure key
+       or a case URI -- although three of the gestures name it ``key`` in
+       Python. Showing is the user's command, not something the loop does
+       after a draw: the figure is in the *Windows*
        menu, and that is where the raise lives.
    * - the plugins
      - ``list_plugins``, ``run_plugin``
@@ -296,8 +300,9 @@ the same descriptions. The tools, in the order the faces group them:
      - ``get_screenshot``
      - a window as it stands, in PNG -- the application, one figure, or the
        shot view of a case. The pixels are asked for, never handed out after a
-       draw; the window that brings itself forward is ``focus_window``, in the
-       group of the windows it moves.
+       draw; the window that brings itself forward is
+       ``manage_window(action="focus")``, in the group of the windows it
+       moves.
    * - the log
      - ``get_logs``
      - the log panel of one case, or of every case: the last lines the gestures
@@ -503,8 +508,8 @@ happen only when **this run** asks for them, in French or English
 (*ferme Plot5*, *referme le cas*, *nouvelle session* ...) -- any other run
 that poses one meets a named refusal, the gesture is not taken, and the answer
 says so: nothing was closed. That is the way the old bug went: the loop closed
-a figure, the window was gone from ``list_windows``, and the loop noticed it
-itself, without having asked for it.
+a figure, the window was gone from ``manage_window(action="list")``, and the
+loop noticed it itself, without having asked for it.
 
 A dictionary of ready phrases, with what they answer on the reference case:
 
@@ -536,8 +541,9 @@ A dictionary of ready phrases, with what they answer on the reference case:
      - :code:`get_signal(..., indices={"psi": 50})`
    * - to see the figure
      - "show me Plot1" / "bring Plot1 forward"
-     - :code:`focus_window(window="Plot1")` -- the window comes forward,
-       at the size it holds; *"en grand"* adds the pixels to put it at
+     - :code:`manage_window(action="focus", window="Plot1")` -- the window
+       comes forward, at the size it holds; *"en grand"* adds the pixels to
+       put it at
    * - a capture of the figure
      - "a capture of Plot1"
      - :code:`get_screenshot(window="Plot1")`
@@ -725,8 +731,9 @@ answers by default:
   psi = 0, 10 and 50 on one figure, and give me the capture"* -- one run, one
   image, the group arrives open.
 - **A re-capture is asked, by the name of the figure.** *"show me Plot1"*
-  brings that figure forward (``focus_window``, at the size it holds);
-  *"a capture of Plot1"* saves it (``get_screenshot``). The page's own
+  brings that figure forward (``manage_window(action="focus")``, at the
+  size it holds); *"a capture of Plot1"* saves it (``get_screenshot``). The
+  page's own
   button on a capture card does the second one. A figure the answer only
   *names* is not among these: a show is the user's command, and the
   mention stays in the transcript, beside the PNG the turn that drew it

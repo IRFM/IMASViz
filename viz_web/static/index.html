@@ -200,7 +200,8 @@ details.tool summary strong { color: var(--accent-strong); }
    the request drew. The newest request sits on top and the older ones
    are kept below -- the pictures are the point of the session, and the
    buttons on their caption act on the window the picture shows
-   (focus_window / get_screenshot take its name). Clicking a picture
+   (manage_window(action="focus") / get_screenshot take its name).
+   Clicking a picture
    enlarges it in the lightbox. */
 .shots { display: flex; flex-direction: column; gap: 10px; }
 .shots .shotGroup { margin: 0; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface); }
@@ -1631,8 +1632,9 @@ details.tool summary strong { color: var(--accent-strong); }
 
      One card per picture, grouped per request: the newest request on
      top, the previous ones kept below, and every card addressed to the
-     window it shows -- the name the `focus_window` and `get_screenshot`
-     gestures take. A group is closed by default: the request names
+     window it shows -- the name the `manage_window(action="focus")` and
+     `get_screenshot` gestures take. A group is closed by default: the
+     request names
      itself and its count, and it reveals its pictures when it is
      opened. The pictures are served from the request's directory on
      disk (`/api/turns/{n}/shots/{name}`), which is what makes them
@@ -1660,7 +1662,7 @@ details.tool summary strong { color: var(--accent-strong); }
     var cap = el('figcaption', {}, [el('span', { 'class': 'shotName' }, [name])]);
     if (window) {
       var focus = el('button', { type: 'button' }, ['Focus']);
-      focus.addEventListener('click', function () { gesture('focus_window', { window: window }); });
+      focus.addEventListener('click', function () { gesture('manage_window', { action: 'focus', window: window }); });
       var shot = el('button', { type: 'button' }, ['Screenshot']);
       shot.addEventListener('click', function () { gesture('get_screenshot', { window: window }); });
       cap.appendChild(focus);
@@ -1826,7 +1828,7 @@ details.tool summary strong { color: var(--accent-strong); }
           appendLine('  ← REFUSAL — ' + j.error, 'refusal');
           return null;
         }
-        if (name === 'focus_window') {
+        if (name === 'manage_window') {
           appendLine('  ← ' + JSON.stringify(j.result || j));
         }
         if (name === 'get_screenshot') {

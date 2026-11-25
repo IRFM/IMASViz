@@ -85,7 +85,8 @@ def test_closing_a_figure_takes_it_out_of_the_records_of_the_session(qapp,
                     finish_reason='stop'),
         # Second: the figure is closed -- the interface stays named.
         LLMResponse(tool_calls=[
-            {'name': 'close_window', 'args': {'key': 'SlicesPlot1'}}],
+            {'name': 'manage_window',
+             'args': {'action': 'close', 'window': 'SlicesPlot1'}}],
             content=''),
         LLMResponse(content='La figure est fermée.', finish_reason='stop'),
     ])
@@ -101,9 +102,11 @@ def test_closing_a_figure_takes_it_out_of_the_records_of_the_session(qapp,
     # The application side of the closure: the window is gone, and the
     # loop said so in the transcript the page reads.
     assert not any(r['key'] == 'SlicesPlot1' for r in core.list_windows()), \
-        'close_window ran: the core must hold the window no more'
+        'the close ran: the core must hold the window no more'
     text = '\n'.join(second['lines'])
-    assert 'close_window' in text
+    assert 'manage_window' in text, \
+        'the transcript names the call the model made, not the gesture ' \
+        'behind it'
     assert 'closed=SlicesPlot1' in text or "'closed': 'SlicesPlot1'" in text
     # The page's side of the truth: the record of the turn that drew
     # it no longer names the figure -- and it keeps the capture the
@@ -135,12 +138,16 @@ def test_closing_a_figure_takes_it_out_of_the_records_of_the_session(qapp,
 def test_the_page_asking_the_close_updates_the_records_the_same_way(qapp,
                                                                     tmp_path):
     """`callGesture` is the direct ask of the page (`POST /api/tool`):
-    a `close_window` it answers runs the same core gesture, and the
-    figure it closes leaves the records the same way the loop's turn
-    takes it out -- the two asks cannot leave two different truths in
-    the gallery behind them. And a key the core does not hold is the
-    refusal of the core, named, with the records left as they are:
-    there is no card to drop for a figure that is not there."""
+    a `manage_window(action="close")` it answers runs the same core
+    gesture, and the figure it closes leaves the records the same way the
+    loop's turn takes it out -- the two asks cannot leave two different
+    truths in the gallery behind them. And a key the core does not hold is
+    the refusal of the core, named, with the records left as they are:
+    there is no card to drop for a figure that is not there.
+
+    The page asks with the group's name because `callGesture` answers every
+    ask through `resolveCall`: a member spelled on its own would come back
+    to the user as a refusal, whoever the caller is."""
     session, core = build(qapp, tmp_path)
     llm = FakeLLMClient([
         LLMResponse(tool_calls=[
@@ -154,7 +161,7 @@ def test_the_page_asking_the_close_updates_the_records_the_same_way(qapp,
     assert first['image_files'] == ['SlicesPlot1.png']
 
     out = inWorker(lambda: session.callGesture(
-        'close_window', {'key': 'SlicesPlot1'}), qapp)
+        'manage_window', {'action': 'close', 'window': 'SlicesPlot1'}), qapp)
     assert out['error'] is None
     assert not any(r['key'] == 'SlicesPlot1' for r in core.list_windows())
     assert session.turns[0]['image_windows'] == [], \
@@ -168,7 +175,7 @@ def test_the_page_asking_the_close_updates_the_records_the_same_way(qapp,
     # The key the session no longer holds is refused by name -- and a
     # refusal of a close is not a close: nothing is taken out.
     out2 = inWorker(lambda: session.callGesture(
-        'close_window', {'key': 'SlicesPlot1'}), qapp)
+        'manage_window', {'action': 'close', 'window': 'SlicesPlot1'}), qapp)
     assert out2['error'] is not None
     assert 'SlicesPlot1' in out2['error']
 

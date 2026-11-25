@@ -310,7 +310,8 @@ def test_a_show_of_a_prior_figure_reaches_the_page(qapp, tmp_path):
     core = ShowCore([3])
     llm = FakeLLMClient([
         LLMResponse(tool_calls=[
-            {'name': 'focus_window', 'args': {'window': 'plot3'}}],
+            {'name': 'manage_window',
+             'args': {'action': 'focus', 'window': 'plot3'}}],
             content=''),
         LLMResponse(content='Voici la figure.', finish_reason='stop'),
     ])

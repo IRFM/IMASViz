@@ -228,7 +228,7 @@ def test_a_prompt_that_only_named_a_figure_saves_the_answer_alone(
 def test_an_explicit_show_of_a_held_figure_is_a_capture(qapp, tmp_path):
     """The half this rule still owes to the user: when the prompt
     ASKS to see the held figure — the "montre-moi SlicesPlot1" that
-    reaches it — the `focus_window` it earned is the capture ask, and
+    reaches it — the focus it earned is the capture ask, and
     the figure is in this prompt's directory like any other ask."""
     llm = CliLLMClient([
         LLMResponse(tool_calls=[
@@ -238,8 +238,8 @@ def test_an_explicit_show_of_a_held_figure_is_a_capture(qapp, tmp_path):
         LLMResponse(content='La figure est tracée.',
                     finish_reason='stop'),
         LLMResponse(tool_calls=[
-            {'name': 'focus_window',
-             'args': {'window': 'SlicesPlot1'}}],
+            {'name': 'manage_window',
+             'args': {'action': 'focus', 'window': 'SlicesPlot1'}}],
             content='C’est devant.',
         ),
         LLMResponse(content='C’est devant.', finish_reason='stop'),

@@ -740,30 +740,54 @@ def buildServer(core, dispatcher, name='imasviz'):
 
     # -------------------------------------------------------------- windows
 
-    @server.tool(name='list_windows')
-    def list_windows():
-        """Every window of the session, in the order the menus draw them.
+    @server.tool(name='manage_window')
+    def manage_window(
+            action: Literal['list', 'show', 'hide', 'close', 'focus'],
+            window: Optional[str] = None,
+            width: Optional[int] = None,
+            height: Optional[int] = None):
+        """What one window of the session is asked to do: `action` picks it.
 
-        The case views, the figures, the plugin windows: each with its
-        kind, its label, its key and whether it is on screen.
+        "list" answers every window in the order the menus draw them -- the
+        case views, the figures, the plugin windows, each with its kind, its
+        label, its key and whether it is on screen. It asks for no window.
+
+        "show" puts a window back on the screen after a hide, at the size it
+        holds; it keeps its key either way. "hide" takes it off the screen
+        without deleting it, and "show" brings it back. "close" deletes it
+        and forgets its key.
+
+        "focus" is the "show me this" gesture: the window comes forward
+        (shown when off screen, raised when not) at the size it holds, and
+        `width`/`height` are the pixels to put it at only when they are
+        named -- a side left out keeps the size the window holds on that
+        side, and a side that is named but is not a positive whole number
+        is refused. Left without a `window`, it means the application. The
+        answer is the size the window then holds.
+
+        `window` is "app" for the application, a figure key for one figure,
+        a case URI for its shot view. Showing is the user's command, not
+        something the agent does after a draw: the figure is in the
+        *Windows* menu, and that is where the raise lives. Neither a draw
+        nor a gesture that moved a figure's content (transform_curve,
+        configure_axes) is a reason to call it.
         """
-        return {'windows': _run(core.list_windows)}
+        gesture = gestureOf('manage_window', {'action': action})
+        args = {name: value for name, value in (
+            ('window', window), ('width', width), ('height', height))
+            if value is not None}
+        unknown = unknownParameters(gesture, args)
+        if unknown:
+            raise ValueError(unknownParameterRefusal(gesture, unknown))
+        missing = missingParameters(gesture, args)
+        if missing:
+            raise ValueError(missingParameterRefusal(gesture, missing))
+        spelled = argumentsForMember(gesture, args)
 
-    @server.tool(name='show_window')
-    def show_window(key: str):
-        """Put a window back on the screen; it keeps its key either way."""
-        return _run(partial(core.show_window, key))
+        def move():
+            return getattr(core, gesture)(**spelled)
 
-    @server.tool(name='hide_window')
-    def hide_window(key: str):
-        """Take a window off the screen without deleting it: it keeps its
-        key and `show_window` brings it back."""
-        return _run(partial(core.hide_window, key))
-
-    @server.tool(name='close_window')
-    def close_window(key: str):
-        """Close a window for good: it is deleted and forgets its key."""
-        return _run(partial(core.close_window, key))
+        return _run(move)
 
     # -------------------------------------------------------------- plugins
 
@@ -929,7 +953,10 @@ def buildServer(core, dispatcher, name='imasviz'):
 
         "app" for the application, a figure key for one figure, a case
         URI for its shot view -- the image content of the answer is the
-        picture itself.
+        picture itself. The picture is the size the window is: when a
+        requested picture should be readable and the window answers
+        small, size it with manage_window(action='focus', width, height)
+        first, then take the picture.
         """
         png = _run(partial(core.screenshot, window))
         return [
@@ -941,28 +968,6 @@ def buildServer(core, dispatcher, name='imasviz'):
                 data=base64.b64encode(png).decode('ascii'),
                 mimeType='image/png'),
         ]
-
-    @server.tool(name='focus_window')
-    def focus_window(window: str = 'app',
-                     width: Optional[int] = None,
-                     height: Optional[int] = None):
-        """Bring a window forward -- the caller's "show me this" command.
-
-        Shown when it is off the screen, raised to the front, and kept
-        at the size it holds unless `width` and `height` name the pixels
-        to put it at (a side left out keeps the size the window holds
-        on that side; both named refusals when they are not positive
-        integers). "app" for the application, a figure key for one
-        figure, a case URI for its shot view. A draw is not a reason to
-        call it -- a figure is a window of the session, in the *Windows*
-        menu -- and neither is a gesture that moved a figure's content
-        (transform_curve, the axes); the caller shows what it wants, when
-        it wants it. Called to make a requested picture readable, size
-        the window first and take the get_screenshot after. The answer
-        is the size the window then holds.
-        """
-        return _run(partial(core.focus_window, window,
-                            width=width, height=height))
 
     # ------------------------------------------------------------------- log
 

@@ -36,8 +36,8 @@ You control the GUI strictly through the provided tools.
   - `indices`: 0-based index of a tensor dimension or nested array (e.g., `indices={"psi": 50}`).
   - `path`: Specific member of a structure array (e.g., `magnetics.flux_loop[2].flux.data`). To plot two members together, call `plot(mode="single")` twice using `into_figure_key` on the second call—never put `flux_loop` in `indices`.
 - **MULTIPLE FAMILIES:** When asked to plot two different families (e.g., probes then flux loops), create two separate figures unless the user explicitly asks to overlay them ("sur la même figure" / "on the same figure").
-- **WINDOWS & FOCUS:** Do NOT call `focus_window` or `show_window` automatically after plotting. Only call them if the user explicitly asks to bring a window to the front.
-- **DESTRUCTIVE & SHARED ACTIONS:** Never call `close_window`, `close_case`, `new_session`, or write to `scope="shared"` (journals/prompts) unless the user explicitly asks for it in their prompt.
+- **WINDOWS & FOCUS:** Do NOT call `manage_window(action="focus")` or `manage_window(action="show")` automatically after plotting. Only call them if the user explicitly asks to bring a window to the front.
+- **DESTRUCTIVE & SHARED ACTIONS:** Never call `manage_window(action="close")`, `close_case`, `new_session`, or write to `scope="shared"` (journals/prompts) unless the user explicitly asks for it in their prompt.
 - **AMBIGUITY:** If a user request is ambiguous (e.g., "sonde 2" when multiple probes exist), list the exact paths found by `search_nodes` and ask the user to choose.
 
 ### RESPONSE FORMAT
@@ -869,37 +869,54 @@ TOOLS = [
         }, 'required': ['figure_key'], 'additionalProperties': False},
     ),
 
+    # One name for everything a window of the session answers, because the
+    # ask is « what do I do with that window », and the five answers differ
+    # by one word. The window itself is named `window` here although three
+    # of the gestures were written against `key`: one group, one word (the
+    # rename is `ACTION_RENAMES`, applied once, after the checks).
     _tool(
-        'list_windows',
-        'Every window of the session, in the order the menus draw them. '
-        'Each with its kind, label, key, and whether it is on screen.',
-        {'type': 'object', 'properties': {}, 'additionalProperties': False},
-    ),
-    _tool(
-        'show_window',
-        'The user\'s "remets Plot1 à l\'écran" command: put a window '
-        'back on the screen after a hide, at the size it holds; it '
-        'keeps its key either way. A window that is on screen but not '
-        'in front is a focus_window, and a draw is neither -- showing '
-        'and raising are the gestures of the user\'s *Windows* menu.',
+        'manage_window',
+        'What one window of the session is asked to do, and `action` says '
+        'which. "list": every window of the session, in the order the menus '
+        'draw them -- kind, label, key, and whether it is on screen. '
+        '"show": the user\'s "remets Plot1 à l\'écran" command -- put a '
+        'window back on the screen after a hide, at the size it holds; it '
+        'keeps its key either way. "hide": take it off the screen without '
+        'deleting it, and "show" brings it back. "close": delete it and '
+        'forget its key -- asked for, never taken on a request that names '
+        'no window. "focus": the user\'s "show me this" command -- the '
+        'window is brought to the front, shown when it is off the screen '
+        'and raised when it is not, and keeps the size it holds unless '
+        '`width` and `height` name the pixels to put it at -- a side left '
+        'out keeps the size the window holds on that side. A window that '
+        'is on screen but not in front is "focus", and a draw is neither: '
+        'showing and raising are the gestures of the user\'s *Windows* '
+        'menu, so a figure you drew or named in your answer is not a '
+        'reason to call it -- a draw is not an ask to show it. `window` is '
+        '"app" for the application, a figure key for one figure, a case '
+        'URI for its shot view; left out of "focus", the application. '
+        'Call "focus" when the user asks to see or bring a window forward '
+        '("montre-moi Plot1", "ramène Plot1 devant", "je ne vois pas la '
+        'figure"), and to size one for a requested picture before the '
+        'get_screenshot on it; it answers the size the window now holds.',
         {'type': 'object', 'properties': {
-            'key': {'type': 'string'},
-        }, 'required': ['key'], 'additionalProperties': False},
-    ),
-    _tool(
-        'hide_window',
-        'Take a window off the screen without deleting it: it keeps its '
-        'key and `show_window` brings it back.',
-        {'type': 'object', 'properties': {
-            'key': {'type': 'string'},
-        }, 'required': ['key'], 'additionalProperties': False},
-    ),
-    _tool(
-        'close_window',
-        'Close a window for good: it is deleted and forgets its key.',
-        {'type': 'object', 'properties': {
-            'key': {'type': 'string'},
-        }, 'required': ['key'], 'additionalProperties': False},
+            'action': {'type': 'string',
+                       'enum': ['list', 'show', 'hide', 'close', 'focus']},
+            'window': {'type': 'string',
+                       'description': 'The window the action is made on: '
+                                      '"app" for the application, a figure '
+                                      'key for one figure, a case URI for '
+                                      'its shot view. Required of "show", '
+                                      '"hide" and "close"; the application '
+                                      'when "focus" leaves it out; not a '
+                                      'parameter of "list".'},
+            'width': {'type': ['integer', 'null'],
+                      'description': '"focus": pixels, 1 and up; left out, '
+                                     'the size the window holds'},
+            'height': {'type': ['integer', 'null'],
+                       'description': '"focus": pixels, 1 and up; left out, '
+                                      'the size the window holds'},
+        }, 'required': ['action'], 'additionalProperties': False},
     ),
     _tool(
         'list_plugins',
@@ -1076,37 +1093,12 @@ TOOLS = [
         '"app" for the application, a figure key for one figure, a case '
         'URI for its shot view. The picture is the size the window is, '
         'and no bigger: when a requested picture should be readable and '
-        'the window answers small, size it with focus_window first, '
-        'then take the picture. The LLM cannot parse this PNG on this '
-        'stack; describe a figure by reading its underlying arrays with '
-        'get_signal instead.',
+        'the window answers small, size it with '
+        'manage_window(action="focus") first, then take the picture. The '
+        'LLM cannot parse this PNG on this stack; describe a figure by '
+        'reading its underlying arrays with get_signal instead.',
         {'type': 'object', 'properties': {
             'window': {'type': 'string', 'default': 'app'},
-        }, 'additionalProperties': False},
-    ),
-    _tool(
-        'focus_window',
-        'The user\'s "show me this" command: the window is brought to '
-        'the front -- shown when it is off the screen, raised when it is '
-        'not -- and keeps the size it holds, unless `width` and '
-        '`height` name the pixels to put it at (a side left out keeps '
-        'the size the window holds on that side). "app" for the '
-        'application, a figure key for one figure, a case URI for its '
-        'shot view. Call it when the user asks to see or bring forward '
-        'a window -- "montre-moi Plot1", "ramène Plot1 devant", '
-        '"je ne vois pas la figure" -- and to size one for a requested '
-        'picture before the get_screenshot on it. A figure you drew or '
-        'named in your answer is not a reason to call it: it is in the '
-        'session\'s *Windows* menu, and a draw is not an ask to show '
-        'it. The answer is the size the window now holds.',
-        {'type': 'object', 'properties': {
-            'window': {'type': 'string', 'default': 'app'},
-            'width': {'type': ['integer', 'null'],
-                      'description': 'Pixels, 1 and up; left out, the '
-                                     'size the window holds'},
-            'height': {'type': ['integer', 'null'],
-                       'description': 'Pixels, 1 and up; left out, the '
-                                      'size the window holds'},
         }, 'additionalProperties': False},
     ),
     _tool(
@@ -1860,6 +1852,28 @@ ACTION_PARAMETERS = {
         'x': {'type': ['boolean', 'null']},
         'y': {'type': ['boolean', 'null']},
     }, ('figure_key',)),
+    # The five things one window of the session answers. Four of them are
+    # made ON a window, and that window is the same word for all four even
+    # though three of the gestures have always taken a `key` -- the rename
+    # is `ACTION_RENAMES` below. "list" is the one that asks for nothing:
+    # it answers every window the session holds. `width`/`height` belong to
+    # "focus" alone, and "focus" is the one that can do without the window
+    # itself: left out, it means the application.
+    'list_windows': ({}, ()),
+    'show_window': ({
+        'window': {'type': 'string'},
+    }, ('window',)),
+    'hide_window': ({
+        'window': {'type': 'string'},
+    }, ('window',)),
+    'close_window': ({
+        'window': {'type': 'string'},
+    }, ('window',)),
+    'focus_window': ({
+        'window': {'type': 'string'},
+        'width': {'type': ['integer', 'null']},
+        'height': {'type': ['integer', 'null']},
+    }, ()),
     'plot_report': ({
         'figure_key': {'type': 'string'},
         'name': {'type': ['string', 'null']},
@@ -1888,6 +1902,15 @@ ACTION_PARAMETERS = {
 ACTION_RENAMES = {
     'plot_slice': {'path': 'leaf'},
     'normalize_curve': {'reference': 'mode'},
+    # The window one group names `window` while three of its gestures have
+    # always taken `key`. It is the rename in the other direction from the
+    # two above: there, the gesture was written before its group; here, the
+    # group's word is the one the whole vocabulary already uses for a window
+    # -- `get_screenshot` asks for a `window`, and a group that answered
+    # `key` beside it would be one idea with two words again.
+    'show_window': {'window': 'key'},
+    'hide_window': {'window': 'key'},
+    'close_window': {'window': 'key'},
 }
 
 

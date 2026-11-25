@@ -25,8 +25,9 @@ What it pins, in the order the session must answer it:
   already answers a readable size keeps it, and a session's saved geometry
   is applied after the embed, over the rule.
 
-* **`focus_window`.** The core gesture the page's buttons and the agent's
-  tool list take: the user's "show me this" -- a window is shown (a hid
+* **`focus_window`.** The core gesture behind the windows group's
+  `manage_window(action="focus")`, and what the page's buttons and the
+  agent's call take: the user's "show me this" -- a window is shown (a hid
   one put back) and raised to the front, and keeps the size it holds
   unless `width` and `height` name the pixels to put it at (a side left
   out keeps the size the window holds on that side). A draw and a
@@ -36,12 +37,13 @@ What it pins, in the order the session must answer it:
   is refused from the open ones.
 
 * **the address of a picture.** `saveShots` answers the `(window, path)`
-  pairs it wrote -- the window is what `focus_window` and `get_screenshot`
+  pairs it wrote -- the window is what a focus and a `get_screenshot`
   take back -- which is what the page's gallery acts on each card with.
 
-* **the tool the loop offers.** `focus_window` in `TOOLS` answers the
-  parameters it takes and refuses the ones it does not (the resolution on
-  the core is `test_116`'s, parametrized over `TOOLS`).
+* **the tool the loop offers.** The windows answer one name, `manage_window`,
+  and its "focus" action answers the parameters it takes and refuses the
+  ones it does not (the resolution on the core is `test_116`'s,
+  parametrized over `TOOLS`).
 """
 
 import base64
@@ -457,20 +459,22 @@ def test_saveShots_keeps_the_figures_the_turn_named(qtbot, tmp_path):
 
 # ------------------------------------------------------------------ the tool
 
-def test_focus_window_is_in_tools_with_its_parameters():
-    focus = next(t for t in TOOLS
-                 if t['function']['name'] == 'focus_window')
-    props = focus['function']['parameters']['properties']
-    assert set(props) == {'window', 'width', 'height'}
-    assert focus['function']['parameters']['additionalProperties'] is False
+def test_the_windows_group_offers_its_focus_with_its_parameters():
+    """The size of a window belongs to the group's "focus", and the schema
+    says so beside the other four actions: the window one word names, and
+    the two sides a focus may be told."""
+    manage = next(t for t in TOOLS
+                  if t['function']['name'] == 'manage_window')
+    props = manage['function']['parameters']['properties']
+    assert set(props) == {'action', 'window', 'width', 'height'}
+    assert manage['function']['parameters']['additionalProperties'] is False
 
 
-def test_focus_window_refuses_a_parameter_it_does_not_hold():
+def test_the_windows_group_refuses_a_parameter_its_action_does_not_hold():
     assert unknownParameters('focus_window',
                              {'window': 'Plot1', 'width': 2,
                               'height': 3, 'zoom': 1}) == ['zoom']
-    # The two names it takes are the ones the page's buttons and the
-    # agent's call hold.
+    # The names the page's buttons and the agent's call hold.
     assert unknownParameters('focus_window',
                              {'window': 'Plot1', 'width': 2,
                               'height': 3}) == []

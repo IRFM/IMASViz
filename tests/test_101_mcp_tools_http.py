@@ -45,7 +45,7 @@ EXPECTED_TOOLS = {
     'describe_ids', 'list_quantities',
     'plot',
     'get_signal',
-    'list_windows', 'show_window', 'hide_window', 'close_window',
+    'manage_window',
     'list_plugins', 'run_plugin',
     'save_session', 'restore_session',
     'list_sessions', 'list_configurations', 'select_from_configuration',

@@ -239,12 +239,17 @@ def test_a_closed_figure_mentioned_stands(qapp):
     """The close of a real figure is not a fabrication: the model closes
     Plot2 (the user asked for it, so the destructive gate lets it) and
     reports it. Plot2 is in the ground set the loop tracked, so the
-    mention stands -- the guard must not refuse an honest close."""
+    mention stands -- the guard must not refuse an honest close.
+
+    The close is asked as the windows group answers it, and the closed key
+    is read back off the `window` of that call: the loop watches what the
+    model typed, not what the gesture behind it was renamed to."""
     core = Core()
     core._open = {'Plot1', 'Plot2'}
     out = runTurn(core, [
         LLMResponse(tool_calls=[
-            {'name': 'close_window', 'args': {'key': 'Plot2'}}],
+            {'name': 'manage_window',
+             'args': {'action': 'close', 'window': 'Plot2'}}],
             content=''),
         LLMResponse(content='Plot2 est fermée, Plot1 reste ouverte.',
                     tool_calls=None, finish_reason='stop'),

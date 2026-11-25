@@ -181,8 +181,8 @@ def test_the_page_keeps_its_screenshots_and_can_act_on_them():
     load -- served from the request's directory on disk
     (`/api/turns/{n}/shots/…`), which is what makes a reload of the page
     cost nothing. Each picture is addressed to the window it shows (the
-    name `focus_window` and `get_screenshot` take), and a click
-    enlarges it in the lightbox.
+    name `manage_window(action="focus")` and `get_screenshot` take), and a
+    click enlarges it in the lightbox.
     """
     with open(INDEX, 'r', encoding='utf-8') as f:
         text = f.read()
@@ -191,9 +191,13 @@ def test_the_page_keeps_its_screenshots_and_can_act_on_them():
     assert '/api/turns' in text, 'the gallery is not served from the request history'
     assert '/shots/' in text, 'the pictures are not served from the request directories'
     assert 'prependTurnShots' in text, 'a request replaces the previous ones, not joins them'
-    # The address of a picture, and the two gestures it answers.
+    # The address of a picture, and the two gestures it answers. The Focus
+    # button speaks the name the tool set offers: the page's click goes
+    # through `resolveCall` like any other face's, so a member asked by its
+    # old name comes back to the user as a refusal.
     assert 'image_windows' in text, 'the cards are not addressed to the window they show'
-    assert 'focus_window' in text, 'no Focus button on the screenshot cards'
+    assert "gesture('manage_window', { action: 'focus'" in text, \
+        'no Focus button on the screenshot cards'
     assert 'get_screenshot' in text, 'no Screenshot button on the screenshot cards'
     # And the one that takes it away: the card names the capture it
     # stands on, and the ask goes to the address the picture was served

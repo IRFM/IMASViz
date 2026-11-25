@@ -349,8 +349,8 @@ class WebSession:
                       'image_files': [name for name in
                                       (entry['name'] for entry in windows)],
                       # The address of every picture: what the page's
-                      # Focus and Screenshot buttons send to focus_window
-                      # and get_screenshot.
+                      # Focus and Screenshot buttons send to
+                      # manage_window(action="focus") and get_screenshot.
                       'image_windows': windows,
                       'reports': sorted(self.reportsOnDisk() - before_reports),
                       'dir': turn_dir}
@@ -506,8 +506,8 @@ class WebSession:
             f.write('\n'.join(lines) + '\n')
         # `saveShots` answers the (window, path) pairs it wrote: the name
         # the page shows is the file's own, and `window` is the address
-        # the same page acts on it with -- focus_window and get_screenshot
-        # take that name back.
+        # the same page acts on it with -- manage_window(action="focus")
+        # and get_screenshot take that name back.
         images = []
         windows = []
         for window, path in saved:
@@ -598,14 +598,23 @@ class WebSession:
             # they name it -- so the same mark the loop's turn applies
             # is applied here, or the reload of the page brings the
             # figures the page just cleared back under the user's eyes.
-            # A refusal of the gesture (a `close_window` on a key the
-            # core does not hold) is the `ValueError` above, and it
-            # takes nothing out: there is no card to drop the close did
-            # not earn.
-            if name == 'close_window':
-                key = (args or {}).get('key')
-                if key:
-                    self._markFiguresClosed([key])
+            # A refusal of the gesture (a close on a key the core does
+            # not hold) is the `ValueError` above, and it takes nothing
+            # out: there is no card to drop the close did not earn.
+            #
+            # The windows group spells this ask `manage_window(action=
+            # "close", window=...)`, and what is read here is what the
+            # caller sent -- before `resolveCall` turns that word into the
+            # `key` the gesture takes. So the action is the question and
+            # `window` is the answer. A reader left on `close_window` /
+            # `key` marks nothing on the page's side, and the reload puts
+            # back the card the user just closed.
+            if name == 'manage_window':
+                sent = args or {}
+                if sent.get('action') == 'close':
+                    key = sent.get('window')
+                    if key:
+                        self._markFiguresClosed([key])
             elif name == 'new_session':
                 self._markFiguresClosed(close_all=True)
             return {'error': None, 'result': result}

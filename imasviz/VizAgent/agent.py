@@ -40,6 +40,7 @@ from imasviz.VizAgent.tools import (
     missingParameterRefusal,
     missingParameters,
     offeredNames,
+    offerHead,
     resolveCall,
     unknownParameterRefusal,
     unknownParameters,
@@ -450,7 +451,14 @@ class AgentLoop(QObject):
                                 and result.get('saved_to')):
                             reports_written.add(result['saved_to'])
                         if gesture == 'close_window':
-                            key = (args or {}).get('key')
+                            # The key is read under the word the CALL spells
+                            # it: the windows group asks for a `window` and
+                            # the gesture behind it has always taken a `key`
+                            # (`ACTION_RENAMES`), and these are the arguments
+                            # the model typed, not the ones the core was
+                            # handed. A reader of `key` here would record no
+                            # figure and refuse an honest "Plot2 est fermée".
+                            key = (args or {}).get('window')
                             if key:
                                 closed_figures.add(key)
                         # The journal line, on the strength of the call that
@@ -830,13 +838,14 @@ class AgentLoop(QObject):
             if invented:
                 return (
                     'the answer presents %s with a curve it does not '
-                    'hold: the session has no such figure open -- '
-                    'list_windows() names what is, and it is not among '
+                    'hold: the session has no such figure open -- %s '
+                    'names what is, and it is not among '
                     'them. Draw it: call %s, '
                     'pill it onto its figure with into_figure_key where '
                     'a curve belongs, and answer from what that call '
                     'returns.'
                     % (' and '.join(sorted(invented)),
+                       callSpelling('list_windows'),
                        callSpelling('plot_one')))
         return None
 
@@ -959,13 +968,20 @@ class AgentLoop(QObject):
         that does not ask for it.
 
         The rule the model sees, in the shape ``test_115``'s refusals
-        wear: who is refused (the gesture, by name), what it costs
-        (the figure, the case and its own figures, or the whole session),
-        that the refusal did not run the gesture (the same thing the user
-        sees on screen still stands), and the one word that unblocks it
-        (an ask in the user's own words, either language). The field
-        report it answers: a figure that "created and then disappears"
-        -- a close the model ran, on a request that did not name one.
+        wear: who is refused (the call it made, spelled as the tool set
+        offers it), what it costs (the figure, the case and its own
+        figures, or the whole session), that the refusal did not run the
+        gesture (the same thing the user sees on screen still stands), and
+        the one word that unblocks it (an ask in the user's own words,
+        either language). The field report it answers: a figure that
+        "created and then disappears" -- a close the model ran, on a
+        request that did not name one.
+
+        The guard is asked about the GESTURE (``DESTRUCTIVE_GESTURES``) and
+        the words name the CALL: the windows group answers
+        ``manage_window(action="close")``, and a refusal naming
+        ``close_window`` would send the model to a name it is refused for
+        asking.
         """
         taken = {
             'close_window': 'the figure it names',
@@ -981,7 +997,8 @@ class AgentLoop(QObject):
             'the window and the session still stand. Run it only once '
             'the user asks for it in their own words ("close Plot5", '
             '"ferme la figure", "nouvelle session"), and answer from '
-            'what that call returns.' % (name, taken, user_prompt))
+            'what that call returns.' % (offerHead(name), taken,
+                                         user_prompt))
 
     def _sharedJournalRefusal(self, name, user_prompt):
         """The named refusal a shared-journal write receives on a

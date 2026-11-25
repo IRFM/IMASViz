@@ -254,18 +254,23 @@ def test_a_name_that_is_not_a_tool_is_answered_as_such():
 
 
 def test_the_advice_stays_inside_the_group():
-    """``show_window`` takes ``key`` while its neighbour of the same group,
-    ``focus_window``, takes ``window`` -- the two spellings the merge of the
-    windows will have to settle. A ``window`` put on ``show_window`` is
-    answered by the neighbour that takes it and never by a tool outside the
-    group: the capture names a window the same way, but pointing at it is a
-    guess about what the caller meant, and a guess is what a refusal exists
-    to avoid."""
-    text = unknownParameterRefusal('show_window', ['window'])
-    assert 'it takes key' in text
-    assert siblingTaking('show_window', 'window') == ['focus_window']
-    assert 'focus_window' in text, \
-        'the neighbour that takes the stray must be named'
+    """The windows are merged under one name now, and that name settled the
+    two spellings this test used to record: ``show_window`` asks ``window``
+    like every other member of the group and the rename turns it into the
+    ``key`` the gesture has always taken. A ``width`` put on a show is a
+    focus parameter, and the advice stays inside the group: the sibling that
+    takes it is named by the call the model can actually type, never by the
+    gesture's member name, and never by a tool outside the group -- the
+    capture names a window the same way, but pointing at it is a guess about
+    what the caller meant, and a guess is what a refusal exists to avoid."""
+    text = unknownParameterRefusal('show_window', ['width'])
+    assert 'it takes window' in text
+    assert siblingTaking('show_window', 'width') == ['focus_window']
+    assert 'manage_window(action="focus")' in text, \
+        'the neighbour that takes the stray must be named as a call'
+    assert 'focus_window' not in text, \
+        'a refusal naming a name the model is no longer offered sends it ' \
+        'to a call it would be refused for asking'
     assert 'get_screenshot' not in text, \
         'the advice left the group and reached %s' % 'the capture'
 
