@@ -197,15 +197,18 @@ the same descriptions. The tools, in the order the faces group them:
        refused by name, and so is a row a band does
        not hold -- naming the rows it does.
    * - the physics of a signal
-     - ``detect_events``, ``clear_event_marks``, ``events_report``,
-       ``spectrum``, ``cross_correlation``, ``spectrum_report``
-     - the events of a leaf's series (``elm`` an excursion up, ``sawtooth`` a
-       crash down, ``lh`` a threshold crossing), optionally marked on a named
-       curve figure; the marks off; the same detection as an HTML report. And
-       what the series oscillates at -- the dominant frequency and period, the
-       leading peaks with their share of the power, the share inside a named
-       band -- and, for a pair of leaves, how far one **lags or leads** the
-       other and at what the two oscillate together. The signal is the one
+     - ``analyze_signal``
+     - one tool, and ``action`` says which of the six reads is meant:
+       ``events`` finds the events of a leaf's series (``elm`` an excursion
+       up, ``sawtooth`` a crash down, ``lh`` a threshold crossing),
+       optionally marked on a named curve figure; ``clear_events`` takes
+       those marks off; ``events_report`` is the same detection as an HTML
+       report. ``spectrum`` is what the series oscillates at -- the dominant
+       frequency and period, the leading peaks with their share of the
+       power, the share inside a named band; ``correlate`` is how far one
+       leaf **lags or leads** another and at what the two oscillate
+       together; ``spectrum_report`` is the same spectral facts on a page.
+       The signal is the one
        ``get_signal`` answers, so what is measured and what a figure of the same
        leaf draws are one read; see :ref:`physical_bricks`.
    * - what a case says

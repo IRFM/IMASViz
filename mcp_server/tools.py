@@ -552,116 +552,89 @@ def buildServer(core, dispatcher, name='imasviz'):
         return _run(partial(core.export_curve, figure_key, curve=curve,
                             format=format, name=name))
 
-    # -------------------------------------------------------------- events
+    # ------------------------------------------------- physics of a signal
 
-    @server.tool(name='detect_events')
-    def detect_events(uri: str, path: str, kind: str,
-                      threshold: Optional[float] = None,
-                      prominence: Optional[float] = None,
-                      min_distance: Optional[int] = None,
-                      direction: Optional[str] = None,
-                      hysteresis: Optional[float] = None,
-                      along: Optional[str] = None,
-                      indices: Optional[dict] = None,
-                      figure_key: Optional[str] = None):
-        """The events of one kind read off the leaf's signal: `elm`
-        (an excursion up), `sawtooth` (a crash down), or `lh` (a threshold
+    @server.tool(name='analyze_signal')
+    def analyze_signal(
+            action: Literal['events', 'clear_events', 'events_report',
+                            'spectrum', 'correlate', 'spectrum_report'],
+            uri: Optional[str] = None,
+            path: Optional[str] = None,
+            path_b: Optional[str] = None,
+            kind: Optional[str] = None,
+            threshold: Optional[float] = None,
+            prominence: Optional[float] = None,
+            min_distance: Optional[int] = None,
+            direction: Optional[str] = None,
+            hysteresis: Optional[float] = None,
+            n_peaks: Optional[int] = None,
+            band_low: Optional[float] = None,
+            band_high: Optional[float] = None,
+            along: Optional[str] = None,
+            indices: Optional[dict] = None,
+            indices_b: Optional[dict] = None,
+            figure_key: Optional[str] = None,
+            name: Optional[str] = None,
+    ):
+        """What one leaf's signal does, and what to do with what it says:
+        `action` picks the ask.
+
+        "events": the events of one `kind` read off the leaf -- `elm` (an
+        excursion up), `sawtooth` (a crash down), `lh` (a threshold
         crossing). The signal is the one get_signal answers, so what is
-        detected and what a figure of the same leaf draws are the same
-        read. A kind refuses a parameter it does not take, by name. `figure_key`
-        marks the events on that curve figure (capped), and clear_event_marks
-        takes them off again.
-        """
-        return _run(partial(core.detect_events, uri, path, kind,
-                            threshold=threshold,
-                            prominence=prominence,
-                            min_distance=min_distance,
-                            direction=direction,
-                            hysteresis=hysteresis,
-                            along=along, indices=indices,
-                            figure_key=figure_key))
+        detected and what a figure of the same leaf draws are the same read.
+        `threshold` / `prominence` / `min_distance` gate an ELM or a
+        sawtooth, `threshold` / `direction` / `hysteresis` an L-H crossing,
+        and a kind refuses a parameter it does not take, by name. `figure_key`
+        marks the events on that curve figure (capped, and refused when it
+        would be a wall).
 
-    @server.tool(name='clear_event_marks')
-    def clear_event_marks(figure_key: str):
-        """The event marks off a curve figure, one detect_events put there.
-        Safe when the figure holds none: it answers the number it took off.
-        """
-        return _run(partial(core.clear_event_marks, figure_key))
+        "clear_events": those marks off a curve figure, safe when it holds
+        none -- it answers the number it took off.
 
-    @server.tool(name='events_report')
-    def events_report(uri: str, path: str, kind: str,
-                      threshold: Optional[float] = None,
-                      prominence: Optional[float] = None,
-                      min_distance: Optional[int] = None,
-                      direction: Optional[str] = None,
-                      hysteresis: Optional[float] = None,
-                      along: Optional[str] = None,
-                      indices: Optional[dict] = None,
-                      figure_key: Optional[str] = None,
-                      name: Optional[str] = None):
-        """The events of one kind as a self-contained HTML report: the same
-        read and detection as detect_events, the events in a table, the
-        period of their times, and the figure when one is named. Lands in
-        `~/.imasviz/reports` like the other reports.
-        """
-        return _run(partial(core.events_report, uri, path, kind,
-                            threshold=threshold,
-                            prominence=prominence,
-                            min_distance=min_distance,
-                            direction=direction,
-                            hysteresis=hysteresis,
-                            along=along, indices=indices,
-                            figure_key=figure_key, name=name))
+        "events_report": the same read and detection as a self-contained HTML
+        page -- the events in a table, the period of their times, and the
+        figure when one is named. Lands in `~/.imasviz/reports` like the
+        other reports, and a `name` that names a place is refused by name.
 
-    @server.tool(name='spectrum')
-    def spectrum(uri: str, path: str,
-                 n_peaks: Optional[int] = None,
-                 band_low: Optional[float] = None,
-                 band_high: Optional[float] = None,
-                 along: Optional[str] = None,
-                 indices: Optional[dict] = None):
-        """What a leaf's time series oscillates at: the dominant frequency and
-        period, the leading peaks (most power first), and the band's share when
-        a band is named. The read is the one get_signal answers for the leaf,
-        so the frequency read is the one a figure of the same leaf draws. A band
-        named with only one bound is refused by name.
-        """
-        return _run(partial(core.spectrum, uri, path,
-                            n_peaks=n_peaks, band_low=band_low,
-                            band_high=band_high,
-                            along=along, indices=indices))
+        "spectrum": what the time series oscillates at -- the dominant
+        frequency and its period, the leading `n_peaks` (most power first),
+        and the band's share between `band_low` and `band_high` when a band
+        is named. A band named with only one bound, or a flat or too-short
+        series, is refused by name.
 
-    @server.tool(name='cross_correlation')
-    def cross_correlation(uri: str, path: str, path_b: str,
-                          along: Optional[str] = None,
-                          indices: Optional[dict] = None,
-                          indices_b: Optional[dict] = None):
-        """How far one leaf's time series lags or leads another, and at what
-        the two ring together. Both reads are the ones a figure draws, so a
-        pair the case does not hold on one clock, or at one length, is refused
-        by name.
-        """
-        return _run(partial(core.cross_correlation, uri, path, path_b,
-                            along=along, indices=indices, indices_b=indices_b))
+        "correlate": how far `path` lags or leads `path_b`, and at what the
+        two oscillate together. Both reads are the ones a figure draws, so a
+        pair the case does not hold on one clock, or at one length, is
+        refused by name.
 
-    @server.tool(name='spectrum_report')
-    def spectrum_report(uri: str, path: str,
-                        n_peaks: Optional[int] = None,
-                        band_low: Optional[float] = None,
-                        band_high: Optional[float] = None,
-                        along: Optional[str] = None,
-                        indices: Optional[dict] = None,
-                        figure_key: Optional[str] = None,
-                        name: Optional[str] = None):
-        """The spectral facts of a leaf's series as a self-contained HTML
-        report: the peaks in a table, the band when named, and the figure when
-        one is named. Lands in `~/.imasviz/reports`.
+        "spectrum_report": the same spectral facts as a self-contained HTML
+        page -- the peaks in a table, the band when named, and the figure
+        when one is named.
+
+        `uri` and `path` are the case and the leaf for the five reads;
+        "clear_events" works on a figure, not on a case. `along` and
+        `indices` pick one element out of a family, the way get_signal does.
         """
-        return _run(partial(core.spectrum_report, uri, path,
-                            n_peaks=n_peaks, band_low=band_low,
-                            band_high=band_high,
-                            along=along, indices=indices,
-                            figure_key=figure_key, name=name))
+        gesture = gestureOf('analyze_signal', {'action': action})
+        args = {name_: value for name_, value in (
+            ('uri', uri), ('path', path), ('path_b', path_b),
+            ('kind', kind), ('threshold', threshold),
+            ('prominence', prominence), ('min_distance', min_distance),
+            ('direction', direction), ('hysteresis', hysteresis),
+            ('n_peaks', n_peaks), ('band_low', band_low),
+            ('band_high', band_high), ('along', along),
+            ('indices', indices), ('indices_b', indices_b),
+            ('figure_key', figure_key), ('name', name))
+            if value is not None}
+        unknown = unknownParameters(gesture, args)
+        if unknown:
+            raise ValueError(unknownParameterRefusal(gesture, unknown))
+        missing = missingParameters(gesture, args)
+        if missing:
+            raise ValueError(missingParameterRefusal(gesture, missing))
+        spelled = argumentsForMember(gesture, args)
+        return _run(partial(getattr(core, gesture), **spelled))
 
     @server.tool(name='greenwald')
     def greenwald(uri: str, n_e_path: str, ip_path: str, area_path: str,

@@ -573,22 +573,65 @@ TOOLS = [
         }, 'required': ['figure_key'], 'additionalProperties': False},
     ),
 
+    # One name for what a leaf's signal is doing, because the six asks are
+    # one question about that signal -- « qu'est-ce que ce signal dit », and
+    # then what to do with the answer. The discriminant is `action`: no
+    # member of this group takes an `action` of its own (test_175 refuses a
+    # discriminant a member already answers for itself), and what sets the
+    # six apart is the read, not a window or a case. `figure_key` is the one
+    # parameter four actions share for three different reasons, so its
+    # description says which is which.
     _tool(
-        'detect_events',
-        'The events of one kind, read off the leaf\'s signal: \'elm\' '
-        '(an excursion up), \'sawtooth\' (a crash down), or \'lh\' (a '
-        'threshold crossing). The signal is the one get_signal answers for '
-        'the leaf, so what is detected and what a figure of the same leaf '
-        'draws are the same read. ELM/sawtooth are gated by threshold '
-        '(value floor), prominence, min_distance; lh by threshold, direction '
-        '(up/down/both), hysteresis -- a kind refuses a parameter it does '
-        'not take, by name. `figure_key` marks the events on that curve '
-        'figure (capped at 40, refused when it would be a wall).',
+        'analyze_signal',
+        'What one leaf\'s signal does, and what to do with what it says: '
+        '`action` picks the ask. "events": the events of one `kind` read off '
+        'the signal -- \'elm\' (an excursion up), \'sawtooth\' (a crash '
+        'down), \'lh\' (a threshold crossing). The signal is the one '
+        'get_signal answers for the leaf, so what is detected and what a '
+        'figure of the same leaf draws are the same read; `threshold` / '
+        '`prominence` / `min_distance` gate an ELM or a sawtooth, '
+        '`threshold` / `direction` / `hysteresis` an L-H crossing, and a '
+        'kind refuses a parameter it does not take, by name. `figure_key` '
+        'marks the events on that curve figure (capped at 40, refused when '
+        'it would be a wall). "clear_events": those marks off a curve '
+        'figure, safe when it holds none -- it answers the number it took '
+        'off. "events_report": the same read and detection as a '
+        'self-contained HTML page -- the events in a table, the period of '
+        'their times, and the picture of the figure when one is named; it '
+        'lands in ~/.imasviz/reports like the other reports, and a `name` '
+        'that names a place is refused by name. "spectrum": what the time '
+        'series oscillates at -- the dominant frequency and its period, the '
+        'leading `n_peaks` (most power first) with their power and share, '
+        'and the share of the power between `band_low` and `band_high` when '
+        'a band is named; a flat or too-short series is refused by name. '
+        '"correlate": how far `path` lags or leads `path_b`, and at what the '
+        'two oscillate together -- the lag in samples and in time, the '
+        'correlation at the peak, and the shared dominant frequency; both '
+        'reads are the ones a figure draws for the two leaves, so a pair the '
+        'case does not hold on one clock, or at one length, is refused by '
+        'name. "spectrum_report": the same spectral facts as a '
+        'self-contained HTML page -- the leading peaks in a table, the band '
+        'when one is named, and the picture of the figure when one is.',
         {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-            'path': {'type': 'string'},
+            'action': {'type': 'string',
+                       'enum': ['events', 'clear_events', 'events_report',
+                                'spectrum', 'correlate', 'spectrum_report']},
+            'uri': {'type': 'string',
+                    'description': 'the case the leaf stands in; asked of '
+                                   '"events", "events_report", "spectrum", '
+                                   '"correlate" and "spectrum_report". '
+                                   '"clear_events" works on a figure, not on '
+                                   'a case.'},
+            'path': {'type': 'string',
+                     'description': 'the leaf; for "correlate", the first of '
+                                    'the two series.'},
+            'path_b': {'type': 'string',
+                       'description': '"correlate": the second series, '
+                                      'lagged against the first.'},
             'kind': {'type': 'string',
-                     'enum': ['elm', 'sawtooth', 'lh']},
+                     'enum': ['elm', 'sawtooth', 'lh'],
+                     'description': '"events" and "events_report": which '
+                                    'event is looked for.'},
             'threshold': {'type': ['number', 'null'],
                           'description': 'ELM/sawtooth: value floor. '
                                          'lh: the level crossed.'},
@@ -608,122 +651,38 @@ TOOLS = [
                            'description': 'lh: band the signal must clear '
                                           'off the level before it '
                                           're-triggers.'},
-            'along': {'type': ['string', 'null']},
-            'indices': {'type': ['object', 'null'],
-                        'description': 'each other axis fixed by name, '
-                                       'the way plot and get_signal do.'},
-            'figure_key': {'type': ['string', 'null'],
-                           'description': 'mark the events on this curve '
-                                          'figure.'},
-        }, 'required': ['uri', 'path', 'kind'],
-           'additionalProperties': False},
-    ),
-    _tool(
-        'clear_event_marks',
-        'The event marks off a curve figure, one detect_events put there. '
-        'Safe when the figure holds none: it answers the number it took '
-        'off.',
-        {'type': 'object', 'properties': {
-            'figure_key': {'type': 'string'},
-        }, 'required': ['figure_key'], 'additionalProperties': False},
-    ),
-    _tool(
-        'events_report',
-        'The events of one kind as a self-contained HTML report: the same '
-        'read and detection as detect_events, the events in a table, the '
-        'period of their times, and the figure when one is named. Lands in '
-        '~/.imasviz/reports like the other reports; a name that names a '
-        'place is refused by name.',
-        {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-            'path': {'type': 'string'},
-            'kind': {'type': 'string',
-                     'enum': ['elm', 'sawtooth', 'lh']},
-            'threshold': {'type': ['number', 'null']},
-            'prominence': {'type': ['number', 'null']},
-            'min_distance': {'type': ['integer', 'number', 'null']},
-            'direction': {'type': ['string', 'null'],
-                          'enum': ['up', 'down', 'both']},
-            'hysteresis': {'type': ['number', 'null']},
-            'along': {'type': ['string', 'null']},
-            'indices': {'type': ['object', 'null']},
-            'figure_key': {'type': ['string', 'null']},
-            'name': {'type': ['string', 'null']},
-        }, 'required': ['uri', 'path', 'kind'],
-           'additionalProperties': False},
-    ),
-
-    _tool(
-        'spectrum',
-        'What a leaf\'s time series oscillates at: the dominant frequency '
-        'and its period, the leading peaks (most power first) with their '
-        'power and share, and -- when a band is named -- the share of the '
-        'power between its two bounds. The read is the one get_signal answers '
-        'for the leaf, so the frequency read is the one a figure of the same '
-        'leaf draws. A flat or too-short series is refused by name.',
-        {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-            'path': {'type': 'string'},
             'n_peaks': {'type': ['integer', 'null'],
-                        'description': 'how many leading peaks come back; '
+                        'description': '"spectrum" and "spectrum_report": '
+                                       'how many leading peaks come back; '
                                        'five when left out.'},
             'band_low': {'type': ['number', 'null'],
-                         'description': 'lower bound of the band, in Hz.'},
+                         'description': '"spectrum" and "spectrum_report": '
+                                        'lower bound of the band, in Hz.'},
             'band_high': {'type': ['number', 'null'],
-                          'description': 'upper bound of the band, in Hz.'},
-            'along': {'type': ['string', 'null']},
+                          'description': '"spectrum" and "spectrum_report": '
+                                         'upper bound of the band, in Hz.'},
+            'along': {'type': ['string', 'null'],
+                      'description': 'the axis the read runs along, for the '
+                                     'five reads of this tool.'},
             'indices': {'type': ['object', 'null'],
                         'description': 'each other axis fixed by name, '
                                        'the way plot and get_signal do.'},
-        }, 'required': ['uri', 'path'],
-           'additionalProperties': False},
-    ),
-    _tool(
-        'cross_correlation',
-        'How far one leaf\'s time series lags or leads another, and at what '
-        'the two oscillate together. Both reads are the ones a figure draws '
-        'for the two leaves, so a pair the case does not hold on one clock, '
-        'or at one length, is refused by name. Answers the lag in samples '
-        'and in time, the correlation of the peak, and the shared '
-        'dominant frequency.',
-        {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-            'path': {'type': 'string',
-                     'description': 'the first series.'},
-            'path_b': {'type': 'string',
-                       'description': 'the second series, lagged against '
-                                      'the first.'},
-            'along': {'type': ['string', 'null']},
-            'indices': {'type': ['object', 'null']},
             'indices_b': {'type': ['object', 'null'],
-                          'description': 'the element of the second series '
-                                         'fixed by name.'},
-        }, 'required': ['uri', 'path', 'path_b'],
-           'additionalProperties': False},
-    ),
-    _tool(
-        'spectrum_report',
-        'The spectral facts of a leaf\'s time series as a self-contained '
-        'HTML report: the same read and spectrum as spectrum, the leading '
-        'peaks in a table, the band when one is named, and the figure when a '
-        'curve figure is named. Lands in ~/.imasviz/reports like the other '
-        'reports; a name that names a place is refused by name.',
-        {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-            'path': {'type': 'string'},
-            'n_peaks': {'type': ['integer', 'null']},
-            'band_low': {'type': ['number', 'null']},
-            'band_high': {'type': ['number', 'null']},
-            'along': {'type': ['string', 'null']},
-            'indices': {'type': ['object', 'null']},
+                          'description': '"correlate": the element of the '
+                                         'second series fixed by name.'},
             'figure_key': {'type': ['string', 'null'],
-                           'description': 'put the picture of this curve '
-                                          'figure on the page.'},
-            'name': {'type': ['string', 'null']},
-        }, 'required': ['uri', 'path'],
-           'additionalProperties': False},
+                           'description': '"clear_events": the curve figure '
+                                          'whose marks come off. "events": '
+                                          'mark the events on it. '
+                                          '"events_report" and '
+                                          '"spectrum_report": put the picture '
+                                          'of it on the page.'},
+            'name': {'type': ['string', 'null'],
+                     'description': '"events_report" and "spectrum_report": '
+                                    'the name of the page; one that names a '
+                                    'place, not a report, is refused.'},
+        }, 'required': ['action'], 'additionalProperties': False},
     ),
-
     _tool(
         'greenwald',
         'The Greenwald fraction of a case, over the time the three read. '
@@ -1878,6 +1837,70 @@ ACTION_PARAMETERS = {
     'reindex_journals': ({
         'scope': {'type': ['string', 'null']},
     }, ()),
+    # The six reads of one leaf's signal. `figure_key` is the parameter the
+    # group is named for: four actions take it, for three different things
+    # (mark them, take the marks off, put the picture on the page), which is
+    # why its description on the offer spells which action means which.
+    'detect_events': ({
+        'uri': {'type': 'string'},
+        'path': {'type': 'string'},
+        'kind': {'type': 'string', 'enum': ['elm', 'sawtooth', 'lh']},
+        'threshold': {'type': ['number', 'null']},
+        'prominence': {'type': ['number', 'null']},
+        'min_distance': {'type': ['integer', 'number', 'null']},
+        'direction': {'type': ['string', 'null'],
+                      'enum': ['up', 'down', 'both']},
+        'hysteresis': {'type': ['number', 'null']},
+        'along': {'type': ['string', 'null']},
+        'indices': {'type': ['object', 'null']},
+        'figure_key': {'type': ['string', 'null']},
+    }, ('uri', 'path', 'kind')),
+    'clear_event_marks': ({
+        'figure_key': {'type': 'string'},
+    }, ('figure_key',)),
+    'events_report': ({
+        'uri': {'type': 'string'},
+        'path': {'type': 'string'},
+        'kind': {'type': 'string', 'enum': ['elm', 'sawtooth', 'lh']},
+        'threshold': {'type': ['number', 'null']},
+        'prominence': {'type': ['number', 'null']},
+        'min_distance': {'type': ['integer', 'number', 'null']},
+        'direction': {'type': ['string', 'null'],
+                      'enum': ['up', 'down', 'both']},
+        'hysteresis': {'type': ['number', 'null']},
+        'along': {'type': ['string', 'null']},
+        'indices': {'type': ['object', 'null']},
+        'figure_key': {'type': ['string', 'null']},
+        'name': {'type': ['string', 'null']},
+    }, ('uri', 'path', 'kind')),
+    'spectrum': ({
+        'uri': {'type': 'string'},
+        'path': {'type': 'string'},
+        'n_peaks': {'type': ['integer', 'null']},
+        'band_low': {'type': ['number', 'null']},
+        'band_high': {'type': ['number', 'null']},
+        'along': {'type': ['string', 'null']},
+        'indices': {'type': ['object', 'null']},
+    }, ('uri', 'path')),
+    'cross_correlation': ({
+        'uri': {'type': 'string'},
+        'path': {'type': 'string'},
+        'path_b': {'type': 'string'},
+        'along': {'type': ['string', 'null']},
+        'indices': {'type': ['object', 'null']},
+        'indices_b': {'type': ['object', 'null']},
+    }, ('uri', 'path', 'path_b')),
+    'spectrum_report': ({
+        'uri': {'type': 'string'},
+        'path': {'type': 'string'},
+        'n_peaks': {'type': ['integer', 'null']},
+        'band_low': {'type': ['number', 'null']},
+        'band_high': {'type': ['number', 'null']},
+        'along': {'type': ['string', 'null']},
+        'indices': {'type': ['object', 'null']},
+        'figure_key': {'type': ['string', 'null']},
+        'name': {'type': ['string', 'null']},
+    }, ('uri', 'path')),
 }
 
 # The few names a merged group offers under a different spelling than the
