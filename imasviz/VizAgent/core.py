@@ -719,7 +719,8 @@ class McpGuiCore:
         if idsInstance is None:
             raise ValueError(
                 'The "%s" IDS occurrence %s is not loaded in this view: '
-                'load it first with load_ids.' % (ids_name, occurrence))
+                'load it first with manage_idss(action="load").'
+                % (ids_name, occurrence))
         props = getattr(idsInstance, 'ids_properties', None)
         if props is None:
             raise ValueError(
@@ -1317,8 +1318,9 @@ class McpGuiCore:
         view = self._viewForUri(uri)
         if 'equilibrium' not in view.IDSRoots:
             raise ValueError(
-                '%s holds no equilibrium IDS, so there is no flux surface to '
-                'draw: list_case_idss names the IDS this case does hold.'
+                '%s holds no equilibrium IDS, so there is no flux surface '
+                'to draw: manage_idss(action="filled") names the IDS this '
+                'case does hold.'
                 % uri)
         from imasviz.VizDataAccess.QVizEquilibriumRead import \
             QVizEquilibriumRead
@@ -3662,7 +3664,8 @@ class McpGuiCore:
         if not rows:
             raise ValueError(
                 'The tree of %s holds no curve: load the IDSs it holds '
-                'first (list_idss names them, load_ids builds the branch).'
+                'first (manage_idss(action="filled") names them, '
+                'manage_idss(action="load") builds the branch).'
                 % uri)
         path = self._namedReport(name, len(rows))
         self._writeReport(path,
@@ -3725,8 +3728,9 @@ class McpGuiCore:
                             'loaded': loaded, 'state': state})
         if not any(row['held'] for row in summary):
             raise ValueError(
-                'The case %s holds no data at all (list_case_idss answers '
-                'the same): there is nothing to report.' % uri)
+                'The case %s holds no data at all '
+                '(manage_idss(action="filled") answers the same): there is '
+                'nothing to report.' % uri)
 
         sections = []
         for key in sorted(view.ids_roots_occurrence):

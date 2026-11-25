@@ -232,6 +232,62 @@ def test_list_case_idss_holds_only_the_held(core):
     assert len(held) < len(declared)
 
 
+def test_the_idss_calls_a_turn_types_answer_the_three_gestures(core):
+    """The three asks about the IDSs of a case answer one name, and its
+    `action` says which. Nothing here asks a gesture of the session: what
+    is pinned is the seam -- the word a turn types and the gesture it
+    reaches, and the refusals a wrong word meets, each naming the call
+    that does answer the gesture it means.
+
+    The last block is the one a merge cannot get wrong in silence: a turn
+    that types the old name is refused, and the refusal has to name the
+    call that replaced it, or the next turn types the old one again.
+    """
+    session, _home = core
+    for action, member in (('declared', 'list_idss'),
+                           ('filled', 'list_case_idss'),
+                           ('load', 'load_ids')):
+        assert gestureOf('manage_idss', {'action': action}) == member
+        name, spelled = resolveCall('manage_idss',
+                                    {'action': action, 'uri': CASE_URI})
+        assert name == member
+        assert 'action' not in spelled, \
+            'the discriminant would reach %s as a stray parameter' % member
+
+    # All three ask a case, so `uri` is the group's own requirement and no
+    # row has to repeat it as a surprise. What the rows answer is the other
+    # half: an `ids_name` beside "filled" is a word of the load ask -- the
+    # group schema has to declare it, since "load" needs it, and only the
+    # row of the action can say it is a stray here.
+    stray = unknownParameters('list_case_idss',
+                              {'uri': CASE_URI, 'ids_name': IDS_NAME})
+    assert stray == ['ids_name'], stray
+    text = unknownParameterRefusal('list_case_idss', stray)
+    assert 'manage_idss(action="filled")' in text, text
+    assert 'manage_idss(action="load")' in text, text
+
+    # And a "load" that names no IDS is an incomplete call, refused before
+    # the core is asked.
+    missing = missingParameters('load_ids', {'uri': CASE_URI})
+    assert missing == ['ids_name']
+    refusal = missingParameterRefusal('load_ids', missing)
+    assert 'manage_idss(action="load", uri, ids_name)' in refusal, refusal
+
+    for member, action in (('list_idss', 'declared'),
+                           ('list_case_idss', 'filled'),
+                           ('load_ids', 'load')):
+        with pytest.raises(ValueError) as refused:
+            resolveCall(member, {})
+        # The head of the call, with the action that means this gesture;
+        # the parameters that follow are the row's own, pinned above.
+        assert 'manage_idss(action="%s"' % action in str(refused.value), \
+            refused.value
+
+    # The probe asked nothing of the session, so the case stands as the
+    # ids before it left it.
+    assert [entry['uri'] for entry in session.list_cases()] == [CASE_URI]
+
+
 # -------------------------------------------------------------------- search
 
 

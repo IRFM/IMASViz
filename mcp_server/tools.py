@@ -46,8 +46,11 @@ cases, driven by name and answered by name.
 How to work with it:
 1. manage_case(action='open', uri) -- the data dictionary is asked of the
    case when you do not name one;
-2. list_idss(uri) tells which IDSs the case holds and which occurrences;
-3. load_ids(uri, ids_name, occurrence) builds the tree branch;
+2. manage_idss(action='filled', uri) tells which IDSs the case actually
+   holds and which occurrences; manage_idss(action='declared') adds the
+   roots the dictionary declares but the case leaves empty;
+3. manage_idss(action='load', uri, ids_name, occurrence) builds the tree
+   branch;
 4. search_nodes(uri, query) names the leaves in every spelling the tree
    holds -- the paths manage_selection(action='select'), plot and
    get_signal take are any of those spellings;
@@ -168,41 +171,46 @@ def buildServer(core, dispatcher, name='imasviz'):
 
     # -------------------------------------------------------------------- ids
 
-    @server.tool(name='list_idss')
-    def list_idss(uri: str):
-        """Every IDS the case's data dictionary declares, and the occurrences
-        each one holds -- including the roots that hold no data (an empty
-        occurrence list). Asked of the case itself, never listed from a file.
+    @server.tool(name='manage_idss')
+    def manage_idss(action: Literal['declared', 'filled', 'load'],
+                    uri: str,
+                    ids_name: Optional[str] = None,
+                    occurrence: Optional[int] = None,
+                    slices: Optional[str] = None):
+        """The IDSs of a case, and `action` picks the ask.
 
-        For the short list of the IDS the case actually holds, use
-        list_case_idss instead: its names can be trusted as the case's own,
-        because they are read from the case through
-        DBEntry.list_all_occurrences, not recalled.
+        'declared': every IDS the case's data dictionary declares and the
+        occurrences each one holds, including the roots that hold no data
+        (an empty occurrence list). 'filled': only the IDS the case
+        actually holds -- read through DBEntry.list_all_occurrences, so its
+        names and counts can be trusted as the case's own. That one is the
+        source of truth for "what is in this case": do not present an IDS
+        list you did not read from this call. 'load': one occurrence of one
+        IDS into the tree, synchronously; `slices` is "first" for the slice
+        a plain load keeps, "all" for the whole dynamic array, and an
+        occurrence the case does not hold is refused by the load with its
+        reason. `ids_name`, `occurrence` and `slices` are Optional because
+        the two lists name no IDS; a word the asked action does not take is
+        refused by name instead of travelling to the core.
         """
-        return {'idss': _run(partial(core.list_idss, uri))}
-
-    @server.tool(name='list_case_idss')
-    def list_case_idss(uri: str):
-        """Only the IDS the case actually holds, and the occurrences each one
-        names -- the roots the dictionary declares but the case does not fill
-        are left out.
-
-        The source of truth for "what is in this case". Do not present an IDS
-        list you did not read from this call.
-        """
-        return {'idss': _run(partial(core.list_case_idss, uri))}
-
-    @server.tool(name='load_ids')
-    def load_ids(uri: str, ids_name: str, occurrence: int = 0,
-                 slices: str = 'first'):
-        """Load one occurrence of one IDS into the tree, synchronously.
-
-        `slices` is "first" for the slice a plain load keeps, "all" for
-        the whole dynamic array -- and an occurrence the case does not
-        hold is refused by the load with its reason.
-        """
-        return _run(partial(core.load_ids, uri, ids_name, occurrence,
-                            slices=slices))
+        gesture = gestureOf('manage_idss', {'action': action})
+        args = {field: value for field, value in (
+            ('uri', uri), ('ids_name', ids_name),
+            ('occurrence', occurrence), ('slices', slices))
+            if value is not None}
+        unknown = unknownParameters(gesture, args)
+        if unknown:
+            raise ValueError(unknownParameterRefusal(gesture, unknown))
+        missing = missingParameters(gesture, args)
+        if missing:
+            raise ValueError(missingParameterRefusal(gesture, missing))
+        spelled = argumentsForMember(gesture, args)
+        answer = _run(partial(getattr(core, gesture), **spelled))
+        if gesture in ('list_idss', 'list_case_idss'):
+            # The SDK answers a top-level list as one content block per
+            # element; the list is a value under a name, not the answer.
+            return {'idss': answer}
+        return answer
 
     # ------------------------------------------------------- the tree itself
 
@@ -226,8 +234,8 @@ def buildServer(core, dispatcher, name='imasviz'):
         (case-insensitive: the display path, the data name, the parametrized
         path), `ids_name` narrowing to one IDS and `limit` bounding the
         answer. The matches come back under `matches`, each with its three
-        spellings -- any is what `select_signals`, `plot` and `get_signal`
-        take -- and the `kind` a plot would make of it.
+        spellings -- any is what manage_selection(action='select'), `plot`
+        and `get_signal` take -- and the `kind` a plot would make of it.
 
         "node" answers what one `path` holds, as the application's own
         documentation says it: units, size, shape, the finite minimum and
@@ -244,7 +252,7 @@ def buildServer(core, dispatcher, name='imasviz'):
         parametrized path, units, data type, how many elements the case
         holds. A scalar (0D) leaf is not a tensor and is not listed; an
         occurrence whose tree was never built is refused -- load it with
-        load_ids first.
+        manage_idss(action='load') first.
         """
         gesture = gestureOf('inspect_tree', {'action': action})
         args = {field: value for field, value in (
@@ -931,8 +939,9 @@ def buildServer(core, dispatcher, name='imasviz'):
         one row per curve the tree holds, the numeric arrays its leaves
         read, in tree order, with the statistics of each. An IDS not yet
         loaded is not a curve, so the answer says how many curves it gave
-        and list_idss names what the case still holds; a case whose loaded
-        tree has no curve is refused by name. "case_ids" -- the case itself
+        and manage_idss(action='declared') names what the case still
+        holds; a case whose loaded tree has no curve is refused by name.
+        "case_ids" -- the case itself
         under one page: every IDS its data dictionary holds and the
         occurrences each one holds (read through
         DBEntry.list_all_occurrences, not listed from memory), which of

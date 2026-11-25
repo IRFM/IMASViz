@@ -17,9 +17,9 @@ The 2026-11-24 rewrite of the instruction keeps the field rules in their
 own words:
 
 * the three words, kept apart: an ``occurrence`` is a version of an IDS
-  (passed to ``load_ids``); ``indices`` is the 0-based index of a tensor
-  dimension or nested array; a ``path`` is a specific member of a
-  structure array;
+  (passed to ``manage_idss(action="load")``); ``indices`` is the 0-based
+  index of a tensor dimension or nested array; a ``path`` is a specific
+  member of a structure array;
 * a family member is picked by its OWN path, never by ``indices`` -- the
   prompt says "never put ``flux_loop`` in ``indices``", the same
   direction the old prompt spelled with ``magnetics.bpol_probe[3]``;
@@ -53,10 +53,12 @@ def _text():
 def test_the_prompt_keeps_the_three_words_apart():
     """The three words the model mixes are each defined, in the direction
     of the application: an occurrence is a version of an IDS passed to
-    load_ids; indices is the 0-based index of a tensor dimension or nested
-    array; a path is a specific member of a structure array."""
+    ``manage_idss(action="load")``; indices is the 0-based index of a
+    tensor dimension or nested array; a path is a specific member of a
+    structure array."""
     text = _text()
-    assert '`occurrence`: version of an ids (passed to `load_ids`)' in text
+    assert '`occurrence`: version of an ids (passed to ' \
+           '`manage_idss(action="load")`)' in text
     assert '0-based index of a tensor dimension or nested array' in text
     assert 'specific member of a structure array' in text
 

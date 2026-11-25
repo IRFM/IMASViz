@@ -172,7 +172,8 @@ def test_a_persistent_fabrication_is_refused_after_one_reanchor(qapp,
         'an unfounded list must end in a named refusal'
     assert joined.count('REFUSAL') >= 2, \
         'the one re-anchor and the final refusal are each named'
-    assert 'list_case_idss' in errors[0], 'the refusal names the grounding tool'
+    assert 'manage_idss(action="filled", uri)' in errors[0], \
+        'the refusal names the grounding tool'
     assert 'bpol_probe' not in errors[0], 'the refusal is not the list itself'
 
 
@@ -241,7 +242,8 @@ def test_an_inventory_stands_after_a_case_tool(qapp, agent_kwargs):
     a real "list_case_idss then answer" flow reaches the user."""
     llm = FakeLLMClient([
         LLMResponse(content='', tool_calls=[
-            {'name': 'list_case_idss', 'args': {'uri': 'x'}}],
+            {'name': 'manage_idss',
+             'args': {'action': 'filled', 'uri': 'x'}}],
             finish_reason='tool_calls'),
         LLMResponse(content=CONFABULATED, tool_calls=None,
                     finish_reason='stop'),
@@ -255,7 +257,7 @@ def test_an_inventory_stands_after_a_case_tool(qapp, agent_kwargs):
     agent.tools_mode = 'verbose'
     joined, errors = _ask(agent, 'list the ids in the case')
     assert errors == [None], 'a tool-grounded answer must stand'
-    assert 'list_case_idss' in joined, 'the grounding call showed in the log'
+    assert 'manage_idss' in joined, 'the grounding call showed in the log'
 
 
 def test_a_conversational_answer_stands(qapp, agent_kwargs):
@@ -357,8 +359,8 @@ def test_the_refusal_points_at_the_grounding_tools(qapp, agent_kwargs):
                       dispatcher=FakeDispatcher(), **agent_kwargs)
     joined, errors = _ask(agent, 'what ids are in this case?')
     assert errors and errors[0] is not None
-    assert 'list_case_idss' in errors[0]
-    assert 'list_idss' in errors[0]
+    assert 'manage_idss(action="filled", uri)' in errors[0]
+    assert 'manage_idss(action="declared", uri)' in errors[0]
     assert 'list_sessions' in errors[0]
     assert 'get_signal' in errors[0], 'a figure claim is grounded by the read'
     assert 'plot(mode="single"' in errors[0], \

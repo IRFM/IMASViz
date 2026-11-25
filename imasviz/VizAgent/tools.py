@@ -20,8 +20,10 @@ You control the GUI strictly through the provided tools.
 
 ### MANDATORY WORKFLOW
 1. `manage_case(action="open", uri)` -> Open the shot.
-2. `list_case_idss(uri)` -> Check which IDSs and occurrences actually exist in the case.
-3. `load_ids(uri, ids_name, occurrence)` -> Load the required IDS into the tree.
+2. `manage_idss(action="filled", uri)` -> Check which IDSs and occurrences
+   actually exist in the case.
+3. `manage_idss(action="load", uri, ids_name, occurrence)` -> Load the
+   required IDS into the tree.
 4. `inspect_tree(action="search")` or `inspect_tree(action="quantities")` -> Find exact leaf paths.
 5. `plot(mode=...)` or `get_signal(...)` -> Draw curves or read numerical values.
    `mode` is the shape of the drawing: "single" one quantity, "slice" one
@@ -32,7 +34,8 @@ You control the GUI strictly through the provided tools.
 - **NO HALLUCINATION:** Never invent IDS names, paths, numbers, figure keys, or file paths. Only state facts returned by a tool in this session.
 - **NO FAKE ACTIONS:** Never say you plotted a curve, wrote a report, or saved a note unless the corresponding tool returned `error: null` in this turn. If a tool fails or refuses, report the exact refusal reason.
 - **OCCURRENCE vs INDICES vs PATH:**
-  - `occurrence`: Version of an IDS (passed to `load_ids`).
+  - `occurrence`: Version of an IDS (passed to
+    `manage_idss(action="load")`).
   - `indices`: 0-based index of a tensor dimension or nested array (e.g., `indices={"psi": 50}`).
   - `path`: Specific member of a structure array (e.g., `magnetics.flux_loop[2].flux.data`). To plot two members together, call `plot(mode="single")` twice using `into_figure_key` on the second call—never put `flux_loop` in `indices`.
 - **MULTIPLE FAMILIES:** When asked to plot two different families (e.g., probes then flux loops), create two separate figures unless the user explicitly asks to overlay them ("sur la même figure" / "on the same figure").
@@ -74,8 +77,9 @@ names any of it is an answer that is wrong.
 What you do: say in direct words what you can answer from what you know
 about plasma fusion and IMAS in general, and say out loud where an answer
 needs the case, naming the gesture that would read it from the case --
-``list_case_idss``, ``plot``, ``get_signal`` -- and inviting the user
-to switch the agent back to a shape where it runs, the tools back on.
+``manage_idss(action="filled")``, ``plot``, ``get_signal`` -- and
+inviting the user to switch the agent back to a shape where it runs, the
+tools back on.
 The user asks a question, you answer it in the shape you can answer in."""
 
 
@@ -118,43 +122,41 @@ TOOLS = [
                                           'pin'},
         }, 'required': ['action'], 'additionalProperties': False},
     ),
+    # The three asks about the IDSs of a case: what its data dictionary
+    # declares, which of those the case actually fills, and the load of one
+    # occurrence into the tree. All three ask the same case by URI, so the
+    # group can require `uri` beside its discriminant -- and the rows of
+    # `ACTION_PARAMETERS` are what say that "load" is nothing without the
+    # IDS it loads, and that an `ids_name` beside "filled" is a word that
+    # went to the wrong ask.
     _tool(
-        'list_idss',
-        'Every IDS the case\'s data dictionary declares, and the occurrences '
-        'each one holds -- including the roots that hold no data (an empty '
-        'occurrence list). Asked of the case itself, never listed from a '
-        'file. For the short list of the IDS the case actually holds, use '
-        'list_case_idss instead.',
+        'manage_idss',
+        'The IDSs of a case, and `action` says which ask. "declared": every '
+        'IDS its data dictionary declares and the occurrences each holds, '
+        'the roots that hold no data included. "filled": only the IDS the '
+        'case actually holds, read through DBEntry.list_all_occurrences, so '
+        'the names and counts are the case\'s own -- the list to answer '
+        '"what is in this case" with, never a recalled, summarised or '
+        'renamed one. "load": one occurrence of one IDS into the tree, '
+        'synchronously; `slices` is "first" for the slice a plain load '
+        'keeps, "all" for the whole dynamic array.',
         {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-        }, 'required': ['uri'], 'additionalProperties': False},
-    ),
-    _tool(
-        'list_case_idss',
-        'Only the IDS the case actually holds, and the occurrences each one '
-        'names -- the roots the dictionary declares but the case does not '
-        'fill are left out. Asked of the case through '
-        'DBEntry.list_all_occurrences, so the names and counts are the case\'s '
-        'own. This is the list to answer "what is in this case" with; '
-        'recalling IDS names from memory is not. Do not summarise or rename '
-        'the answer, and do not present an IDS list you did not read from '
-        'this call.',
-        {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-        }, 'required': ['uri'], 'additionalProperties': False},
-    ),
-    _tool(
-        'load_ids',
-        'Load one occurrence of one IDS into the tree, synchronously. '
-        '`slices` is "first" for the slice a plain load keeps, "all" for '
-        'the whole dynamic array.',
-        {'type': 'object', 'properties': {
-            'uri': {'type': 'string'},
-            'ids_name': {'type': 'string'},
-            'occurrence': {'type': 'integer', 'default': 0},
-            'slices': {'type': 'string', 'enum': ['first', 'all'],
-                       'default': 'first'},
-        }, 'required': ['uri', 'ids_name'], 'additionalProperties': False},
+            'action': {'type': 'string', 'enum': ['declared', 'filled',
+                                                  'load']},
+            'uri': {'type': 'string',
+                    'description': 'the case the IDSs are asked of'},
+            'ids_name': {'type': ['string', 'null'],
+                         'description': '"load": the IDS to load, and it is '
+                                        'asked of that action'},
+            'occurrence': {'type': ['integer', 'null'],
+                           'description': '"load": which occurrence; 0 when '
+                                          'left out'},
+            'slices': {'type': ['string', 'null'],
+                       'enum': ['first', 'all'],
+                       'description': '"load": how much of the dynamic '
+                                      'array the load keeps; "first" when '
+                                      'left out'},
+        }, 'required': ['action', 'uri'], 'additionalProperties': False},
     ),
     # One name for the four ways the tree answers a question about itself:
     # which leaves the case holds, what one of them holds, what the data
@@ -182,7 +184,8 @@ TOOLS = [
         'of one `occurrence`, grouped by the array of structures that '
         'drives them -- the "what can be drawn" answer. A scalar (0D) leaf '
         'is not a tensor and is not listed; an occurrence whose tree was '
-        'never built is refused by name, load it with load_ids first.',
+        'never built is refused by name, load it with '
+        'manage_idss(action="load") first.',
         {'type': 'object', 'properties': {
             'action': {'type': 'string',
                        'enum': ['search', 'node', 'ids', 'quantities']},
@@ -967,7 +970,8 @@ TOOLS = [
         'case: one row per curve the tree holds -- the numeric arrays its '
         'leaves read, in tree order -- with the statistics of each. An IDS '
         'not yet loaded is not a curve, so the answer says how many curves '
-        'it gave and list_idss names what the case still holds. A case '
+        'it gave and manage_idss(action="declared") names what the case '
+        'still holds. A case '
         'whose loaded tree has no curve is refused by name. "case_ids" -- '
         'the case itself: every IDS the case\'s data dictionary holds and '
         'the occurrences each one holds, which of those the session '
@@ -1559,6 +1563,24 @@ ACTION_PARAMETERS = {
     'close_case': ({
         'uri': {'type': 'string'},
     }, ('uri',)),
+    # The three asks about the IDSs of a case. The group requires `uri`
+    # because all three ask a case, but only "load" takes the IDS it loads:
+    # these rows are what say that a "load" without `ids_name` is an
+    # incomplete call and that an `ids_name` beside "filled" or "declared"
+    # belongs to the third ask.
+    'list_idss': ({
+        'uri': {'type': 'string'},
+    }, ('uri',)),
+    'list_case_idss': ({
+        'uri': {'type': 'string'},
+    }, ('uri',)),
+    'load_ids': ({
+        'uri': {'type': 'string'},
+        'ids_name': {'type': 'string'},
+        'occurrence': {'type': 'integer', 'default': 0},
+        'slices': {'type': 'string', 'enum': ['first', 'all'],
+                   'default': 'first'},
+    }, ('uri', 'ids_name')),
     # What the tree of a case says about itself. `query` belongs to the
     # rank alone, and `ids_name` is optional for that one only: it narrows a
     # search that stands without it, while "ids" and "quantities" are

@@ -718,11 +718,13 @@ class AgentLoop(QObject):
             'table of values, but no tool was called this request to '
             'ground it; a list, curve or number you recite is not the '
             'truth of this session. Ground it: the case\'s IDS with '
-            'list_case_idss(uri) or list_idss(uri), the saved sessions '
+            '%s or %s, the saved sessions '
             'with %s, the profile\'s arrays with '
             'get_signal(uri, path, ...) -- and show its curve with '
             '%s -- and answer only from what those '
-            'calls return.' % (callSpelling('list_sessions'),
+            'calls return.' % (callSpelling('list_case_idss'),
+                               callSpelling('list_idss'),
+                               callSpelling('list_sessions'),
                                callSpelling('plot_one')))
 
     def _deflectionRefusal(self, content, last_action):

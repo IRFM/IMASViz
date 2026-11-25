@@ -42,7 +42,9 @@ EXPECTED_TOOLS = {
     # The three asks about the cases of the session answer one name, with
     # `action` saying which, as they do on the loop face.
     'manage_case',
-    'list_idss', 'load_ids', 'inspect_tree',
+    # The three asks about the IDSs of a case answer one name too, with
+    # `action` saying which.
+    'manage_idss', 'inspect_tree',
     # The three asks about the selection answer one name, as they do on the
     # loop face.
     'manage_selection',
@@ -193,8 +195,8 @@ def _openCase(session):
         'uri': CASE_URI, 'dd_version': CASE_DATA_DICTIONARY_VERSION})
 
 
-def _listIdss(session, uri):
-    return session.call_tool('list_idss', {'uri': uri})
+def _listIdss(session, uri, action):
+    return session.call_tool('manage_idss', {'action': action, 'uri': uri})
 
 
 def _listCases(session):
@@ -235,11 +237,21 @@ def test_open_case_comes_back_over_the_wire(mcpSession):
     assert 'equilibrium' in data['ids'], 'the ids the case holds are not in the answer'
 
 
-def test_list_idss_answers_the_case_itself(mcpSession):
-    result = mcpSession['invoke']([lambda s: _listIdss(s, CASE_URI)])[1]
-    data = _payload(result)
-    entry = next(item for item in data['idss'] if item['name'] == IDS_NAME)
+def test_the_two_idss_lists_answer_the_case_itself(mcpSession):
+    """Both lists of the group come back over the wire under one name: the
+    dictionary's declaration and the shorter list of what the case actually
+    holds. Each stays a value under `idss` -- the SDK would answer a
+    top-level list as one content block per element."""
+    _, declared, held = mcpSession['invoke']([
+        lambda s: _listIdss(s, CASE_URI, 'declared'),
+        lambda s: _listIdss(s, CASE_URI, 'filled'),
+    ])
+    entry = next(item for item in _payload(declared)['idss']
+                 if item['name'] == IDS_NAME)
     assert entry['occurrences'] == EQUILIBRIUM_OCCURRENCES, entry
+    filled = next(item for item in _payload(held)['idss']
+                  if item['name'] == IDS_NAME)
+    assert filled['occurrences'], filled
 
 
 def test_get_logs_reads_the_panel(mcpSession):
@@ -254,7 +266,8 @@ def test_get_logs_reads_the_panel(mcpSession):
 
 def test_a_refusal_is_named_over_the_wire(mcpSession):
     result = mcpSession['invoke']([
-        lambda s: _listIdss(s, 'imas:hdf5?path=/no/such/case')])[1]
+        lambda s: _listIdss(s, 'imas:hdf5?path=/no/such/case', 'declared')
+    ])[1]
     assert result.isError is True, 'a refused case is an error the tool says so'
     assert 'is not open in this session' in _text(result), _text(result)
 

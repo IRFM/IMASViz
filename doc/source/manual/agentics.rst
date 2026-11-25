@@ -140,11 +140,14 @@ the same descriptions. The tools, in the order the faces group them:
        holds; ``close`` takes one open case, its view, its windows and its
        bookkeeping away for good.
    * - the IDSs
-     - ``list_idss``, ``list_case_idss``, ``load_ids``
-     - every IDS the data dictionary declares, the short list of the IDS the
-       case **actually** holds (the one to trust), and the load of one
-       occurrence into the tree -- "first" for the slice a plain load keeps,
-       "all" for the whole dynamic array.
+     - ``manage_idss``
+     - one tool for the IDSs of a case, and ``action`` says which ask:
+       ``declared`` answers every IDS the data dictionary declares, with
+       the occurrences each one holds, the roots that hold no data
+       included; ``filled`` the short list of the IDS the case **actually**
+       holds -- the one to trust; ``load`` puts one occurrence of one IDS
+       into the tree, ``slices`` being "first" for the slice a plain load
+       keeps and "all" for the whole dynamic array.
    * - the tree
      - ``inspect_tree``
      - one tool for what the tree says about itself, and ``action`` says
