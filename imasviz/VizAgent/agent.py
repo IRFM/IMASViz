@@ -1309,10 +1309,17 @@ _CLAIM_NEGATION_RE = re.compile(r'\bnot\b|\bpas\b|\bnever\b')
 # other. A success is one that found its figure (`_windowForKey` is
 # what refuses a key it does not hold), so the ask of such a call is as
 # grounded as its answer.
+# `run_plugin` belongs here with the draws, not beside them: an entry
+# draws a window of its own, and it did. Left out, the turn that ran
+# `run_plugin` on `equilibriumsurfaces` and answered « j'ai tracé les
+# surfaces sur EquiSurfaces:1 » met a guard that had seen no work on
+# that key, and its re-anchor ("do the work: draw it") sent the model
+# to the drawing tool -- a second, identical window. `run_plugin`
+# answers the keys it drew as `drawn` for exactly that reading.
 _WORK_GESTURES = frozenset((
     'plot_one', 'plot_slice', 'plot_selection',
     'plot_table', 'plot_stacked', 'equilibrium_surfaces',
-    'equilibrium_at_time', 'scale_curve', 'shift_curve',
+    'equilibrium_at_time', 'run_plugin', 'scale_curve', 'shift_curve',
     'normalize_curve', 'reset_curve', 'remove_curve', 'set_axis_range',
     'set_log_scale', 'invert_axis'))
 # `list_windows` is a read of the session's own figures: the answer is
@@ -1340,12 +1347,19 @@ def _groundedFigureKeys(args, result):
             value = result.get(field)
             if isinstance(value, str) and value:
                 keys.append(value)
-        for value in result.get('figures') or ():
-            if isinstance(value, str):
-                keys.append(value)
-    # A list result is the window list `list_windows` answers: each entry
-    # carries the key of the window it is, and a claim on one of them
-    # stands on that read the way a `curve_stats` read does.
+        # `figures` is what the multi-window draws answer; `drawn` is what
+        # `run_plugin` answers for the windows its entry registered. Neither
+        # is the whole screen: a plugin entry answers `windows` too, and that
+        # list is every window of the session, so reading it would ground a
+        # claim of work on a figure this request never touched.
+        for field in ('figures', 'drawn'):
+            for value in result.get(field) or ():
+                if isinstance(value, str):
+                    keys.append(value)
+    # A list result is the window list `list_windows` answers -- a call whose
+    # whole answer is that read, which is another thing from the `windows`
+    # field above: each entry carries the key of the window it is, and a claim
+    # on one of them stands on that read the way a `curve_stats` read does.
     if isinstance(result, list):
         for entry in result:
             if isinstance(entry, dict) and isinstance(entry.get('key'), str):

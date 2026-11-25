@@ -1272,6 +1272,25 @@ class equilibriumcharts(VizPlugin):
         # `figureframes` stayed empty and the only way out of a window was its
         # own Exit entry, while each new click on the menu built another one on
         # top of the previous.
+        #
+        # A second call of this entry on a window that already stands gets that
+        # window back on the screen, not a second chart of the same case: the
+        # caller (the agent's `run_plugin`) found the window by the stamp this
+        # entry leaves on the frame and handed its key with `reuse`. A session
+        # replay is not a reuse -- it names the key its file gave the window and
+        # means to build it.
+        if context.answers is not None and context.answers.reuse:
+            standing = context.api.figureframes.get(context.answers.figureKey)
+            if standing is not None:
+                self.frame = standing
+                context.api.setWindowVisible(standing, True)
+                standing.raise_()
+                standing.activateWindow()
+                logging.getLogger(context.view.dataSource.uri).info(
+                    'The Equilibrium chart of this case is already open: %s is '
+                    'put back on the screen instead of drawing a second chart.'
+                    % context.answers.figureKey)
+                return
         figureKey = context.api.FigureKeyFor(FigureTypes.EQUILIBRIUMPLOTTYPE,
                                              None if context.answers is None
                                              else context.answers.figureKey)

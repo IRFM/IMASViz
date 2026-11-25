@@ -1175,6 +1175,43 @@ class Viz_API:
                 return figureKey
         return None
 
+    def openWindowOfPluginEntry(self, uri, plugin, entry, occurrence, time=None,
+                                ids_name=None):
+        """The open window that plugin entry already drew, or None.
+
+        A plugin window is stamped when it is drawn (`VizPlugins/VizPlugin.py`
+        `QVizPluginWindow`), which is what a session reads to put it back; the
+        same stamp answers "is this thing already on the screen?". It matters
+        because the stamp is the only place saying *which* entry drew a window:
+        the key says the kind, the registry says the case, and nothing says the
+        entry. So the second call of one entry can be drawn into the window that
+        stands instead of opening a second one over it.
+
+        `time` narrows to the instant the entry answered, because an entry that
+        draws one instant per window answers a different window per instant:
+        asked for `None`, the search takes an entry's window at any instant.
+        `ids_name` narrows to the branch the entry was asked on, because one
+        entry can be offered on several IDS roots and answer one window each:
+        the Profiles line earns a panel per IDS, all of them stamped with the
+        same plugin, entry and occurrence, so a call asking for the `equilibrium`
+        panel would otherwise redraw the `magnetics` one.
+        A window whose Qt side is gone is forgotten on the way, like the
+        *Windows* menu does (`releaseLeftBehind`), so a close interrupted
+        between its windows cannot hold the search off a new window.
+        """
+        self.releaseLeftBehind()
+        for figureKey, frame in self.figureframes.items():
+            stamp = getattr(frame, 'pluginWindow', None)
+            if stamp is None:
+                continue
+            if (stamp.uri == uri and stamp.plugin == plugin
+                    and stamp.entry == entry
+                    and stamp.occurrence == occurrence
+                    and (ids_name is None or stamp.ids == ids_name)
+                    and (time is None or getattr(stamp, 'time', None) == time)):
+                return figureKey
+        return None
+
     def DeleteFigure(self, figureKey):
         """Take a figure out of the run: its window and its key both go.
 

@@ -327,6 +327,37 @@ A window that is never registered in ``figureframes`` (a plain ``matplotlib``
 window, like the one this tutorial draws) is not in the session at all, and the
 :guilabel:`Windows` menu does not reach it either.
 
+That same stamp answers a second question, and the answer is what keeps a window
+from being drawn twice. The agent's ``run_plugin`` asks the api which open window
+carries the stamp of the entry it is about to run (``Viz_API.openWindowOfPluginEntry``,
+named for the case, the entry, the occurrence, the branch it was asked on and --
+for an entry that draws one window per instant -- the instant). When it finds
+one, it hands your action that window's key with ``context.answers.reuse`` set:
+the ask is the same line asked again, so the window that stands is what has to
+answer it -- redrawn from the inside, or put back on the screen if the user had
+only hidden it. Drawing a second one leaves two windows saying the same thing,
+with one gesture in the transcript. A **session replay** is not a reuse: it names
+the key its file gave the window, means to build it, and gets ``reuse`` false --
+so keep the strict rule that a key a live window already holds is refused.
+
+.. code-block:: python
+
+    def draw(self, context):
+        if context.answers is not None and context.answers.reuse:
+            standing = context.api.figureframes[context.answers.figureKey]
+            context.api.setWindowVisible(standing, True)
+            standing.raise_()
+            standing.activateWindow()
+            return
+
+That is the whole answer for a window whose content does not change between two
+asks -- what the shipped ``equilibriumcharts`` entry and the Profiles panel do.
+An entry whose window **re-reads the case** has to take its own drawings back
+before laying the new ones down, or the second read is laid under the first;
+``QVizEquilibriumFigure.clearDrawings`` is the shipped example of that, and it is
+called only once the reads have answered, so an entry that fails leaves the
+window exactly as the user left it.
+
 A registered window of your own should follow the same close rule as the rest of
 the application. A window inside the MDI area already does: the subwindow it sits
 in asks the api what its close box is worth. A top-level window -- one you show

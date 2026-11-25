@@ -88,6 +88,7 @@ from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizMainMenuController \
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizWindowMenu \
     import QVizWindowMenu
 from imasviz.VizPlugins.QVizPluginCatalog import QVizPluginCatalog
+from imasviz.VizPlugins.VizPlugin import QVizPluginAnswers
 from imasviz.VizUtils import FigureTypes, QVizPreferences
 
 from conftest import (CASE_DATA_DICTIONARY_VERSION, CASE_URI, case_uri_or_skip)
@@ -512,6 +513,33 @@ def test_a_second_click_gets_its_own_key(session):
     # Measured: 0,44 s once the case holds the IDS, against 6,73 s for the first
     # run, which is the one reading it.
     assert session.runCost < 5.0, 'the second run cost %.2f s' % session.runCost
+
+
+def test_a_tool_call_for_the_chart_that_stands_gets_that_chart_back(session):
+    """A second *call* is not a second click on the line.
+
+    The id above pins that a click earns its own key: two charts of one case is
+    what a user asking twice wants. The agent's `run_plugin` is different -- it
+    looks the window up by the stamp this entry leaves on the frame and hands
+    its key with `reuse`, because what it asks for is the answer showing, not a
+    second copy of the same fourteen axes. The window is hidden first: one the
+    close box only hides keeps its key, and putting it back on the screen is
+    what the redraw owes whoever asked.
+    """
+    frame = session.api.figureframes[SECOND_KEY]
+    session.api.setWindowVisible(frame, False)
+    assert not frame.isVisible()
+    keys = list(session.api.GetFiguresKeys(figureType=KIND))
+
+    answers = QVizPluginAnswers(occurrence=0, figureKey=SECOND_KEY, reuse=True)
+    refusal = session.catalog.run(session.entry, answers=answers)
+    session.qapp.processEvents()
+
+    assert refusal is None, refusal
+    assert session.api.GetFiguresKeys(figureType=KIND) == keys, \
+        'the call drew a second chart of the same case'
+    assert session.api.figureframes[SECOND_KEY] is frame
+    assert frame.isVisible(), 'the chart was left off the screen'
 
 
 def test_the_menu_lists_the_plugin_windows_and_delete_takes_one_away(session):

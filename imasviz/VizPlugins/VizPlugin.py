@@ -222,9 +222,15 @@ QVizPluginWindow = namedtuple('QVizPluginWindow',
 # by. `time` is the instant an entry answered -- a session replaying
 # `equilibriumsurfaces` entry 1 hands it the number the file held instead of
 # opening the dialog a second time; it is `None` when the entry asks no time.
+# `reuse` says what `figureKey` is: a window the entry already drew and is asked
+# to draw again (True), as opposed to the key a session file named for the window
+# it is putting back (False). The two need different answers from the plugin,
+# because the plot commands refuse to hand out a key a live window holds --
+# rightly for a replay, which would put two windows under one name, and wrongly
+# for a redraw, which is the same window showing the second answer.
 QVizPluginAnswers = namedtuple('QVizPluginAnswers',
-                               'occurrence figureKey time',
-                               defaults=(None,))
+                               'occurrence figureKey time reuse',
+                               defaults=(None, None, False))
 
 
 RegisteredPlugins = {'equilibriumcharts': 'viz_equi.equilibriumcharts',

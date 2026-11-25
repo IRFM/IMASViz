@@ -34,6 +34,7 @@ from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizMainMenuController \
     import QVizMainMenuController
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizTablePlot import QVizTablePlot
 from imasviz.VizPlugins.QVizPluginCatalog import QVizPluginCatalog
+from imasviz.VizPlugins.VizPlugin import QVizPluginAnswers
 from imasviz.VizPlugins.viz_Profiles.viz_profiles.QVizProfilePanel import \
     QVizProfilePanel
 
@@ -153,6 +154,36 @@ def test_the_entry_of_another_ids_still_opens_its_own_window(session):
     assert {one.idsName for one in panels} == {IDS_NAME, OTHER_IDS}, panels
     assert len(panels) == len({one for one in panels}), \
         'two windows, one per IDS'
+
+
+def test_a_tool_call_asking_for_a_panel_that_stands_gets_that_panel(session):
+    """The agent's path answers like a click, because the answers say so.
+
+    The menu half above is recognised by the entry itself. The tool half needs
+    the caller to say it is asking again: `run_plugin` looks the standing window
+    up by the stamp this entry left on it -- named for the branch it was asked
+    on, because one entry earns one panel per IDS -- and hands its key back with
+    `reuse`. Measured before that guard, the entry recognised only a menu click
+    as a repeat, so a tool call built a second panel of one IDS: two tab sets,
+    two occurrence choices, one answer said twice on the screen.
+    """
+    entry = entryFor(session, IDS_NAME)
+    panel = panelsOf(session, IDS_NAME)[0]
+    key = session.api.openWindowOfPluginEntry(session.view.dataSource.uri,
+                                              'VizProfiles_plugin',
+                                              entry.number, 0,
+                                              ids_name=IDS_NAME)
+    assert key == panel.figureKey, 'the panel this entry drew carries no stamp'
+
+    before = set(session.api.figureframes)
+    refusal = QVizPluginCatalog(session.view).run(
+        entry, answers=QVizPluginAnswers(occurrence=0, figureKey=key,
+                                         time=None, reuse=True))
+    session.qapp.processEvents()
+
+    assert refusal is None, refusal
+    assert set(session.api.figureframes) == before, 'a second panel of one IDS'
+    assert panelsOf(session, IDS_NAME) == [panel]
 
 
 # -----------------------------------------------------------------------------

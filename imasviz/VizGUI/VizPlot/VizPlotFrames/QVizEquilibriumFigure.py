@@ -246,6 +246,32 @@ class QVizEquilibriumFigure(QWidget):
 
     # --------------------------------------------------------------- row
 
+    def clearDrawings(self):
+        """Take back what this window drew, so a read can be laid down again.
+
+        The two refuses below are right for what they guard: a second row in one
+        window would be laid over the first, on bounds settled for the other one.
+        A window asked *again for the same thing* is not that case: the second
+        read replaces the first, and the window keeps its key, its place on the
+        screen and its line in the *Windows* menu -- which is what "the same
+        figure" means to whoever is looking at it.
+
+        The row goes through the layout of the graphics widget: measured here,
+        `GraphicsLayoutWidget` has no `clear()` of its own (only the `ci` layout
+        it holds does), and after `ci.clear()` its `items` answer 0 and a fresh
+        `addPlot` answers 0 data items -- so the frames that come back are new,
+        not the old ones still wearing their curves. The stack of profiles is a
+        widget of the window's own layout, so it leaves that layout before Qt is
+        asked to take it down.
+        """
+        self.pgPlotWidget.ci.clear()
+        self._row = []
+        if self._profilesStack is not None:
+            self.layout().removeWidget(self._profilesStack)
+            self._profilesStack.setParent(None)
+            self._profilesStack.deleteLater()
+            self._profilesStack = None
+
     def drawRow(self, surfaces, wall=None):
         """Lays the row of frames down, one per read. Returns how many sit on it.
 
@@ -257,7 +283,9 @@ class QVizEquilibriumFigure(QWidget):
         """
         if self._row:
             raise ValueError('This figure already holds %d flux-surface frame(s): '
-                             'a second read needs a window of its own.' % len(self._row))
+                             'a second read needs a window of its own, or '
+                             'clearDrawings() first to replace what is there.'
+                             % len(self._row))
         if not surfaces:
             raise ValueError('no frame to draw: the row of an equilibrium figure '
                              'needs at least one read.')

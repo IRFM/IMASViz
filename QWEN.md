@@ -347,7 +347,8 @@ Core concepts, in the vocabulary used by the code and docs:
   a `<Figure>` — it is not in the MDI area and answers no key of its own — so it
   is a `<PluginWindow>` under the case whose view offered its entry, and the
   restore asks that entry again through `view.pluginCatalog` (built there if the
-  menu was never opened) with `QVizPluginAnswers(occurrence, figureKey, time)`: nothing
+  menu was never opened) with `QVizPluginAnswers(occurrence, figureKey, time)` —
+  `reuse` false, since a restore builds the window rather than redrawing one: nothing
   is asked of the user, where the Profiles occurrence question used to be a **modal
   `QInputDialog`** that held a probe **240 s**, and the `equilibrium` surfaces entry
   its instant the same way. That needs two things of a plugin,
@@ -494,6 +495,32 @@ callers import as `from imasviz.VizUtils import QVizLogger`.
    with the api it is registered in, which is what makes that box hide the window and keep
    its key (or close it for good under `Close_button_deletes=1`) instead of leaving a window
    no *Windows* menu line can bring back.
+
+   **An entry asked twice draws into the window that stands.** The same stamp answers
+   the other question — "did this entry already draw a window?" — through
+   `Viz_API.openWindowOfPluginEntry(uri, plugin, entry, occurrence, time, ids_name)`.
+   It has to be the stamp: the key says the kind, the registry says the case, and
+   **nothing else says which entry** drew a window. `McpGuiCore.run_plugin` asks it and
+   hands the answer back as `QVizPluginAnswers(…, figureKey=standing, reuse=True)`;
+   `reuse` is the fourth field of that record and is **false** for a session replay,
+   which names the key its file gave and means to build the window (so the strict
+   refusal of `FigureKeyFor` — a key a live window holds is refused — still stands
+   there). Each window-owning plugin answers `reuse` its own way, and only the three
+   that stamp have anything to answer: the surfaces entries take the row and the
+   profile stack back (`QVizEquilibriumFigure.clearDrawings`, called **after** the reads
+   answer so a read that fails leaves the window as it was) and lay the new read down;
+   the Profiles panel and the matplotlib chart put the standing window back on the
+   screen instead of building a second one. `ids_name` is not decoration: one Profiles
+   entry earns one panel per IDS, all stamped with the same plugin, entry and
+   occurrence, so an ask for the `equilibrium` panel would otherwise redraw the
+   `magnetics` one. What still doubles is asking an entry **and** the tool that entry
+   answers with — `equilibriumsurfaces` entry 0 *is* `equilibrium_surfaces` — so the
+   tool descriptions say « ask one ». A *menu* click is not a reuse (`answers is None`)
+   and keeps its own behaviour per plugin: a second click on the chart line earns its
+   own key (`test_53`), a second click on the Profiles line brings the panel forward
+   (`test_88`). Pinned by `test_30` (the lookup), `test_53`, `test_54`, `test_88` and
+   `test_100` (the entries, on the case).
+
 2. Register the class in the `RegisteredPlugins` dict in `VizPlugins/VizPlugin.py`
    (`'PluginName': 'viz_<name>.PluginName'` — the class must bear the key's name, since
    that is what the catalog takes out of the module). **Seven** are active:
