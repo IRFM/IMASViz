@@ -173,11 +173,12 @@ the same descriptions. The tools, in the order the faces group them:
        case holds**, and the answer keeps ``time_requested`` and
        ``time_slice_time`` apart -- see :ref:`IMASViz_plugins`.
    * - the curves already drawn
-     - ``scale_curve``, ``shift_curve``, ``normalize_curve``, ``reset_curve``,
-       ``remove_curve``, ``curve_stats``, ``export_curve``
-     - what the figure window does to a curve it drew, not what the case holds:
-       multiply, offset, divide by a reference of its own (``max``, ``first``,
-       ``mean``), put it back to the values it was drawn with, take it off. All
+     - ``transform_curve``, ``curve_stats``, ``export_curve``
+     - one tool, and ``operation`` says what is done to the curve: ``scale``
+       multiplies it, ``shift`` offsets it, ``normalize`` divides it by a
+       reference of its own (``reference``: ``max``, ``first``, ``mean``),
+       ``reset`` puts it back to the values it was drawn with, ``remove``
+       takes it off. All
        reversible, all read back by ``curve_stats`` -- the sample count, the
        finite min/max/mean/std, the nan/inf counts and the peak with its
        abscissa -- and by ``export_curve``, which writes the values **as they

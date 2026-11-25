@@ -1977,7 +1977,8 @@ class McpGuiCore:
                     'negative: %d of the %d sampled point%s read so. The '
                     'picture would hide them and read as empty where it '
                     'holds a half-empty axis, so the log ask on it is '
-                    'refused, and `shift_curve` (up to the zero or above) '
+                    'refused, and `transform_curve(operation="shift")` '
+                    '(up to the zero or above) '
                     'is the answer to give it back.'
                     % (axis, n_bad, int(finite.size),
                        '' if finite.size == 1 else 's'))

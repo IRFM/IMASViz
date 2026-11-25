@@ -17,7 +17,8 @@ The field shape the existing guards do not cross-check: the figure
 passes it), yet the answer says a change landed on it that no call of
 this request performed -- "j'ai ajouté la courbe de température sur
 Plot1" with no ``plot_one`` called, or "la courbe est multipliée par 3"
-after the ``scale_curve`` the loop ran was **refused** (empty curve,
+after the ``transform_curve`` whose ``operation`` is ``scale``
+the loop ran was **refused** (empty curve,
 values crossing zero, whatever the named reason is). The loop then
 hands the turn back to the user, the user answers "la courbe n'est pas
 là", and the model apologizes -- the claim and the apology in two
@@ -196,7 +197,8 @@ def test_a_real_add_on_a_held_figure_stands(qapp):
 
 
 def test_a_refused_transform_claimed_done_is_reanchored_then_reported(qapp):
-    """The ``scale_curve`` this request ran was **refused**, and the
+    """The ``transform_curve(operation="scale")`` this request ran was
+    **refused**, and the
     first answer says the transform is on. The claim is refused by
     name; the honest report of the refusal -- the reason the call
     answered -- then stands. The apology is not two turns after the
@@ -206,8 +208,9 @@ def test_a_refused_transform_claimed_done_is_reanchored_then_reported(qapp):
     core.refuse_scale = True
     out = runTurn(core, [
         LLMResponse(tool_calls=[
-            {'name': 'scale_curve', 'args': {'figure_key': 'Plot1',
-                                             'factor': 3}}],
+            {'name': 'transform_curve',
+             'args': {'figure_key': 'Plot1', 'operation': 'scale',
+                      'factor': 3}}],
             content=''),
         LLMResponse(content='La courbe de Plot1 est maintenant '
                             'multipliée par 3.',
@@ -218,7 +221,7 @@ def test_a_refused_transform_claimed_done_is_reanchored_then_reported(qapp):
                     tool_calls=None, finish_reason='stop'),
     ], 'multiplie la courbe de Plot1 par 3')
     assert out['finished'] == [None]
-    # The call's own refusal line ("← scale_curve: REFUSAL — …") stands in
+    # The call's own refusal line ("← transform_curve: REFUSAL — …") stands in
     # the transcript whatever -- it is the answer the tools gave -- what
     # is counted here is the guard's line, the one that led the model back
     # from claiming the transform.
@@ -236,8 +239,9 @@ def test_a_real_transform_stands(qapp):
     core._open = {'Plot1'}
     out = runTurn(core, [
         LLMResponse(tool_calls=[
-            {'name': 'scale_curve', 'args': {'figure_key': 'Plot1',
-                                             'factor': 3}}],
+            {'name': 'transform_curve',
+             'args': {'figure_key': 'Plot1', 'operation': 'scale',
+                      'factor': 3}}],
             content=''),
         LLMResponse(content='J\'ai multiplié la courbe de Plot1 par 3.',
                     tool_calls=None, finish_reason='stop'),

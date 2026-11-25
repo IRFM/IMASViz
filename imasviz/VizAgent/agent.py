@@ -888,8 +888,8 @@ class AgentLoop(QObject):
             'said. If the call ran and was refused, report the refusal '
             'it named; otherwise do the work -- %s '
             'with into_figure_key to add the curve, '
-            'scale_curve / shift_curve / normalize_curve for a '
-            'transform, set_axis_range / set_log_scale / invert_axis '
+            'transform_curve(operation=...) for a transform, '
+            'set_axis_range / set_log_scale / invert_axis '
             'for the axes -- or read it back with curve_stats, and '
             'answer only from what those calls return.'
             % (keys, callSpelling('plot_one')))

@@ -440,64 +440,54 @@ TOOLS = [
     ),
 
     # the figures: work on the data the figure holds, and the axes it draws to
+    # One name for the five things done to a curve a figure already holds,
+    # because what the model is answering is « what do I do to that curve »,
+    # not « which of these five functions is it ». `operation` answers it,
+    # and what each one takes is checked per action: a `factor` put on a
+    # "reset" is refused by naming the parameter and the operation that
+    # takes it, never as a Python error.
     _tool(
-        'scale_curve',
-        'Multiply a figure\'s drawn curve(s) by a constant. In place and '
-        'reversible (reset_curve); `curve` is a name substring, a 0-based '
-        'index, or left out for every curve. `factor` must be a finite '
-        'number. curve_stats and export_curve then read the multiplied '
-        'value, the quantity in the tree unchanged.',
+        'transform_curve',
+        'Do one thing to the curve(s) a figure already holds: `operation` '
+        'picks it. "scale" multiplies their values by `factor`, "shift" '
+        'adds `offset`, "normalize" divides them by a reference of their '
+        'own (`reference`: the largest sample, the first one, or the '
+        'mean), "reset" puts them back to the data they were drawn with, '
+        '"remove" takes the curve off the figure. scale, shift and '
+        'normalize work in place, and "reset" answers what a hand put on '
+        'was and takes it off; "remove" leaves the figure with one curve '
+        'less. `curve` is a name substring, a 0-based index, or left '
+        'out for every curve. curve_stats and export_curve then read the '
+        'transformed value; the quantity in the tree is unchanged. A table '
+        'or a stacked window is not one figure and is refused by name.',
         {'type': 'object', 'properties': {
             'figure_key': {'type': 'string'},
-            'factor': {'type': 'number'},
+            'operation': {
+                'type': 'string',
+                'enum': ['scale', 'shift', 'normalize', 'reset', 'remove'],
+                'description': 'what to do to the curve: "scale" times a '
+                               'constant, "shift" plus a constant, '
+                               '"normalize" divided by its own reference, '
+                               '"reset" back as drawn, "remove" off the '
+                               'figure'},
+            'factor': {'type': ['number', 'null'],
+                       'description': '"scale": the constant, a finite '
+                                      'number'},
+            'offset': {'type': ['number', 'null'],
+                       'description': '"shift": the constant to add, a '
+                                      'finite number'},
+            'reference': {'type': ['string', 'null'],
+                          'enum': ['max', 'first', 'mean'],
+                          'default': 'max',
+                          'description': '"normalize": which reference of '
+                                         'the curve it is divided by; a '
+                                         'reference that is zero or not a '
+                                         'number is refused by name'},
             'curve': {'type': ['string', 'integer', 'null'],
                       'description': 'a name substring, a 0-based index, '
                                      'or null for every curve'},
-        }, 'required': ['figure_key', 'factor'], 'additionalProperties': False},
-    ),
-    _tool(
-        'shift_curve',
-        'Add a constant to a figure\'s drawn curve(s): a vertical offset. '
-        'The inverse of a subtraction, on the same `curve` as scale_curve. '
-        '`offset` must be a finite number.',
-        {'type': 'object', 'properties': {
-            'figure_key': {'type': 'string'},
-            'offset': {'type': 'number'},
-            'curve': {'type': ['string', 'integer', 'null']},
-        }, 'required': ['figure_key', 'offset'], 'additionalProperties': False},
-    ),
-    _tool(
-        'normalize_curve',
-        'Divide a figure\'s drawn curve(s) by a reference of their own: '
-        '`max` (the largest sample), `first` (index 0), or `mean`. A '
-        'reference that is zero or not a number is refused by name.',
-        {'type': 'object', 'properties': {
-            'figure_key': {'type': 'string'},
-            'mode': {'type': 'string', 'enum': ['max', 'first', 'mean'],
-                     'default': 'max'},
-            'curve': {'type': ['string', 'integer', 'null']},
-        }, 'required': ['figure_key'], 'additionalProperties': False},
-    ),
-    _tool(
-        'reset_curve',
-        'Put a figure\'s curve(s) back to the data they were drawn with: '
-        'the scale/shift/normalize put on is taken off. A curve nobody '
-        'transformed is not in the answer.',
-        {'type': 'object', 'properties': {
-            'figure_key': {'type': 'string'},
-            'curve': {'type': ['string', 'integer', 'null']},
-        }, 'required': ['figure_key'], 'additionalProperties': False},
-    ),
-    _tool(
-        'remove_curve',
-        'Take a curve off a figure, or every one when `curve` is left '
-        'out. The curve leaves the plot and the figure forgets it; the '
-        'answer is the count still held. A table or the flux-surface '
-        'figure is not a single figure and is refused by name.',
-        {'type': 'object', 'properties': {
-            'figure_key': {'type': 'string'},
-            'curve': {'type': ['string', 'integer', 'null']},
-        }, 'required': ['figure_key'], 'additionalProperties': False},
+        }, 'required': ['figure_key', 'operation'],
+           'additionalProperties': False},
     ),
     _tool(
         'set_axis_range',
@@ -572,7 +562,7 @@ TOOLS = [
         'A log axis, by name: `x`/`y` each `true` for log, `false` for '
         'linear; name at least one. A log turned on where the values cross '
         'zero or below is refused by name (the picture would hide them); '
-        'shift_curve to clear them is the answer.',
+        'transform_curve(operation="shift") to clear them is the answer.',
         {'type': 'object', 'properties': {
             'figure_key': {'type': 'string'},
             'x': {'type': ['boolean', 'null']},
@@ -1822,6 +1812,40 @@ ACTION_PARAMETERS = {
         'paths': {'type': 'array', 'items': {}},
         'plot_axis': {'type': ['string', 'null']},
     }, ('uri', 'paths')),
+    # The five operations of `transform_curve`. What they share is a figure
+    # and the curve(s) of it; what sets them apart is the one number each
+    # one asks for, which is why `factor` is required of "scale" and a
+    # stranger on "reset".
+    'scale_curve': ({
+        'figure_key': {'type': 'string'},
+        'factor': {'type': ['number', 'null']},
+        'curve': {'type': ['string', 'integer', 'null']},
+    }, ('figure_key', 'factor')),
+    'shift_curve': ({
+        'figure_key': {'type': 'string'},
+        'offset': {'type': ['number', 'null']},
+        'curve': {'type': ['string', 'integer', 'null']},
+    }, ('figure_key', 'offset')),
+    # `mode` is the name the gesture takes in Python for the reference it
+    # divides by. Inside a group whose own word for the operation is
+    # `operation`, a second word of that shape is the confusion the merge
+    # was asked to end: the offer says `reference` and `ACTION_RENAMES`
+    # below is where the two meet.
+    'normalize_curve': ({
+        'figure_key': {'type': 'string'},
+        'reference': {'type': ['string', 'null'],
+                      'enum': ['max', 'first', 'mean'],
+                      'default': 'max'},
+        'curve': {'type': ['string', 'integer', 'null']},
+    }, ('figure_key',)),
+    'reset_curve': ({
+        'figure_key': {'type': 'string'},
+        'curve': {'type': ['string', 'integer', 'null']},
+    }, ('figure_key',)),
+    'remove_curve': ({
+        'figure_key': {'type': 'string'},
+        'curve': {'type': ['string', 'integer', 'null']},
+    }, ('figure_key',)),
     'plot_report': ({
         'figure_key': {'type': 'string'},
         'name': {'type': ['string', 'null']},
@@ -1849,6 +1873,7 @@ ACTION_PARAMETERS = {
 # model was never told it may type.
 ACTION_RENAMES = {
     'plot_slice': {'path': 'leaf'},
+    'normalize_curve': {'reference': 'mode'},
 }
 
 

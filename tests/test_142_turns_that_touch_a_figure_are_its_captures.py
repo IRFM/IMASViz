@@ -14,9 +14,10 @@ souvent que je dise que je ne vois pas le plot pour que cela déclenche
 une capture (et ca n'a marche pas tout le temps même en disant ça). »
 
 The repro this file pins, word for word: « trace 2 boucles sur la même
-figure » then « multiplie la première courbe par 3 » (a `scale_curve`).
+figure » then « multiplie la première courbe par 3 » (a
+`transform_curve` whose `operation` is `scale`).
 Before the fix the second prompt left a transcript and nothing else:
-`scale_curve` changes what the figure SHOWS without redrawing it, so it
+that call changes what the figure SHOWS without redrawing it, so it
 was neither the figure the turn drew (the key was held before and after)
 nor a window the turn asked to see -- the figure reached the screen only
 if the model decided to call `focus_window` on top, with the key exactly
@@ -168,8 +169,9 @@ def test_a_prompt_that_moved_a_figure_keeps_its_capture(qapp, tmp_path):
         LLMResponse(content='Les deux boucles sont tracées.',
                     finish_reason='stop'),
         LLMResponse(tool_calls=[
-            {'name': 'scale_curve',
-             'args': {'figure_key': 'SlicesPlot1', 'factor': 3}}],
+            {'name': 'transform_curve',
+             'args': {'figure_key': 'SlicesPlot1', 'operation': 'scale',
+                      'factor': 3}}],
             content=''),
         LLMResponse(content='C\'est fait, la courbe est triplée.',
                     finish_reason='stop'),
@@ -267,7 +269,7 @@ class MutatingWebCore(WebFakeCore):
 def test_the_web_turn_that_moved_a_figure_keeps_its_capture(qapp, tmp_path):
     """The same hole reported on the web surface, the one the user
     tested: the figure is captured in the turn that drew it, and AGAIN
-    in the turn that moved its curve -- `scale_curve` asking nothing --
+    in the turn that moved its curve -- the transform asking nothing --
     and a mention the turn does not act on is neither a picture nor a
     refusal, as in the REPL."""
     llm = FakeLLMClient([
@@ -277,8 +279,9 @@ def test_the_web_turn_that_moved_a_figure_keeps_its_capture(qapp, tmp_path):
             content=''),
         LLMResponse(content='La figure est tracée.', finish_reason='stop'),
         LLMResponse(tool_calls=[
-            {'name': 'scale_curve',
-             'args': {'figure_key': 'SlicesPlot1', 'factor': 3}}],
+            {'name': 'transform_curve',
+             'args': {'figure_key': 'SlicesPlot1', 'operation': 'scale',
+                      'factor': 3}}],
             content=''),
         LLMResponse(content='La courbe est triplée.',
                     finish_reason='stop'),

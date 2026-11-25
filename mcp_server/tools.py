@@ -22,7 +22,7 @@ touch the widgets -- the rule the dispatcher exists for.
 
 import base64
 from functools import partial
-from typing import Literal, Optional
+from typing import Literal, Optional, Union
 
 from mcp.server.fastmcp import FastMCP
 from mcp import types as mcp_types
@@ -80,12 +80,14 @@ How to work with it:
    (the ones it carries as available, a 0-D scalar held by the dynamic
    array among them).
 8. manipulating a figure is work on what it holds, by name of the figure
-   and of the curve: scale_curve multiplies its value by a constant,
-   shift_curve adds one, normalize_curve divides by its own peak/first/
+   and of the curve: transform_curve does one thing to a drawn curve, and
+   its `operation` says which -- 'scale' multiplies its value by a
+   constant, 'shift' adds one, 'normalize' divides by its own peak/first/
    mean; curve_stats and export_curve read the numbers as they stand, so a
-   transform a hand put on is the value it returns. reset_curve takes the
-   transform off, remove_curve takes the curve off. The axes are set by
-   name and number: set_axis_range pins the window (xmin/xmax, ymin/ymax,
+   transform a hand put on is the value it returns, and operation='reset'
+   takes that transform off, operation='remove' takes the curve off. The
+   axes are set by name and number: set_axis_range pins the window
+   (xmin/xmax, ymin/ymax,
    or auto=True to re-fit), set_log_scale makes an axis log (True) or
    linear (False), invert_axis flips one. A curve is selected by a
    substring of its name, a 0-based index, or left out for every one; a
@@ -410,62 +412,51 @@ def buildServer(core, dispatcher, name='imasviz'):
 
     # ------------------------------------ the figures: the data and the axes
 
-    @server.tool(name='scale_curve')
-    def scale_curve(figure_key: str, factor: float,
-                    curve: Optional[str] = None):
-        """Multiply a figure's drawn curve(s) by a constant.
+    @server.tool(name='transform_curve')
+    def transform_curve(
+            operation: Literal['scale', 'shift', 'normalize', 'reset',
+                               'remove'],
+            figure_key: str, factor: Optional[float] = None,
+            offset: Optional[float] = None,
+            reference: Optional[str] = None,
+            curve: Optional[Union[str, int]] = None):
+        """Do one thing to the curve(s) a figure already holds: `operation` picks it.
 
-        In place and reversible (`reset_curve`), on the curves the figure
-        named: `curve` is a name substring, an index, or left out for every
-        curve the figure holds. `factor` must be a finite number. This turns
-        the value of the curve as a reader of it reads it, not the quantity
-        in the tree, so `curve_stats` and `export_curve` then answer the
-        multiplied number.
+        "scale" multiplies their values by `factor`, "shift" adds `offset`
+        to them, "normalize" divides them by a reference of their own --
+        `reference` being `max` (the largest sample, the default), `first`
+        (the sample at index 0) or `mean`; "reset" puts them back to the
+        data they were drawn with, and "remove" takes the curve off the
+        figure. Scale, shift and normalize are in place and reversible
+        through "reset"; a reference that is zero or not a number is
+        refused, as the division would then read as a picture full of
+        no-signal. `curve_stats` and `export_curve` answer the transformed
+        value afterwards; the quantity in the tree is unchanged.
+
+        `curve` is a name substring, a 0-based index, or left out for every
+        curve the figure holds. The figure is the one a single curve was
+        drawn in -- a table or the flux-surface figure are refused by name.
+        An operation asked without the number it needs, or with one that
+        belongs to another, is refused by naming the parameter and the
+        operation that takes it.
         """
-        return _run(partial(core.scale_curve, figure_key, factor, curve=curve))
+        gesture = gestureOf('transform_curve', {'operation': operation})
+        args = {name: value for name, value in (
+            ('figure_key', figure_key), ('factor', factor),
+            ('offset', offset), ('reference', reference),
+            ('curve', curve)) if value is not None}
+        unknown = unknownParameters(gesture, args)
+        if unknown:
+            raise ValueError(unknownParameterRefusal(gesture, unknown))
+        missing = missingParameters(gesture, args)
+        if missing:
+            raise ValueError(missingParameterRefusal(gesture, missing))
+        spelled = argumentsForMember(gesture, args)
 
-    @server.tool(name='shift_curve')
-    def shift_curve(figure_key: str, offset: float,
-                    curve: Optional[str] = None):
-        """Add a constant to a figure's drawn curve(s): a vertical offset.
+        def change():
+            return getattr(core, gesture)(**spelled)
 
-        The inverse of a subtraction, on the same curve (by name, index, or
-        all) as `scale_curve`. `offset` must be a finite number.
-        """
-        return _run(partial(core.shift_curve, figure_key, offset, curve=curve))
-
-    @server.tool(name='normalize_curve')
-    def normalize_curve(figure_key: str, mode: str = 'max',
-                        curve: Optional[str] = None):
-        """Divide a figure's drawn curve(s) by a reference of their own.
-
-        `mode` is `max` (split by the largest sample), `first` (split by the
-        first, index 0), or `mean` (split by the mean). A reference that is
-        zero or not a number is refused by name; the division is then
-        undefined and would read as a picture full of no-signal.
-        """
-        return _run(partial(core.normalize_curve, figure_key, mode, curve=curve))
-
-    @server.tool(name='reset_curve')
-    def reset_curve(figure_key: str, curve: Optional[str] = None):
-        """Put a figure's curve(s) back to the data they were drawn with.
-
-        The transform that scale, shift and normalize put on is taken off,
-        and a curve nobody transformed is not in the answer. `curve` targets
-        the one or the figure's.
-        """
-        return _run(partial(core.reset_curve, figure_key, curve=curve))
-
-    @server.tool(name='remove_curve')
-    def remove_curve(figure_key: str, curve: Optional[str] = None):
-        """Take a curve off a figure, or every one when `curve` is left out.
-
-        The trace leaves the plot and the figure forgets it; the answer is
-        the count still held. The figure is the one a single curve was drawn
-        in; a table or the flux-surface figure are not it, and are refused
-        by name.
-        """
-        return _run(partial(core.remove_curve, figure_key, curve=curve))
+        return _run(change)
 
     @server.tool(name='set_axis_range')
     def set_axis_range(figure_key: str, xmin: Optional[float] = None,
@@ -543,8 +534,8 @@ def buildServer(core, dispatcher, name='imasviz'):
         """A log axis, by name: `x`/`y` each `True` for log, `False` for
         linear. Name at least one. A log on a set of values that cross zero
         or below is refused by name, because the picture hides them and
-        reads as empty where it holds a half-empty axis; `shift_curve` to
-        clear the negatives is the answer.
+        reads as empty where it holds a half-empty axis; `transform_curve`
+        with `operation="shift"` to clear the negatives is the answer.
         """
         return _run(partial(core.set_log_scale, figure_key, x=x, y=y))
 
@@ -986,8 +977,7 @@ def buildServer(core, dispatcher, name='imasviz'):
         figure, a case URI for its shot view. A draw is not a reason to
         call it -- a figure is a window of the session, in the *Windows*
         menu -- and neither is a gesture that moved a figure's content
-        (scale_curve, shift_curve, normalize_curve, reset_curve,
-        remove_curve, the axes); the caller shows what it wants, when
+        (transform_curve, the axes); the caller shows what it wants, when
         it wants it. Called to make a requested picture readable, size
         the window first and take the get_screenshot after. The answer
         is the size the window then holds.

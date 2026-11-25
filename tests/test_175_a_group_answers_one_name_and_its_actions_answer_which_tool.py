@@ -226,6 +226,40 @@ def test_a_merged_group_may_ask_its_own_word_for_a_parameter():
         'the drawing offer gives two words for one leaf again'
 
 
+def test_a_merged_group_renames_a_parameter_that_was_its_own_question():
+    """``transform_curve(operation="normalize", reference="mean")`` reaches
+    ``normalize_curve`` as ``mode="mean"``.
+
+    The second rename, and the one the merge itself created: the drawing
+    group inherited a ``leaf`` from a gesture written before it. Here the
+    gesture divides by a reference and calls that argument ``mode`` -- a
+    word that means "which of the four things do I do" everywhere else in
+    this vocabulary, and a group whose own discriminant is ``operation``
+    cannot offer ``mode`` beside it without asking the model to answer the
+    same question twice, in two spellings. So the offer says ``reference``.
+    """
+    member, args = resolveCall('transform_curve', {
+        'figure_key': 'Plot1', 'operation': 'normalize',
+        'reference': 'mean'})
+    assert member == 'normalize_curve'
+    assert unknownParameters(member, args) == [], \
+        'the check is asked with the spelling the model typed'
+    assert argumentsForMember(member, args) == {
+        'figure_key': 'Plot1', 'mode': 'mean'}, \
+        'the gesture is handed the word its own Python takes'
+
+    offered = {tool['function']['name']:
+               tool['function']['parameters']['properties']
+               for tool in TOOLS}
+    assert 'reference' in offered['transform_curve']
+    assert 'mode' not in offered['transform_curve'], \
+        'the curves offer asks the same question under two words again'
+    # And the row the parameters are measured against speaks the offered
+    # word, or a refusal would name a name the model never saw.
+    row, _required = ACTION_PARAMETERS['normalize_curve']
+    assert 'reference' in row and 'mode' not in row
+
+
 def test_resolve_call_touches_nothing_it_is_handed():
     """The seam runs twice on one call -- ``resolveCall`` for the dispatch,
     ``gestureOf`` for the turn's account of what it did. A resolver that
