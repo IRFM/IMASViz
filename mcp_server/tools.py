@@ -701,37 +701,42 @@ def buildServer(core, dispatcher, name='imasviz'):
         spelled = argumentsForMember(gesture, args)
         return _run(partial(getattr(core, gesture), **spelled))
 
-    @server.tool(name='campaign')
-    def campaign(cases: list, path: str, at: Optional[int] = None,
-                 which: Optional[str] = 'mean', along: Optional[str] = None,
-                 indices: Optional[dict] = None):
-        """The trend of one leaf across a series of shots, in campaign order.
+    # The trend of one leaf over a series of shots, and that same answer as
+    # a page. The page runs the trend and dresses its answer, so the two
+    # asks are one read and one word apart.
+    @server.tool(name='trend_campaign')
+    def trend_campaign(
+            action: Literal['values', 'report'], cases: list, path: str,
+            at: Optional[Union[int, str]] = None,
+            which: Optional[str] = None, along: Optional[str] = None,
+            indices: Optional[dict] = None, name: Optional[str] = None):
+        """What one leaf does across a series of shots, and `action` picks.
 
-        The same leaf, read from each shot (a figure's read of that leaf),
-        one value per shot (a named index into the curve, or mean/max/min
-        over it); the trend over the shots -- the per-shot values, the
-        least-squares slope over the shot index, first to last, min/max and
-        their shots, and the direction. A one-shot campaign, a shot without
-        the leaf, or an all-equal campaign refuses in words.
+        "values": the trend in campaign order -- the same leaf read from
+        each shot (a figure's read of that leaf), one value per shot (a
+        named index into the curve, or mean/max/min over it), then the
+        per-shot values, the least-squares slope over the shot index, first
+        to last, min/max and their shots, and the direction. A one-shot
+        campaign, a shot without the leaf, or an all-equal campaign refuses
+        in words.
+
+        "report": that answer as a self-contained HTML page -- the per-shot
+        table, the trend, the line the values make -- under
+        `~/.imasviz/reports`.
         """
-        return _run(partial(core.campaign, cases, path, at=at,
-                            which=which, along=along, indices=indices))
-
-    @server.tool(name='campaign_report')
-    def campaign_report(cases: list, path: str, at: Optional[int] = None,
-                        which: Optional[str] = 'mean',
-                        along: Optional[str] = None,
-                        indices: Optional[dict] = None,
-                        name: Optional[str] = None):
-        """The campaign answer as a self-contained HTML page.
-
-        The per-shot table, the trend, and the line the values make across
-        the shots. The same read and the same `campaign` the facts run on;
-        the file lands under `~/.imasviz/reports`.
-        """
-        return _run(partial(core.campaign_report, cases, path, at=at,
-                            which=which, along=along, indices=indices,
-                            name=name))
+        gesture = gestureOf('trend_campaign', {'action': action})
+        args = {field: value for field, value in (
+            ('cases', cases), ('path', path), ('at', at), ('which', which),
+            ('along', along), ('indices', indices), ('name', name),
+        ) if value is not None}
+        unknown = unknownParameters(gesture, args)
+        if unknown:
+            raise ValueError(unknownParameterRefusal(gesture, unknown))
+        missing = missingParameters(gesture, args)
+        if missing:
+            raise ValueError(missingParameterRefusal(gesture, missing))
+        spelled = argumentsForMember(gesture, args)
+        return _run(partial(getattr(core, gesture), **spelled))
 
     # -------------------------------------------------------------- windows
 

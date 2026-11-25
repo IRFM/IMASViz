@@ -223,14 +223,16 @@ the same descriptions. The tools, in the order the faces group them:
        points, and the mean, peak and floor. A case that does not hold the
        leaf is refused by name, never with a plausible-looking value.
    * - a campaign of shots
-     - ``campaign``, ``campaign_report``
-     - the trend of one leaf across a series of shots, in the order named: one
-       value per shot (``at`` an index of its curve, or ``which`` of ``mean``,
-       ``max``, ``min``), then the per-shot values, the least-squares slope over
-       the shot index, the first-to-last change, the min and max with the shots
-       they came from, and the direction. A campaign of one shot or of
-       all-equal values refuses in words. The report is the same answer as a
-       page under :file:`~/.imasviz/reports`.
+     - ``trend_campaign``
+     - one tool for a series of shots, and ``action`` says which ask:
+       ``values`` answers the trend of one leaf in the order named -- one
+       value per shot (``at`` an index of its curve, or ``which`` of
+       ``mean``, ``max``, ``min``), then the per-shot values, the
+       least-squares slope over the shot index, the first-to-last change,
+       the min and max with the shots they came from, and the direction;
+       ``report`` writes that same answer as a page under
+       :file:`~/.imasviz/reports`. A campaign of one shot or of all-equal
+       values refuses in words.
    * - the windows
      - ``manage_window``
      - one tool, and ``action`` says which of the five is meant: ``list``

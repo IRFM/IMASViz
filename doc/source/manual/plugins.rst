@@ -648,9 +648,11 @@ words, as is a campaign whose values are all equal -- a flat campaign says
 neither rising nor falling. ``Exporter le rapport`` writes the same answer, with
 the per-shot table, to a self-contained HTML page under :file:`~/.imasviz/reports`.
 
-The tools go further than the menu on one point: ``campaign`` takes the **leaf**
-and how the per-shot value is taken -- ``at`` an index of the curve, or ``which``
-of ``mean`` / ``max`` / ``min`` -- and the shots themselves, in campaign order,
-which is what lets the agent run a trend over a list the user dictated rather
-than over the windows that happen to be open.
+The tools go further than the menu on one point: ``trend_campaign`` takes the
+**leaf** and how the per-shot value is taken -- ``at`` an index of the curve,
+or ``which`` of ``mean`` / ``max`` / ``min`` -- and the shots themselves, in
+campaign order, which is what lets the agent run a trend over a list the user
+dictated rather than over the windows that happen to be open. Its ``action``
+says which of the two answers is asked for: ``values`` is the trend above,
+``report`` the same answer written as a page.
 

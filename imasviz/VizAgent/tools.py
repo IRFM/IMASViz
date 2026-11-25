@@ -757,18 +757,27 @@ TOOLS = [
         }, 'required': ['quantity', 'uri'], 'additionalProperties': False},
     ),
 
+    # One name for the two asks about a series of shots: what one leaf does
+    # across them, and that same answer as a page. The page runs the trend
+    # and dresses its answer, so the two asks are one read and one word
+    # apart. The group is NOT named `campaign`: it holds a tool of that
+    # name, and one name answering two things is the confusion this table
+    # exists to end.
     _tool(
-        'campaign',
-        'The trend of one leaf across a series of shots, in campaign order. '
-        'The same leaf is read from each shot (the read a figure of that leaf '
-        'would draw), one value is taken per shot (at a named index of the '
-        'curve, or mean/max/min over it), and the trend over the shots '
-        'comes out: the per-shot values, the least-squares slope over the '
-        'shot index, first-to-last change, min and max with the shots they '
-        'came from, and the direction. A campaign of one shot, a shot the '
-        'case does not hold the leaf in, or a campaign of all-equal values '
-        'refuses in words -- each in the words that mean it.',
+        'trend_campaign',
+        'What one leaf does across a series of shots, and `action` says '
+        'which ask. "values": the trend in campaign order -- the same leaf '
+        'read from each shot (the read a figure of that leaf would draw), '
+        'one value per shot (at a named index of the curve, or mean/max/min '
+        'over it), then the per-shot values, the least-squares slope over '
+        'the shot index, first-to-last change, min and max with the shots '
+        'they came from, and the direction. "report": that answer as a '
+        'self-contained HTML page under ~/.imasviz/reports -- the per-shot '
+        'table, the trend, the line the values make -- nothing taken from '
+        'memory. A campaign of one shot, a shot the case does not hold the '
+        'leaf in, or all-equal values refuses in words.',
         {'type': 'object', 'properties': {
+            'action': {'type': 'string', 'enum': ['values', 'report']},
             'cases': {'type': 'array',
                       'items': {'type': 'string'},
                       'minItems': 2,
@@ -781,33 +790,15 @@ TOOLS = [
             'which': {'type': ['string', 'null'],
                       'enum': ['mean', 'max', 'min'],
                       'description': 'mean / max / min over the curve each '
-                                     'shot answers; name either this or `at`.'},
-            'along': {'type': ['string', 'null']},
-            'indices': {'type': ['object', 'null']},
-        }, 'required': ['cases', 'path'], 'additionalProperties': False},
-    ),
-
-    _tool(
-        'campaign_report',
-        'The campaign answer as a self-contained HTML page: the per-shot '
-        'table, the trend, and the line the shot values make across the '
-        'shots. The same read and the same `campaign` the facts run on -- '
-        'nothing is remembered from memory -- and the file lands under '
-        '~/.imasviz/reports like the other reports.',
-        {'type': 'object', 'properties': {
-            'cases': {'type': 'array',
-                      'items': {'type': 'string'},
-                      'minItems': 2},
-            'path': {'type': 'string'},
-            'at': {'type': ['integer', 'string', 'null']},
-            'which': {'type': ['string', 'null'],
-                      'enum': ['mean', 'max', 'min']},
+                                     'shot answers; name either this or '
+                                     '`at`.'},
             'along': {'type': ['string', 'null']},
             'indices': {'type': ['object', 'null']},
             'name': {'type': ['string', 'null'],
-                     'description': 'the report name, without the .html. '
-                                    'Refused when it names a place.'},
-        }, 'required': ['cases', 'path'], 'additionalProperties': False},
+                     'description': '"report": the report name, without the '
+                                    '.html; refused when it names a place'},
+        }, 'required': ['action', 'cases', 'path'],
+           'additionalProperties': False},
     ),
 
     # One name for everything a window of the session answers, because the
@@ -1890,6 +1881,31 @@ ACTION_PARAMETERS = {
         'along': {'type': ['string', 'null']},
         'indices': {'type': ['object', 'null']},
     }, ('uri',)),
+    # A series of shots, one leaf at a time. Both asks take the shots and
+    # the leaf -- the page runs the trend and dresses its answer -- so the
+    # two rows differ by `name`, which only the page takes, and by nothing
+    # they are asked to give.
+    'campaign': ({
+        'cases': {'type': 'array', 'items': {'type': 'string'},
+                  'minItems': 2},
+        'path': {'type': 'string'},
+        'at': {'type': ['integer', 'string', 'null']},
+        'which': {'type': ['string', 'null'],
+                  'enum': ['mean', 'max', 'min']},
+        'along': {'type': ['string', 'null']},
+        'indices': {'type': ['object', 'null']},
+    }, ('cases', 'path')),
+    'campaign_report': ({
+        'cases': {'type': 'array', 'items': {'type': 'string'},
+                  'minItems': 2},
+        'path': {'type': 'string'},
+        'at': {'type': ['integer', 'string', 'null']},
+        'which': {'type': ['string', 'null'],
+                  'enum': ['mean', 'max', 'min']},
+        'along': {'type': ['string', 'null']},
+        'indices': {'type': ['object', 'null']},
+        'name': {'type': ['string', 'null']},
+    }, ('cases', 'path')),
     # The catalogue of prompts. `list` is the one ask that takes no `name`:
     # it is the ask that goes looking for one, so its row is the only one
     # with no required parameter, and `query` -- which no other action takes
