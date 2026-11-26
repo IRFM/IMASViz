@@ -26,6 +26,10 @@ last of the four priorities: the *tendance* over a series of shots. Two halves:
   shot (here `max` over each read), the trend over the two, and the report
   that writes the per-shot table and the direction. A one-shot campaign or a
   leaf the shot does not hold is refused in words, which is what comes back.
+  The last test asks those two reads through the spelling a turn types today
+  -- `trend_campaign(action=...)` -- because both faces reach the core
+  through the same helpers, and a seam is only pinned where it is asked of a
+  real read.
 
 The surface test is the plumbing (two reads, one read per shot, the trend over
 them, a report), pinned on the two shots the harness holds -- not the physics
@@ -36,6 +40,8 @@ import os
 
 import pytest
 
+from imasviz.VizAgent.tools import (argumentsForMember, gestureOf,
+                                    resolveCall)
 from imasviz.VizAnalysis.trend import trend
 from mcp_server.core import McpGuiCore
 from conftest import (CASE_DATA_DICTIONARY_VERSION, CASE_URI,
@@ -220,3 +226,34 @@ def test_naming_both_at_and_which_is_refused(campaign_core):
     with pytest.raises(ValueError, match='one of'):
         campaign_core.campaign([CASE_URI, RANK3_CASE_URI], LEAF,
                                at=0, which='max')
+
+
+@pytest.mark.case
+@pytest.mark.ui
+def test_the_spelling_a_turn_types_reaches_the_read_it_means(campaign_core):
+    """A turn asks this with one name and an ``action`` saying which read;
+    the two gestures behind it are ``campaign`` and ``campaign_report``.
+    Both faces resolve the call through the same helpers, so the merge is
+    pinned here against real shots: the action picks the gesture, the
+    discriminant does not travel with it, and a ``which`` the call leaves
+    out is the mean the gesture answers with -- not a missing argument.
+    """
+    cases = [CASE_URI, RANK3_CASE_URI]
+    typed = {'action': 'values', 'cases': cases, 'path': LEAF}
+    assert gestureOf('trend_campaign', typed) == 'campaign'
+    member, args = resolveCall('trend_campaign', typed)
+    assert member == 'campaign'
+    assert 'action' not in args, 'the discriminant is not a gesture argument'
+    out = campaign_core.campaign(**argumentsForMember(member, args))
+    assert len(out['rows']) == 2
+    assert out['trend']['direction'] in ('rising', 'falling')
+
+    typed = {'action': 'report', 'cases': cases, 'path': LEAF,
+             'name': 'seam_campaign'}
+    member, args = resolveCall('trend_campaign', typed)
+    assert member == 'campaign_report'
+    saved = campaign_core.campaign_report(
+        **argumentsForMember(member, args))['saved_to']
+    assert saved == os.path.join(os.environ.get('HOME'), '.imasviz',
+                                 'reports', 'seam_campaign.html')
+    assert os.path.exists(saved)

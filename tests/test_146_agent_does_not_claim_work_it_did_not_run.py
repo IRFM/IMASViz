@@ -17,7 +17,8 @@ The field shape the existing guards do not cross-check: the figure
 passes it), yet the answer says a change landed on it that no call of
 this request performed -- "j'ai ajouté la courbe de température sur
 Plot1" with no ``plot_one`` called, or "la courbe est multipliée par 3"
-after the ``scale_curve`` the loop ran was **refused** (empty curve,
+after the ``transform_curve`` whose ``operation`` is ``scale``
+the loop ran was **refused** (empty curve,
 values crossing zero, whatever the named reason is). The loop then
 hands the turn back to the user, the user answers "la courbe n'est pas
 là", and the model apologizes -- the claim and the apology in two
@@ -172,16 +173,18 @@ def test_an_add_claimed_on_a_held_figure_without_a_call_is_refused(qapp):
 
 
 def test_a_real_add_on_a_held_figure_stands(qapp):
-    """The work ran: ``plot_one`` into Plot1 succeeded, and the answer
+    """The work ran: a drawing into Plot1 succeeded, and the answer
     says exactly that. The claim stands on the call that did it -- the
     guard must not refuse a true statement, or it would refuse every
-    good answer."""
+    good answer. The call is spelled as it is offered (``plot`` with its
+    "single" mode); what the stand-in records is the gesture that ran."""
     core = Core()
     core._open = {'Plot1'}
     out = runTurn(core, [
         LLMResponse(tool_calls=[{
-            'name': 'plot_one',
-            'args': {'uri': 'imas:hdf5', 'path': 'core.temperature',
+            'name': 'plot',
+            'args': {'mode': 'single', 'uri': 'imas:hdf5',
+                     'path': 'core.temperature',
                      'into_figure_key': 'Plot1'}}],
             content=''),
         LLMResponse(content='J\'ai ajouté la courbe de température sur '
@@ -194,7 +197,8 @@ def test_a_real_add_on_a_held_figure_stands(qapp):
 
 
 def test_a_refused_transform_claimed_done_is_reanchored_then_reported(qapp):
-    """The ``scale_curve`` this request ran was **refused**, and the
+    """The ``transform_curve(operation="scale")`` this request ran was
+    **refused**, and the
     first answer says the transform is on. The claim is refused by
     name; the honest report of the refusal -- the reason the call
     answered -- then stands. The apology is not two turns after the
@@ -204,8 +208,9 @@ def test_a_refused_transform_claimed_done_is_reanchored_then_reported(qapp):
     core.refuse_scale = True
     out = runTurn(core, [
         LLMResponse(tool_calls=[
-            {'name': 'scale_curve', 'args': {'figure_key': 'Plot1',
-                                             'factor': 3}}],
+            {'name': 'transform_curve',
+             'args': {'figure_key': 'Plot1', 'operation': 'scale',
+                      'factor': 3}}],
             content=''),
         LLMResponse(content='La courbe de Plot1 est maintenant '
                             'multipliée par 3.',
@@ -216,7 +221,7 @@ def test_a_refused_transform_claimed_done_is_reanchored_then_reported(qapp):
                     tool_calls=None, finish_reason='stop'),
     ], 'multiplie la courbe de Plot1 par 3')
     assert out['finished'] == [None]
-    # The call's own refusal line ("← scale_curve: REFUSAL — …") stands in
+    # The call's own refusal line ("← transform_curve: REFUSAL — …") stands in
     # the transcript whatever -- it is the answer the tools gave -- what
     # is counted here is the guard's line, the one that led the model back
     # from claiming the transform.
@@ -234,8 +239,9 @@ def test_a_real_transform_stands(qapp):
     core._open = {'Plot1'}
     out = runTurn(core, [
         LLMResponse(tool_calls=[
-            {'name': 'scale_curve', 'args': {'figure_key': 'Plot1',
-                                             'factor': 3}}],
+            {'name': 'transform_curve',
+             'args': {'figure_key': 'Plot1', 'operation': 'scale',
+                      'factor': 3}}],
             content=''),
         LLMResponse(content='J\'ai multiplié la courbe de Plot1 par 3.',
                     tool_calls=None, finish_reason='stop'),
@@ -247,15 +253,18 @@ def test_a_real_transform_stands(qapp):
 
 def test_a_state_claim_verified_by_a_read_stands(qapp):
     """Work of an earlier request (the curve is genuinely on Plot1),
-    restated after a read back this request: ``curve_stats`` answered
-    for Plot1, so the state claim stands on the read. That is the shape
-    of the honest "elle est toujours là", with the evidence in the
-    transcript."""
+    restated after a read back this request: the turn asked
+    ``read_figure(action="stats")`` and Plot1 answered, so the state
+    claim stands on the read. That is the shape of the honest "elle est
+    toujours là", with the evidence in the transcript. The read reaches
+    the core through the member it means, the way every merged group
+    does."""
     core = Core()
     core._open = {'Plot1'}
     out = runTurn(core, [
         LLMResponse(tool_calls=[
-            {'name': 'curve_stats', 'args': {'figure_key': 'Plot1'}}],
+            {'name': 'read_figure',
+             'args': {'figure_key': 'Plot1', 'action': 'stats'}}],
             content=''),
         LLMResponse(content='Plot1 est là: la pression y est tracée, '
                             '100 points.',
@@ -308,14 +317,14 @@ def test_a_window_a_plugin_entry_drew_grounds_the_draw_claimed_on_it(qapp):
     turn, and until now it was refused: a plugin entry named no window it
     drew, so the guard had seen no work on `EquiSurfaces:1` -- and its
     re-anchor, "do the work: draw it", is what sent the model to
-    `equilibrium_surfaces`. The second, identical window the user reported
-    is that re-anchor arriving on the screen. The entry answers the keys it
-    opened as `drawn`, and the claim stands on them."""
+    `equilibrium(action="surfaces")`. The second, identical window the user
+    reported is that re-anchor arriving on the screen. The entry answers the
+    keys it opened as `drawn`, and the claim stands on them."""
     core = Core()
     out = runTurn(core, [
         LLMResponse(tool_calls=[
-            {'name': 'run_plugin',
-             'args': {'uri': 'imas:hdf5?path=x',
+            {'name': 'plugin',
+             'args': {'action': 'run', 'uri': 'imas:hdf5?path=x',
                       'plugin': 'equilibriumsurfaces', 'entry': 0}}],
             content=''),
         LLMResponse(content='J\'ai tracé les surfaces de flux sur '
@@ -338,8 +347,8 @@ def test_a_plugin_entry_grounds_nothing_on_a_window_it_did_not_draw(qapp):
     claim = 'J\'ai tracé la pression sur Plot1.'
     out = runTurn(core, [
         LLMResponse(tool_calls=[
-            {'name': 'run_plugin',
-             'args': {'uri': 'imas:hdf5?path=x',
+            {'name': 'plugin',
+             'args': {'action': 'run', 'uri': 'imas:hdf5?path=x',
                       'plugin': 'equilibriumsurfaces', 'entry': 0}}],
             content=''),
         LLMResponse(content=claim, tool_calls=None, finish_reason='stop'),

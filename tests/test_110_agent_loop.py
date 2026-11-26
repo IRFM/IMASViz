@@ -133,7 +133,7 @@ def test_tool_call_then_final(qapp, agent_kwargs):
     """
     call = LLMResponse(
         content='',
-        tool_calls=[{'name': 'list_cases', 'args': {}}],
+        tool_calls=[{'name': 'manage_case', 'args': {'action': 'list'}}],
         finish_reason='tool_calls',
     )
     final = LLMResponse(
@@ -154,7 +154,7 @@ def test_tool_call_then_final(qapp, agent_kwargs):
     agent.ask('list the cases')
     assert error == [None]
     joined = ' '.join(lines)
-    assert 'list_cases' in joined
+    assert 'manage_case' in joined
     assert 'Here are the cases you asked for.' in joined
 
 
@@ -192,7 +192,7 @@ def test_max_turns(qapp, agent_kwargs):
     calls = [
         LLMResponse(
             content='',
-            tool_calls=[{'name': 'list_cases', 'args': {}}],
+            tool_calls=[{'name': 'manage_case', 'args': {'action': 'list'}}],
             finish_reason='tool_calls',
         )
         for _ in range(10)

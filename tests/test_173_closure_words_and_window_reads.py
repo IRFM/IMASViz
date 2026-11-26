@@ -120,10 +120,16 @@ def test_a_claim_grounded_on_the_list_windows_read_stands(qapp):
     the answer stands. Before the fix, ``list_windows`` was in neither
     ``_WORK_GESTURES`` nor ``_READ_GESTURES`` and its window-list answer
     was not a shape ``_groundedFigureKeys`` could read, so the same true
-    statement was refused as an unperformed work."""
+    statement was refused as an unperformed work.
+
+    The read is asked as the windows group answers it --
+    ``manage_window(action="list")`` -- and the sets still decide on the
+    gesture behind that action: a merge of the names must not move a
+    gesture out of the set that says its answer is evidence."""
     claim = 'J\'ai ajouté la courbe de pression sur Plot1.'
     out = runTurn([
-        LLMResponse(tool_calls=[{'name': 'list_windows', 'args': {}}],
+        LLMResponse(tool_calls=[{'name': 'manage_window',
+                                 'args': {'action': 'list'}}],
                     content=''),
         LLMResponse(content=claim, tool_calls=None, finish_reason='stop'),
     ], 'ajoute la pression sur Plot1')

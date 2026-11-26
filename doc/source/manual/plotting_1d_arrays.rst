@@ -109,7 +109,8 @@ are available in the right-click menu.
    not a line of its own on these frames -- it is the Auto/Manual pair in the
    axis sub-window, and :guilabel:`View All` applies it -- and no frame offers
    grid or log-scale choices from a right click. (A log axis is reachable from
-   :ref:`agentics`: ``set_log_scale`` names the axis and turns one around, and
+   :ref:`agentics`: ``configure_axes(operation="log")`` names the axis and
+   turns one around, and
    refuses where the values cross zero.)
 
 .. figure:: images/plotDisplay_popupmenu.png

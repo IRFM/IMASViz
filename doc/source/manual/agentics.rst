@@ -131,107 +131,144 @@ the same descriptions. The tools, in the order the faces group them:
      - the tools
      - what they answer
    * - cases
-     - ``open_case``, ``list_cases``, ``close_case``
-     - open one case by URI (an HDF5 path, or an UDA URI), the cases open and
-       the occurrences each one holds, close one for good.
+     - ``manage_case``
+     - one tool for the cases the session works on, and ``action`` says
+       which ask: ``open`` opens one case by URI (an HDF5 path, or an UDA
+       URI), ``dd_version`` pinning the data dictionary it is read at --
+       left out, the case is asked which one its own IDSs were written
+       with; ``list`` answers the cases open and the occurrences each one
+       holds; ``close`` takes one open case, its view, its windows and its
+       bookkeeping away for good.
    * - the IDSs
-     - ``list_idss``, ``list_case_idss``, ``load_ids``
-     - every IDS the data dictionary declares, the short list of the IDS the
-       case **actually** holds (the one to trust), and the load of one
-       occurrence into the tree -- "first" for the slice a plain load keeps,
-       "all" for the whole dynamic array.
+     - ``manage_idss``
+     - one tool for the IDSs of a case, and ``action`` says which ask:
+       ``declared`` answers every IDS the data dictionary declares, with
+       the occurrences each one holds, the roots that hold no data
+       included; ``filled`` the short list of the IDS the case **actually**
+       holds -- the one to trust; ``load`` puts one occurrence of one IDS
+       into the tree, ``slices`` being "first" for the slice a plain load
+       keeps and "all" for the whole dynamic array.
    * - the tree
-     - ``search_nodes``, ``describe_node``, ``describe_ids``,
-       ``list_quantities``
-     - the leaves matched by a substring of their spellings (any of the
-       match's three spellings is what the plot tools take), what a node holds
+     - ``inspect_tree``
+     - one tool for what the tree says about itself, and ``action`` says
+       which ask: ``search`` matches the leaves by a substring of their
+       spellings (any of a match's three spellings is what the plot tools
+       take, and its ``kind`` says whether a plot would make a curve, a
+       picture or nothing of it); ``node`` answers what one leaf holds
        (units, size, finite minimum and maximum, the zero/nan/inf counts, a
-       bounded preview), what the dictionary says of an IDS, and the filled
-       tensors of an occurrence grouped by the array of structures that drives
-       them.
+       bounded preview); ``ids`` what the dictionary says of an IDS; and
+       ``quantities`` the filled tensors of an occurrence grouped by the
+       array of structures that drives them.
    * - the selection
-     - ``select_signals``, ``unselect_all``, ``list_selection``
-     - put paths into the case selection as clicks would (a path the tree does
-       not hold is refused by name and the selection is left as it was), empty
-       it, read it back.
+     - ``manage_selection``
+     - one tool for the case selection, and ``action`` says which ask:
+       ``select`` puts the named paths in as the tree clicks would (a path
+       the tree does not hold is refused by name and nothing is put in, and
+       ``additive=false`` empties the selection first), ``clear`` empties
+       it -- answering how many were dropped -- and ``list`` reads it back
+       in the order it was put in, path, data name, IDS and occurrence of
+       each; an empty selection answers ``count: 0``, which is an answer
+       and not a refusal.
    * - the drawing
-     - ``plot_one``, ``plot_slice``, ``plot_selection``, ``plot_table``,
-       ``plot_stacked``, ``get_signal``
-     - one quantity into the figure its axes call for (a curve for one axis, a
-       picture for two), a 1D-profile at a single instant, the selection, one
-       panel per quantity in a Table Plot View, the stacked view, and the
-       **values** of a leaf, as JSON -- the same read the plots use, so the
-       figure a viewer sees and the numbers a read reports are the same
-       element of the same array.
+     - ``plot``, ``get_signal``
+     - one tool, and ``mode`` says which drawing is meant: ``single`` puts one
+       quantity into the figure its axes call for (a curve for one axis, a
+       picture for two), ``slice`` answers a 1D-profile at a single instant,
+       ``selection`` draws what the case selection holds, ``table`` one panel
+       per quantity in a Table Plot View, ``stacked`` the stacked view. The
+       **values** of a leaf, as JSON, are the other tool: the same read the
+       plots use, so the figure a viewer sees and the numbers a read reports
+       are the same element of the same array.
    * - the equilibrium
-     - ``equilibrium_surfaces``, ``equilibrium_at_time``
-     - the two readings of the *Equilibrium* plugin, as gestures: the flux
-       surfaces of several named instants side by side in one window, and one
+     - ``equilibrium``
+     - one tool for the two readings of the *Equilibrium* plugin, and
+       ``action`` says which: ``surfaces`` answers the flux surfaces of
+       several named instants side by side in one window, ``at_time`` one
        instant with the radial profiles under it and the slice's global
        quantities in the answer. Each instant answers the **nearest slice the
        case holds**, and the answer keeps ``time_requested`` and
        ``time_slice_time`` apart -- see :ref:`IMASViz_plugins`.
    * - the curves already drawn
-     - ``scale_curve``, ``shift_curve``, ``normalize_curve``, ``reset_curve``,
-       ``remove_curve``, ``curve_stats``, ``export_curve``
-     - what the figure window does to a curve it drew, not what the case holds:
-       multiply, offset, divide by a reference of its own (``max``, ``first``,
-       ``mean``), put it back to the values it was drawn with, take it off. All
-       reversible, all read back by ``curve_stats`` -- the sample count, the
-       finite min/max/mean/std, the nan/inf counts and the peak with its
-       abscissa -- and by ``export_curve``, which writes the values **as they
-       stand** to :file:`~/.imasviz/exports`. The tree, the leaf and the case
-       are unchanged by every one of them.
+     - ``transform_curve``, ``read_figure``
+     - one tool, and ``operation`` says what is done to the curve: ``scale``
+       multiplies it, ``shift`` offsets it, ``normalize`` divides it by a
+       reference of its own (``reference``: ``max``, ``first``, ``mean``),
+       ``reset`` puts it back to the values it was drawn with, ``remove``
+       takes it off. All reversible, all read back by one tool of its own --
+       ``read_figure``, whose ``action`` says which read: ``stats`` answers
+       the sample count, the finite min/max/mean/std, the nan/inf counts and
+       the peak with its abscissa, ``export`` writes the values **as they
+       stand** to :file:`~/.imasviz/exports`. The tree, the leaf and the
+       case are unchanged by every one of them.
    * - the axes and the slices of a window
-     - ``set_axis_range``, ``set_image_window``, ``set_slice_index``,
-       ``set_log_scale``, ``invert_axis``
-     - the range of a figure, pinned by name and number (a picture window takes
-       the same span on each of its pictures); the **window of pictures** --
-       moved with ``start``, resized with ``count``; one row of a slider band
-       posed at a named index, in the words the band spells that row; a log
-       axis, refused where the values cross zero; an axis turned around. A table
-       and a stacked window are refused by name, and so is a row a band does
+     - ``configure_axes``
+     - one tool, and ``operation`` says which of the five moves is meant:
+       ``range`` pins the span of a figure by name and number (a picture
+       window takes the same span on each of its pictures),
+       ``image_window`` sets the **window of pictures** -- moved with
+       ``start``, resized with ``count``; ``slice_index`` poses one row of
+       a slider band at a named index, in the words the band spells that
+       row; ``log`` dresses an axis, refused where the values cross zero;
+       ``invert`` turns one around. A table and a stacked window are
+       refused by name, and so is a row a band does
        not hold -- naming the rows it does.
    * - the physics of a signal
-     - ``detect_events``, ``clear_event_marks``, ``events_report``,
-       ``spectrum``, ``cross_correlation``, ``spectrum_report``
-     - the events of a leaf's series (``elm`` an excursion up, ``sawtooth`` a
-       crash down, ``lh`` a threshold crossing), optionally marked on a named
-       curve figure; the marks off; the same detection as an HTML report. And
-       what the series oscillates at -- the dominant frequency and period, the
-       leading peaks with their share of the power, the share inside a named
-       band -- and, for a pair of leaves, how far one **lags or leads** the
-       other and at what the two oscillate together. The signal is the one
+     - ``analyze_signal``
+     - one tool, and ``action`` says which of the six reads is meant:
+       ``events`` finds the events of a leaf's series (``elm`` an excursion
+       up, ``sawtooth`` a crash down, ``lh`` a threshold crossing),
+       optionally marked on a named curve figure; ``clear_events`` takes
+       those marks off; ``events_report`` is the same detection as an HTML
+       report. ``spectrum`` is what the series oscillates at -- the dominant
+       frequency and period, the leading peaks with their share of the
+       power, the share inside a named band; ``correlate`` is how far one
+       leaf **lags or leads** another and at what the two oscillate
+       together; ``spectrum_report`` is the same spectral facts on a page.
+       The signal is the one
        ``get_signal`` answers, so what is measured and what a figure of the same
        leaf draws are one read; see :ref:`physical_bricks`.
    * - what a case says
-     - ``greenwald``, ``beta_normal``, ``total_pressure``
-     - the derived quantities of one case: ``f_G = n_e / n_G`` over the three
-       leaves the caller names, and the normalised beta and the total pressure
-       **read off the leaf the case keeps them in** -- never computed here. The
-       answer names the path it read, the points, and the mean, peak and floor.
-       A case that does not hold the leaf is refused by name, never with a
-       plausible-looking value.
+     - ``derived_quantity``
+     - one tool for the three numbers a case is judged on, and ``quantity``
+       says which one: ``greenwald`` is ``f_G = n_e / n_G`` over the three
+       leaves the caller names, and ``beta_normal`` and ``total_pressure``
+       are the case's own numbers **read off the leaf the case keeps them
+       in** -- never computed here. The answer names the path it read, the
+       points, and the mean, peak and floor. A case that does not hold the
+       leaf is refused by name, never with a plausible-looking value.
    * - a campaign of shots
-     - ``campaign``, ``campaign_report``
-     - the trend of one leaf across a series of shots, in the order named: one
-       value per shot (``at`` an index of its curve, or ``which`` of ``mean``,
-       ``max``, ``min``), then the per-shot values, the least-squares slope over
-       the shot index, the first-to-last change, the min and max with the shots
-       they came from, and the direction. A campaign of one shot or of
-       all-equal values refuses in words. The report is the same answer as a
-       page under :file:`~/.imasviz/reports`.
+     - ``trend_campaign``
+     - one tool for a series of shots, and ``action`` says which ask:
+       ``values`` answers the trend of one leaf in the order named -- one
+       value per shot (``at`` an index of its curve, or ``which`` of
+       ``mean``, ``max``, ``min``), then the per-shot values, the
+       least-squares slope over the shot index, the first-to-last change,
+       the min and max with the shots they came from, and the direction;
+       ``report`` writes that same answer as a page under
+       :file:`~/.imasviz/reports`. A campaign of one shot or of all-equal
+       values refuses in words.
    * - the windows
-     - ``list_windows``, ``show_window``, ``hide_window``, ``close_window``
-     - the session's windows in the order the menus draw them (kind, label,
-       key, on screen), put one back, take one off without deleting it, delete
-       one for good.
+     - ``manage_window``
+     - one tool, and ``action`` says which of the five is meant: ``list``
+       answers the session's windows in the order the menus draw them (kind,
+       label, key, on screen) and asks for no window; ``show`` puts one back
+       on the screen, ``hide`` takes one off without deleting it, ``close``
+       deletes one for good, and ``focus`` is the "show me this" gesture: a
+       window brought forward (shown when off screen, raised when not), at
+       the size it holds, and the pixels only when they are named. The window
+       is one word for all four -- ``window``, the application, a figure key
+       or a case URI -- although three of the gestures name it ``key`` in
+       Python. Showing is the user's command, not something the loop does
+       after a draw: the figure is in the *Windows*
+       menu, and that is where the raise lives.
    * - the plugins
-     - ``list_plugins``, ``run_plugin``
-     - the entries an IDS root earns, in registration order, with the refusals
-       of the plugins the case cannot offer **named alongside**; and one entry
-       run with the answers the entry would have asked the user -- the
-       ``occurrence``, and the ``time`` of an entry that asks an instant. Which
+     - ``plugin``
+     - one tool, and ``action`` says which of the two is meant: ``list``
+       answers the entries an IDS root earns, in registration order, with the
+       refusals of the plugins the case cannot offer **named alongside**;
+       ``run`` runs one of those entries with the answers the entry would have
+       asked the user -- the ``occurrence``, and the ``time`` of an entry that
+       asks an instant. Which
        branch the line is asked on is a parameter too: left out, it is
        **resolved** by searching the case for the branches that earn that entry,
        and several branches earning it (a plugin offered on any IDS) is refused
@@ -246,79 +283,114 @@ the same descriptions. The tools, in the order the faces group them:
        from a session put back and once from the agent, say -- leaves one window
        showing the second answer instead of two on the screen. What still makes
        two windows is asking an entry *and* the tool that entry answers with,
-       since ``equilibriumsurfaces`` entry 0 *is* ``equilibrium_surfaces`` and
-       entry 1 *is* ``equilibrium_at_time``.
+       since ``equilibriumsurfaces`` entry 0 *is*
+       ``equilibrium(action="surfaces")`` and entry 1 *is*
+       ``equilibrium(action="at_time")``.
    * - sessions and configurations
-     - ``save_session``, ``restore_session``, ``new_session``,
-       ``list_sessions``, ``list_configurations``,
-       ``select_from_configuration``, ``save_selection``,
-       ``save_plot_configuration``
-     - the whole screen as the application writes it, put a session back the
-       way the gesture replays it, the sessions the folder holds, the plot
-       (``.pcfg``) and selection (``.lsp``) files, apply one of them (the
-       IDSs the case would need and does not hold are loaded first, the way
-       the menu does it), and the two saves. ``new_session`` is the *New
-       session* of the *File* menu asked the way the page asks it: every case
-       view and every figure of the run closed and **nothing written** -- the
-       sessions on disk and the reports stay where they are -- and it answers
-       how many windows it closed. Like the *Windows* menu's close, it is a
-       gesture the loop names out loud before it runs it.
+     - ``manage_session``
+     - the run kept and read back, and ``action`` says which of the eight is
+       meant. ``save`` writes the whole screen as the application writes it
+       -- the cases, the loads, the selection, the windows and what a hand
+       styled on them; ``restore`` puts one of those sessions back the way
+       the gesture replays it, naming the cases that came back. ``name`` is
+       a session file there, and a configuration file (``.lsp`` as
+       ``.pcfg``) for the three asks that name one. ``list_sessions`` answers
+       the ``.vsess`` files the folder holds and ``list_configurations`` the
+       plot and selection files, ``kind`` narrowing to one of the two kinds
+       -- a kind the application does not answer is refused by name,
+       ``session`` among them. ``apply`` selects on a case the quantities one
+       saved configuration names (the IDSs the case would need and does not
+       hold are loaded first, the way the menu does it), ``save_selection``
+       writes the case's selection out as a ``.lsp`` and
+       ``save_plot_configuration`` one Table Plot View out as a ``.pcfg``,
+       its panels and the places they held -- any other window is refused by
+       name. ``new`` is the *New session* of the *File* menu asked the way
+       the page asks it: every case view and every figure of the run closed
+       and **nothing written** -- the sessions on disk and the reports stay
+       where they are -- and it answers how many windows it closed. Like the
+       *Windows* menu's close, it is a gesture the loop names out loud before
+       it runs it.
    * - the reports
-     - ``plot_report``, ``case_report``, ``case_ids_report``
-     - a window of curves as a self-contained HTML file on disk (the image of
-       the window and one row per curve, with its statistics), the loaded tree
-       of a case the same way, and the case itself: every IDS the case holds
+     - ``generate_report``
+     - a self-contained HTML file on disk, and ``scope`` says which one is
+       meant: ``plot`` is a window of curves (the image of the window and one
+       row per curve, with its statistics), ``case_loaded`` is the loaded tree
+       of a case the same way, and ``case_ids`` is the case itself: every IDS
+       the case holds
        and the occurrences each holds, the ones the session loaded, the
        header of each loaded occurrence's ``ids_properties`` values, and
        the signals the tree holds for each occurrence -- the ones the
        tree carries as available (the same test its own colouring
        applies), a 0-D scalar held by the dynamic array among them
-       (``global_quantities.ip`` on the reference case).
+       (``global_quantities.ip`` on the reference case). A scope asked
+       without the subject it needs (a ``figure_key`` for ``plot``, a
+       ``uri`` for the two others) is refused by naming what the call is
+       missing.
    * - the export
      - ``export_to_ids``
      - the opened IDSs of a case into the target case, under the data
        dictionary the case was read at.
    * - the screen
-     - ``get_screenshot``, ``focus_window``
+     - ``get_screenshot``
      - a window as it stands, in PNG -- the application, one figure, or the
-       shot view of a case -- and the "show me this" gesture: a window
-       brought forward (shown when off screen, raised when not), at the
-       size it holds, and the pixels only when they are named. Showing is
-       the user's command, not something the loop does after a draw: the
-       figure is in the *Windows* menu, and that is where the raise lives.
+       shot view of a case. The pixels are asked for, never handed out after a
+       draw; the window that brings itself forward is
+       ``manage_window(action="focus")``, in the group of the windows it
+       moves.
    * - the log
      - ``get_logs``
      - the log panel of one case, or of every case: the last lines the gestures
        wrote there, the named refusals among them -- where a loop reads what a
        dialog would have told a hand.
    * - the journals
-     - ``search_journals``, ``list_notes``, ``read_note``, ``add_note``,
-       ``edit_note``, ``delete_note``, ``journal_stats``,
-       ``reindex_journals``
-     - the two journals of the run: the **personal** one (the author's own
-       notes, under ``~/.imasviz/journals``) and the **shared** one
-       (:ref:`agentics_journal_shared`) -- a note is one file with its own
-       front matter (*machine*, *campaign*, *shot*, *date*, *author*,
-       *title*) and its body, and a search narrows by any of the filters and
-       ranks by meaning when the embeddings endpoint is named
-       (:ref:`agentics_journal_llm`), by words while it is not.
-       ``reindex_journals`` puts a journal back in step with its index: an
-       index that is empty, stale, or **guarded** because it was written under
-       an embeddings endpoint this run is no longer under.
+     - ``manage_note``
+     - one tool for the notebook, and its ``action`` says which of the eight
+       is meant: ``search``, ``list``, ``read``, ``add``, ``edit``,
+       ``delete``, ``stats``, ``reindex``. The two journals of the run: the
+       **personal** one (the author's own notes, under ``~/.imasviz/journals``)
+       and the **shared** one (:ref:`agentics_journal_shared`) -- a note is one
+       file with its own front matter (*machine*, *campaign*, *shot*, *date*,
+       *author*, *title*) and its body, and a search narrows by any of the
+       filters and ranks by meaning when the embeddings endpoint is named
+       (:ref:`agentics_journal_llm`), by words while it is not. ``scope`` says
+       which of the two journals an action runs on -- a word the write
+       gestures already answered for themselves, which is why the group took
+       ``action`` as its discriminant and not ``scope``. ``reindex`` puts a
+       journal back in step with its index: an index that is empty, stale, or
+       **guarded** because it was written under an embeddings endpoint this
+       run is no longer under.
    * - the documents corpus
-     - ``list_documents``, ``search_documents``, ``read_document``,
-       ``reindex_documents``, ``documents_stats``
-     - the agent's own reading of **the user's writing**: the markdown, text
-       and (when the reader is importable) PDF files under
-       :code:`AgentDocsDir` in the preferences. A search answers ranked
-       **chunks** -- one hit per chunk, with the document, the chunk and a
-       snippet -- and names the method it ranked with; ``read_document`` gives
-       the full text of one document by the relative path a hit named;
-       ``list_documents`` is the corpus as named; ``documents_stats`` is its
-       state, which is where "it is not indexed yet" and "it was indexed under
-       another endpoint" are answered; ``reindex_documents`` sets the corpus
-       and its index back in step. A corpus with no folder named is refused by
+     - ``manage_documents``
+     - one tool for the corpus the agent *reads*, and its ``action`` says
+       which of the five is meant: ``list``, ``search``, ``read``,
+       ``reindex``, ``stats``. The agent's own reading of **the user's
+       writing**: the markdown, text and (when the reader is importable)
+       PDF files under :code:`AgentDocsDir` in the preferences. A search
+       answers ranked **chunks** -- one hit per chunk, with the document's
+       ``rel``, the chunk and a snippet -- and names the method it ranked
+       with; ``read`` gives the full text of one document by the ``rel`` a
+       hit named; ``list`` is the corpus as named; ``stats`` is its state,
+       which is where "it is not indexed yet" and "it was indexed under
+       another endpoint" are answered; ``reindex`` sets the corpus and its
+       index back in step. A corpus with no folder named is refused by
        name, naming the folder it would have read (:ref:`agentics_documents`).
+   * - the prompts
+     - ``manage_prompt``
+     - one tool for the catalogue of prompts **the user wrote themselves**,
+       and ``action`` says which of the six is meant: ``list`` answers the
+       catalogue grouped by category, each category saying how many it
+       holds, narrowed by ``category`` or a word of ``query``; ``detail``
+       answers one prompt whole, with for each of its holes -- spelled with
+       braces -- the value it would take today and **where that value comes
+       from**; ``fill`` fills those holes from four sources in order (what
+       the call names, the last value typed for **that** prompt, what this
+       session knows, the default the file declares), a hole none of them
+       answers being a refusal **naming the holes** rather than a prompt
+       sent with ``{shot}`` still in it; ``save``, ``edit`` and ``delete``
+       write the catalogue, ``scope`` saying the user's own folder or the
+       shared one. Filling is not running: no face offers a ``run_prompt``
+       gesture, so the text comes back and the face asks the turn with it
+       (:ref:`agentics_prompts`).
 
 .. _agentics_documents:
 
@@ -333,8 +405,9 @@ corpus is the agent's memory of it.
 
 The corpus is indexed, not reread on every question: each document is cut into
 chunks and the chunks are stored in the same index the two journals use, so
-``search_documents`` answers the chunks that carry the answer rather than a file
-name, and ``read_document`` is the one to ask when a hit is worth reading whole.
+``manage_documents(action="search")`` answers the chunks that carry the answer
+rather than a file name, and ``manage_documents(action="read")`` is the one to
+ask when a hit is worth reading whole.
 Ranking follows the same rule as the journals (:ref:`agentics_journal_llm`): by
 **embeddings** when the embeddings endpoint is named and answers, by **words**
 while it is not, and the answer says which -- ``hybrid``, ``embeddings``,
@@ -343,14 +416,15 @@ while it is not, and the answer says which -- ``hybrid``, ``embeddings``,
 Two states are worth reading before concluding the corpus does not work:
 
 - **an empty index**: a document added to the folder announces itself to nobody.
-  ``reindex_documents`` walks the folder, keeps what it has, embeds what moved
-  and drops what left; ``documents_stats`` names how many documents and chunks
+  ``manage_documents(action="reindex")`` walks the folder, keeps what it has,
+  embeds what moved and drops what left;
+  ``manage_documents(action="stats")`` names how many documents and chunks
   stand, under which endpoint and model, and when that was built.
 - **a guarded index**: an index written under one embeddings endpoint and read
   under another is kept out of the ranking -- its vectors live in a different
   space than the query does -- and the search falls back to words, naming the
-  guard. A fresh ``reindex_documents`` under the endpoint of the run is what
-  clears it.
+  guard. A fresh ``manage_documents(action="reindex")`` under the endpoint of
+  the run is what clears it.
 
 A folder that is not named is a refusal that names the line missing; it is not a
 search that quietly answers nothing, and the journals keep answering beside it.
@@ -378,16 +452,18 @@ The two are:
   node reach, so that a note written by one is reachable by the others, and
   the author of the note is the ``$USER`` of the writer, written by hand.
 
-The read: ``search_journals`` (the query and the filters), ``list_notes`` (the
-filters alone, in date order), ``read_note`` (the body by the id a search or
-a list names), and ``journal_stats`` (what the two journals hold on this node,
+The read: ``manage_note(action="search")`` (the query and the filters),
+``manage_note(action="list")`` (the filters alone, in date order),
+``manage_note(action="read")`` (the body by the id a search or a list names),
+and ``manage_note(action="stats")`` (what the two journals hold on this node,
 and whether the embeddings endpoint is named and the model it names). The
-write: ``add_note`` (a new line in one of the two, the fields that name it,
-and the body), ``edit_note`` (one of the lines, changed in place — the note
+write: ``manage_note(action="add")`` (a new line in one of the two, the
+fields that name it, and the body), ``manage_note(action="edit")`` (one of
+the lines, changed in place — the note
 keeps the id it reads under, a field the caller names takes the place of
 the one it held, a field left out keeps it, and an empty one clears it,
 leaving the author and the body the two a note does not go without), and
-``delete_note`` (one of them, gone). Every refusal the read
+``manage_note(action="delete")`` (one of them, gone). Every refusal the read
 answers is one the write does not take: a note with no author is refused by
 name, a body that is empty is refused by name, and an explicit ask for the
 shared journal on a node that does not hold one names the reason, not the
@@ -403,11 +479,11 @@ written. The same rule wears on the *Windows* menu's close and on the *File*
 menu's new session: a close the model runs, the loop names the gesture and
 the rule, the case and the session are still in force.
 
-The ranking: ``search_journals`` ranks by **embeddings** when
+The ranking: ``manage_note(action="search")`` ranks by **embeddings** when
 :code:`AgentEmbedEndpoint` is named and the server answers (the
 :ref:`agentics_journal_llm`), and by **words** while it is not, or while the
-server does not answer -- which is what ``journal_stats`` says, in
-``method`` and, for the fallback case, in ``fallback_from`` and
+server does not answer -- which is what ``manage_note(action="stats")``
+says, in ``method`` and, for the fallback case, in ``fallback_from`` and
 ``fallback_reason``: a search that ran on the keyword with the reason named
 is not a search that presented itself as an embeddings answer. The vectors
 the endpoints answer are cached under the note's journal folder, keyed on
@@ -421,9 +497,9 @@ Asking for a quantity of several axes
 
 A quantity is not drawn "at random". It is addressed with **one axis to run
 along** and **the other axes pinned at their index** under the names the tree
-gives them -- and :code:`plot_one`, :code:`plot_slice` and :code:`get_signal`
-take that pair in exactly the same shape, so the number a read reports and the
-element a figure draws are one and the same thing.
+gives them -- and :code:`plot` (its "single" and "slice" modes) and
+:code:`get_signal` take that pair in exactly the same shape, so the number a
+read reports and the element a figure draws are one and the same thing.
 
 The two words:
 
@@ -447,18 +523,20 @@ for the pressure profile of ``equilibrium``:
 
 1. **Along the time.** The profile is held by the dynamic array, so it runs
    along the clock by default. *"the pressure at psi = 50"* is
-   ``plot_one(uri, "equilibrium.time_slice[0].profiles_1d.pressure",
-   indices={"psi": 50})`` -- the curve it answers is the 49 samples of the
-   case's ``time_slice``, not a point.
+   :code:`plot(mode="single", uri,
+   "equilibrium.time_slice[0].profiles_1d.pressure", indices={"psi": 50})` --
+   the curve it answers is the 49 samples of the case's ``time_slice``, not a
+   point.
 2. **Along the coordinate that is not the time.** *"the pressure as a
-   function of psi"* is ``plot_one(uri, ..., along="psi")`` -- 101 samples, x
-   running over the coordinate of the leaf itself, where along the time it
+   function of psi"* is the same call with :code:`along="psi"` -- 101 samples,
+   x running over the coordinate of the leaf itself, where along the time it
    was 49 samples over about 16 seconds. :code:`get_signal` with the same
    address reports the same curve: a figure and a read that disagree about
    the abscissa have been a refusal since this release.
 3. **A slice at an instant.** *"the pressure of the slice closest to 35 s"*
-   is ``plot_slice(uri, leaf, time=35)`` -- the value the Access Layer answers
-   at that instant (its own slice read, not a GUI-side interpolation), with
+   is :code:`plot(mode="slice", uri, leaf, time=35)` -- the value the
+   Access Layer answers at that instant (its own slice read, not a GUI-side
+   interpolation), with
    ``linear`` (the default), ``closest`` or ``previous`` interpolation. A
    ``time`` outside the case's range answers the nearest slice it holds, and
    the answer names the time asked and the slice time **apart**, not a value
@@ -467,16 +545,16 @@ for the pressure profile of ``equilibrium``:
 
 Two figures, two ways (and two ways only):
 
-- **Stacking on the figure already open.** The first :code:`plot_one` opens the
+- **Stacking on the figure already open.** The first drawing opens the
   figure and **is** what its key is (``Plot1``); the next ones pass that key
   and are drawn on it. N indices of **the same leaf** is N curves on **one**
   figure: each curve is pinned to the index it carried, and the slider the
   figure holds is not touched when stacking -- which is what the four identical
   curves of the old bug would have been, all of them answering the last value
   the slider was set to.
-- **Select first, draw after.** :code:`select_signals` then
-  :code:`plot_selection`: one selection, one figure per figure kind the
-  selection calls for.
+- **Select first, draw after.** :code:`manage_selection` asked with
+  ``action`` ``select`` and the paths, then :code:`plot(mode="selection",
+  uri)`: one selection, one figure per figure kind the selection calls for.
 
 What a superposition is **not**: two different structures (two probes, then two
 loops) is **two** figures, not four in one. The structure is already fixed by
@@ -489,8 +567,8 @@ happen only when **this run** asks for them, in French or English
 (*ferme Plot5*, *referme le cas*, *nouvelle session* ...) -- any other run
 that poses one meets a named refusal, the gesture is not taken, and the answer
 says so: nothing was closed. That is the way the old bug went: the loop closed
-a figure, the window was gone from ``list_windows``, and the loop noticed it
-itself, without having asked for it.
+a figure, the window was gone from ``manage_window(action="list")``, and the
+loop noticed it itself, without having asked for it.
 
 A dictionary of ready phrases, with what they answer on the reference case:
 
@@ -503,26 +581,28 @@ A dictionary of ready phrases, with what they answer on the reference case:
      - what answers
    * - the pressure along the time, at one psi
      - "trace the pressure at psi = 50"
-     - :code:`plot_one(..., along` left out`, indices={"psi": 50})`
+     - :code:`plot(mode="single", ..., indices={"psi": 50})` -- "along" left
+       out
    * - the pressure as a function of psi
      - "draw the pressure as a function of psi"
-     - :code:`plot_one(..., along="psi")`
+     - :code:`plot(mode="single", ..., along="psi")`
    * - three psi's on **one** figure
      - "draw psi = 0, 10 and 50 on **one** figure"
-     - three :code:`plot_one`, the two last with the first's key
+     - three :code:`plot(mode="single")`, the two last with the first's key
    * - two probes, then two loops
      - "draw probe 2 and probe 10, then loop 2 and loop 10"
      - **two** figures
    * - a slice at an instant
      - "the pressure of the slice at 35 s"
-     - :code:`plot_slice(..., time=35)`
+     - :code:`plot(mode="slice", ..., time=35)`
    * - the value at one psi
      - "read the pressure at psi = 50"
      - :code:`get_signal(..., indices={"psi": 50})`
    * - to see the figure
      - "show me Plot1" / "bring Plot1 forward"
-     - :code:`focus_window(window="Plot1")` -- the window comes forward,
-       at the size it holds; *"en grand"* adds the pixels to put it at
+     - :code:`manage_window(action="focus", window="Plot1")` -- the window
+       comes forward, at the size it holds; *"en grand"* adds the pixels to
+       put it at
    * - a capture of the figure
      - "a capture of Plot1"
      - :code:`get_screenshot(window="Plot1")`
@@ -710,8 +790,9 @@ answers by default:
   psi = 0, 10 and 50 on one figure, and give me the capture"* -- one run, one
   image, the group arrives open.
 - **A re-capture is asked, by the name of the figure.** *"show me Plot1"*
-  brings that figure forward (``focus_window``, at the size it holds);
-  *"a capture of Plot1"* saves it (``get_screenshot``). The page's own
+  brings that figure forward (``manage_window(action="focus")``, at the
+  size it holds); *"a capture of Plot1"* saves it (``get_screenshot``). The
+  page's own
   button on a capture card does the second one. A figure the answer only
   *names* is not among these: a show is the user's command, and the
   mention stays in the transcript, beside the PNG the turn that drew it
@@ -831,7 +912,7 @@ guards, and each is a refusal of the face, named:
 - **The number.** A number the run reports must be one the tool read **this
   run**. A figure and a number of a table, without a single call to a tool
   that reads, are a refusal of the run, renouncing the two tools that must be
-  called (``get_signal`` / ``plot_one``), and refused again when they repeat
+  called (``get_signal`` / ``plot``), and refused again when they repeat
   it. A value the case does not hold is a refusal with the extent the tree
   holds, not a 0.
 - **The name of a figure.** A name of a figure without a single opener of a
@@ -874,14 +955,16 @@ The two catalogues are the two the journals answer by:
   (:ref:`agentics_prompts_shared`) -- an AFS directory the writers of the
   node reach, so a prompt one writer filed is on the menu of the others.
 
-The read: ``list_prompts`` (the catalogue, by category and by name, narrowed
-by ``category`` or a word of ``query``, and answering how many prompts each
-category holds), ``prompt_detail`` (one prompt whole: its text and, for each
-of its holes, the value it would take today and **where that value comes
-from**), and the write: ``save_prompt`` (a new file, the id being the slug of
-its name), ``edit_prompt`` (one of the prompts, changed in place -- it keeps
-the id its values were remembered under) and ``delete_prompt`` (one of them,
-and the values remembered for it, gone).
+The catalogue answers one tool, ``manage_prompt``, whose ``action`` says
+which ask is meant. The read: ``action="list"`` (the catalogue, by category
+and by name, narrowed by ``category`` or a word of ``query``, and answering
+how many prompts each category holds) and ``action="detail"`` (one prompt
+whole: its text and, for each of its holes, the value it would take today
+and **where that value comes from**). The write: ``action="save"`` (a new
+file, the id being the slug of its name), ``action="edit"`` (one of the
+prompts, changed in place -- it keeps the id its values were remembered
+under) and ``action="delete"`` (one of them, and the values remembered for
+it, gone).
 
 The holes are filled by four sources, in that order, and the answer names
 which one answered each:
@@ -902,10 +985,11 @@ application made up for it -- which is the whole reason filling is a separate
 ask from running.
 
 Filling is not running. There is no ``run_prompt`` gesture, and no face
-pretends there is one: ``fill_prompt`` answers the text, and the face asks it
-as its own turn -- the panel puts it in its box and *Tourner* runs it, the
-page puts it in its box or sends it through its *Run*, the client runs it on
-the line. A prompt of the catalogue is the user's own ask, and the turn it
+pretends there is one: ``manage_prompt(action="fill")`` answers the text,
+and the face asks it as its own turn -- the panel puts it in its box and
+*Tourner* runs it, the page puts it in its box or sends it through its
+*Run*, the client runs it on the line. A prompt of the catalogue is the
+user's own ask, and the turn it
 starts is the turn the transcript shows.
 
 The four faces, and the catalogue each asks of the same two folders:
@@ -922,27 +1006,28 @@ The four faces, and the catalogue each asks of the same two folders:
 - the **client** (*viz_cli*): ``/prompt`` (the catalogue), ``/prompt list``,
   ``/prompt show``, ``/prompt run`` -- which asks the holes it cannot answer
   on the line, never in a dialog -- and ``/prompt save``;
-- the **loop** itself: the six tools above, so that *relance le prompt sur
-  les instabilités* is a question asked of what the user filed, not a
-  sentence the model invents for it.
+- the **loop** itself: the one tool above with its six actions, so that
+  *relance le prompt sur les instabilités* is a question asked of what the
+  user filed, not a sentence the model invents for it.
 
 The refusals, all named: a hole none of the four sources answers names the
 holes; a second prompt filed under an id the catalogue holds is refused, and
-the refusal names ``edit_prompt`` as the way to change the one it is; a hole
-declared and never opened by the text is refused by name, because a hole
-nobody is ever asked for is a declaration of nothing; an id two prompts carry
-as their display name names both ids and asks which one; and a shared
+the refusal names ``manage_prompt(action="edit")`` as the way to change the
+one it is; a hole declared and never opened by the text is refused by name,
+because a hole nobody is ever asked for is a declaration of nothing; an id
+two prompts carry as their display name names both ids and asks which one;
+and a shared
 catalogue with no folder named costs **its own half** of a listing -- the
 personal prompts still answer, with the reason in ``catalogues_unavailable``
 -- while one write that names ``shared`` and gets no folder is refused,
 because a write silently filed in the personal folder is a prompt its author
 believes shared.
 
-``save_prompt`` into the shared catalogue, like a note written to the shared
-journal, is a line other people read: the loop runs it when the request asks
-for it in the user's own words, not because a turn drew a figure worth
-keeping. The same goes for ``delete_prompt``, which takes away a file the
-user wrote.
+``manage_prompt(action="save", scope="shared")``, like a note written to the
+shared journal, is a line other people read: the loop runs it when the request
+asks for it in the user's own words, not because a turn drew a figure worth
+keeping. The same goes for ``manage_prompt(action="delete")``, which takes
+away a file the user wrote.
 
 .. _agentics_llm:
 

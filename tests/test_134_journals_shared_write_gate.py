@@ -26,6 +26,14 @@ the **user** reaches for is never refused: the click is the ask.
 The rule the loop's destructive gesture already wears — a close the
 model runs on a request that does not name one — is the same shape:
 the shared write runs only when the user asks, in their own words.
+
+Two vocabularies, and this file sits on the seam. The notebooks answer
+one tool, ``manage_note``, whose ``action`` says which write is meant;
+the gate reads the GESTURE behind that action (``SHARED_JOURNAL_GESTURES``
+names members), while the refusal and every ask here are spelled the way
+the tool set offers them — a refusal naming ``add_note`` would send the
+model to a name it is refused for asking, and a scripted call naming it
+is refused as a tool no longer offered on its own.
 """
 
 import pytest
@@ -75,14 +83,14 @@ def loop():
 
 
 def test_a_model_write_to_the_shared_journal_not_asked_is_refused(loop):
-    """A ``model`` reaching for ``add_note(scope='shared')`` on a request
-    that names no shared journal is refused by name: the gate fires,
-    the core is not called, and the refusal names the shared journal
-    and the one word that unblocks it."""
+    """A ``model`` reaching for ``manage_note(action="add",
+    scope='shared')`` on a request that names no shared journal is refused
+    by name: the gate fires, the core is not called, and the refusal names
+    the shared journal and the one word that unblocks it."""
     agent, core = loop
     with pytest.raises(ValueError) as exc:
-        agent._dispatch('add_note', {'scope': 'shared',
-                                     'text': 'the plasma was unstable'},
+        agent._dispatch('manage_note', {'action': 'add', 'scope': 'shared',
+                                        'text': 'the plasma was unstable'},
                         requested_by='model',
                         user_prompt='note down that the plasma was unstable')
     refusal = str(exc.value)
@@ -90,6 +98,9 @@ def test_a_model_write_to_the_shared_journal_not_asked_is_refused(loop):
         'a refused shared write must not reach the core: %r' % core.calls
     assert 'shared' in refusal, \
         'the refusal names the journal the write would land in: %r' % refusal
+    assert 'manage_note(action="add")' in refusal, \
+        'the refusal names the call it refused, in the spelling the tool ' \
+        'set offers it, not the gesture behind it: %r' % refusal
     # The unblock is an ask in the user's own words, in either language.
     assert ('publier' in refusal or 'share' in refusal
             or 'partagé' in refusal), \
@@ -99,10 +110,11 @@ def test_a_model_write_to_the_shared_journal_not_asked_is_refused(loop):
 def test_a_model_write_to_the_shared_journal_asked_runs(loop):
     """The same ``model`` call, on a request that names the shared
     journal in the user's own words, is the one the gate lets through:
-    the unblock is a word, and the word is there."""
+    the unblock is a word, and the word is there. What the core is asked
+    for is the gesture behind that action, under its own name."""
     agent, core = loop
-    agent._dispatch('add_note', {'scope': 'shared',
-                                 'text': 'the plasma was unstable'},
+    agent._dispatch('manage_note', {'action': 'add', 'scope': 'shared',
+                                    'text': 'the plasma was unstable'},
                     requested_by='model',
                     user_prompt='publier cette note au journal partagé')
     assert core.calls, \
@@ -121,8 +133,8 @@ def test_a_user_write_to_the_shared_journal_never_refused(loop):
     # The one the loop's gate refuses as a model gesture, run as the
     # user's: the same core, the same arguments, and the refusal does
     # not stand in the way.
-    agent._dispatch('add_note', {'scope': 'shared',
-                                 'text': 'the plasma was unstable'},
+    agent._dispatch('manage_note', {'action': 'add', 'scope': 'shared',
+                                    'text': 'the plasma was unstable'},
                     requested_by='user',
                     user_prompt='note down that the plasma was unstable')
     assert core.calls, \
@@ -137,8 +149,8 @@ def test_a_model_write_to_the_personal_journal_not_refused(loop):
     is the one it is owed on a "note down what I said", and the gate
     stands aside there."""
     agent, core = loop
-    agent._dispatch('add_note', {'scope': 'personal',
-                                 'text': 'the plasma was unstable'},
+    agent._dispatch('manage_note', {'action': 'add', 'scope': 'personal',
+                                    'text': 'the plasma was unstable'},
                     requested_by='model',
                     user_prompt='note down that the plasma was unstable')
     assert core.calls, \
@@ -148,20 +160,20 @@ def test_a_model_write_to_the_personal_journal_not_refused(loop):
 
 
 def test_the_delete_gate_reads_the_same_way(loop):
-    """The gesture the gate names — ``delete_note`` — reads the
-    same as the add: a model ``delete_note(scope='shared')`` on a
+    """The gesture the gate names — the notebook's delete — reads the
+    same as the add: a model ``manage_note(action="delete")`` on a
     request that names no shared journal is refused, and the one the
     user names in their own words runs."""
     agent, core = loop
     with pytest.raises(ValueError):
-        agent._dispatch('delete_note', {'scope': 'shared',
+        agent._dispatch('manage_note', {'action': 'delete', 'scope': 'shared',
                                         'note_id': 'a-note-id'},
                         requested_by='model',
                         user_prompt='take that note out')
     assert core.calls == [], \
         'a refused shared delete must not reach the core: %r' % core.calls
 
-    agent._dispatch('delete_note', {'scope': 'shared',
+    agent._dispatch('manage_note', {'action': 'delete', 'scope': 'shared',
                                     'note_id': 'a-note-id'},
                     requested_by='user')
     assert core.calls, 'a user delete to the shared journal runs: %r' \
@@ -169,16 +181,16 @@ def test_the_delete_gate_reads_the_same_way(loop):
 
 
 def test_the_edit_gate_reads_the_same_way(loop):
-    """The third gesture the gate names — ``edit_note`` — reads the
-    same as the other two: a model ``edit_note(scope='shared')`` on a
+    """The third gesture the gate names — the notebook's edit — reads the
+    same as the other two: a model ``manage_note(action="edit")`` on a
     request that names no shared journal is refused by name (the edit
     is a write to a place the writers all read, whatever it changes),
     and the one the user names in their own words runs."""
     agent, core = loop
     with pytest.raises(ValueError) as exc:
-        agent._dispatch('edit_note', {'scope': 'shared',
-                                      'note_id': 'a-note-id',
-                                      'text': 'it was unstable, not steady'},
+        agent._dispatch('manage_note', {'action': 'edit', 'scope': 'shared',
+                                        'note_id': 'a-note-id',
+                                        'text': 'it was unstable, not steady'},
                         requested_by='model',
                         user_prompt='fix that last line about the plasma')
     refusal = str(exc.value)
@@ -186,10 +198,13 @@ def test_the_edit_gate_reads_the_same_way(loop):
         'a refused shared edit must not reach the core: %r' % core.calls
     assert 'shared' in refusal, \
         'the refusal names the journal the edit would land in: %r' % refusal
+    assert 'manage_note(action="edit")' in refusal, \
+        'the refusal names the call it refused, in the spelling the tool ' \
+        'set offers it: %r' % refusal
 
-    agent._dispatch('edit_note', {'scope': 'shared',
-                                  'note_id': 'a-note-id',
-                                  'text': 'it was unstable, not steady'},
+    agent._dispatch('manage_note', {'action': 'edit', 'scope': 'shared',
+                                    'note_id': 'a-note-id',
+                                    'text': 'it was unstable, not steady'},
                     requested_by='user')
     assert core.calls, 'a user edit to the shared journal runs: %r' \
         % core.calls

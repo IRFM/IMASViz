@@ -52,12 +52,14 @@ class FakeLLMClient:
 class RecordingCore:
     """A core that records that it was reached: a gesture the agent asked.
 
-    It carries ``list_prompts`` because the two panel tests below build
-    the panel, and it asks the catalogue while it is being built -- a
-    core that cannot answer it is a panel that cannot be built, the
-    contract ``tests/test_111_agent_panel.py`` pins on its own core.
-    What the core itself answers is pinned by ``test_167``; here the
-    shelf is empty.
+    ``list_prompts`` is here because a panel built on this core asks its
+    catalogue while it is being built -- the prompt box is filled from that
+    answer, so a core that cannot answer it is a panel that cannot be built
+    (``test_111``'s ``FakeCore`` carries the same shelf, for the same
+    reason). It is deliberately **not** recorded: what ``called`` counts is
+    the gesture the *agent* asked, and the catalogue read is the panel's
+    own, before any turn. The catalogue itself is ``test_166``/``test_167``,
+    the panel's use of it is ``test_170``.
     """
     def __init__(self):
         self.called = []
@@ -116,7 +118,7 @@ def _run(agent, prompt):
 def _make_call_and_answer():
     call = LLMResponse(
         content='',
-        tool_calls=[{'name': 'list_cases', 'args': {}}],
+        tool_calls=[{'name': 'manage_case', 'args': {'action': 'list'}}],
         finish_reason='tool_calls')
     final = LLMResponse(
         content='Here are the cases you asked for.',
@@ -191,7 +193,7 @@ def test_hide_runs_tools_but_hides_the_traffic(qapp, agent_kwargs):
     assert errors == [None]
     assert 'list_cases' in core.called, \
         'hide still runs the agent\'s gesture'
-    assert 'list_cases' not in joined, \
+    assert 'manage_case' not in joined, \
         'hide cuts the tool traffic from the transcript'
     assert 'Here are the cases you asked for.' in joined, \
         'the final answer still reaches the user'
@@ -211,7 +213,7 @@ def test_verbose_shows_the_traffic(qapp, agent_kwargs):
     joined, errors = _run(agent, 'list the cases')
     assert errors == [None]
     assert 'list_cases' in core.called, 'verbose still runs the agent\'s gesture'
-    assert 'list_cases' in joined, 'verbose shows the tool traffic'
+    assert 'manage_case' in joined, 'verbose shows the tool traffic'
     assert 'Here are the cases you asked for.' in joined
 
 

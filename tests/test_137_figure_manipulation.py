@@ -25,8 +25,9 @@ That mix of a positive and a negative curve, and an abscissa that starts
 at zero, is what makes every named refusal of the axis methods deterministic:
 scale, shift, normalize -- and the log-axis refusal that names the count
 of non-positive samples. The success path of `set_log_scale` is tested
-after the negative curve is cleared with `shift_curve`, which the refusal
-message names as the remedy.
+after the negative curve is cleared with a shift, which the refusal
+message names as the remedy -- in the offered spelling,
+`transform_curve(operation="shift")`, not the name of the method below it.
 
 `export_curve` writes into `~/.imasviz/exports`, the guard is the same
 shape the configurations use -- a `name` that is a place (contains `/`)
@@ -450,15 +451,16 @@ def test_set_axis_range_refuses_a_bool_bound(curve_figure):
 def test_set_log_scale_refuses_y_axis_when_values_are_negative(curve_figure):
     """The ip curve is fully negative -- turning the y axis to log is
     undefined over it, so the refusal names the count of non-positive
-    samples and points at shift_curve as the remedy."""
+    samples and points at the shift operation of `transform_curve` as
+    the remedy, in the spelling the model is offered."""
     session, _h, key, _frame = curve_figure
     with pytest.raises(ValueError) as exc:
         session.set_log_scale(key, y=True)
     msg = str(exc.value)
     assert 'negative' in msg or 'zero or negative' in msg, \
         'refusal should say the axis is undefined: %s' % msg
-    assert 'shift_curve' in msg, \
-        'refusal should name shift_curve as the remedy: %s' % msg
+    assert 'transform_curve(operation="shift")' in msg, \
+        'refusal should name the shift as the remedy: %s' % msg
 
 
 def test_set_log_scale_refuses_x_axis_when_zero_is_present(curve_figure):

@@ -290,7 +290,8 @@ def axesAddressing(axesSpec, along=None, indices=None):
                 'is that one member alone -- there is no slider over the '
                 'other members of the family. For another member, use its '
                 'own path (with into_figure_key to share the figure, or '
-                'select_signals + plot_selection for a selection).'
+                'manage_selection(action="select") then '
+                'plot(mode="selection") for a selection).'
                 % (word, axis.index, axesSpec.dataPath or axesSpec.idsName or '?'))
         _checkExtent(axis, (indices or {})[key])
 
@@ -627,8 +628,9 @@ class McpGuiCore:
                 resolved.append(node)
         if missing:
             raise ValueError(
-                'Not found in the tree of %s: %s -- search_nodes names '
-                'what this case can give, in every spelling it holds.'
+                'Not found in the tree of %s: %s -- inspect_tree('
+                'action="search") names what this case can give, in every '
+                'spelling it holds.'
                 % (uri, ', '.join('"%s"' % path for path in missing)))
         for node in resolved:
             command.selectNode(node, view)
@@ -717,7 +719,8 @@ class McpGuiCore:
         if idsInstance is None:
             raise ValueError(
                 'The "%s" IDS occurrence %s is not loaded in this view: '
-                'load it first with load_ids.' % (ids_name, occurrence))
+                'load it first with manage_idss(action="load").'
+                % (ids_name, occurrence))
         props = getattr(idsInstance, 'ids_properties', None)
         if props is None:
             raise ValueError(
@@ -843,8 +846,9 @@ class McpGuiCore:
             if path in self._aliasesOf(node):
                 return node
         raise ValueError(
-            '"%s" is not a leaf of the case %s -- search_nodes names '
-            'what this tree can give, in every spelling it holds.'
+            '"%s" is not a leaf of the case %s -- inspect_tree('
+            'action="search") names what this tree can give, in every '
+            'spelling it holds.'
             % (path, view.uri))
 
     def _leafKind(self, node):
@@ -879,10 +883,10 @@ class McpGuiCore:
         agent does not have, and a model reads it as "no data" and asks again.
         """
         return ('"%s" is a scalar -- one value per element of its array, '
-                'not a curve of time or coordinate. search_nodes marks the '
-                'curves with "kind": "curve"; for a leaf like this the '
-                'sibling "…/data" under the same array element is '
-                'usually the one a plot wanted.' % path)
+                'not a curve of time or coordinate. inspect_tree('
+                'action="search") marks the curves with "kind": "curve"; '
+                'for a leaf like this the sibling "…/data" under the same '
+                'array element is usually the one a plot wanted.' % path)
 
     def _embedIfNew(self, command, frame):
         """A frame the command opened is embedded and shown; a joined one is not.
@@ -1114,10 +1118,12 @@ class McpGuiCore:
             '"%s" already picks %s by its path: this figure draws that one '
             'member as its own curve, and the family %s has no slider here to '
             'move to a different index. A family member is named by its own '
-            'path, not by indices: for another member, plot_one its own path '
-            '(with into_figure_key to put it in this figure) or select_signals '
-            'the two members and plot_selection. Change the call; repeating '
-            'the refused one will not help.' % (path, word, word))
+            'path, not by indices: for another member, draw its own path with '
+            'plot(mode="single") (with into_figure_key to put it in this '
+            'figure) or manage_selection(action="select") the two '
+            'members and plot(mode="selection"). Change the call; '
+            'repeating the refused one will not help.'
+            % (path, word, word))
 
     def _timeBase(self, view, node):
         """The dynamic time array's own time values, or None.
@@ -1312,8 +1318,9 @@ class McpGuiCore:
         view = self._viewForUri(uri)
         if 'equilibrium' not in view.IDSRoots:
             raise ValueError(
-                '%s holds no equilibrium IDS, so there is no flux surface to '
-                'draw: list_case_idss names the IDS this case does hold.'
+                '%s holds no equilibrium IDS, so there is no flux surface '
+                'to draw: manage_idss(action="filled") names the IDS this '
+                'case does hold.'
                 % uri)
         from imasviz.VizDataAccess.QVizEquilibriumRead import \
             QVizEquilibriumRead
@@ -1778,7 +1785,7 @@ class McpGuiCore:
                 'No transform to take off on "%s": the %d curve(s) it '
                 'holds stand as drawn (a reset asks for a curve that was '
                 'scaled, shifted, or normalized, or a re-plot with '
-                'plot_one).' % (figure_key, held))
+                'plot(mode="single")).' % (figure_key, held))
         self._logFor(record.cases,
                      'reset_curve: %s back to the data as drawn, on %s.'
                      % (', '.join(restored), figure_key))
@@ -1976,7 +1983,8 @@ class McpGuiCore:
                     'negative: %d of the %d sampled point%s read so. The '
                     'picture would hide them and read as empty where it '
                     'holds a half-empty axis, so the log ask on it is '
-                    'refused, and `shift_curve` (up to the zero or above) '
+                    'refused, and `transform_curve(operation="shift")` '
+                    '(up to the zero or above) '
                     'is the answer to give it back.'
                     % (axis, n_bad, int(finite.size),
                        '' if finite.size == 1 else 's'))
@@ -2071,8 +2079,8 @@ class McpGuiCore:
                     'The window "%s" is a figure of curves: it holds traces, '
                     'not a window of pictures, so there is no window to move '
                     'or resize on it, and the span of its axes is the one '
-                    'set_axis_range pins. Name the figure the pictures were '
-                    'drawn in.' % figure_key)
+                    'configure_axes(operation="range") pins. Name the '
+                    'figure the pictures were drawn in.' % figure_key)
             raise ValueError(
                 'The window "%s" is not an image window: it is not a figure '
                 'of pictures, so there is no window of them to move or '
@@ -2086,7 +2094,8 @@ class McpGuiCore:
                 'The window "%s" holds one picture, not a window of them: '
                 'it was not read across an axis, so there is no window to '
                 'move or resize, and the span of the one it holds is what '
-                'set_axis_range pins on the axis it drew.' % figure_key)
+                'configure_axes(operation="range") pins on the axis it '
+                'drew.' % figure_key)
         controls = getattr(frame, 'framesControls', None)
         if controls is None:
             raise ValueError(
@@ -2227,7 +2236,8 @@ class McpGuiCore:
                 'The window "%s" holds no row for that axis: its '
                 'pictures are the axis it reads across (here %s), one '
                 'picture per element, side by side, and the window '
-                'they sit on is what set_image_window moves (start) '
+                'they sit on is what configure_axes'
+                '(operation="image_window") moves (start) '
                 'and resizes (count) -- a row of a band is not one '
                 'for an axis the window already shows.'
                 % (figure_key, word))
@@ -2270,8 +2280,10 @@ class McpGuiCore:
                     'axis that is on screen would move a window the '
                     'picture already shows. Its pictures are the axis the '
                     'window is read across (here %s), which is what '
-                    'set_image_window moves (start) and resizes (count); '
-                    'the span of the axis it drew is what set_axis_range '
+                    'configure_axes(operation="image_window") moves '
+                    '(start) and resizes (count); '
+                    'the span of the axis it drew is what '
+                    'configure_axes(operation="range") '
                     'pins, on each of its pictures.'
                     % (figure_key, fa_word or 'the strip'))
             raise ValueError(
@@ -2279,7 +2291,8 @@ class McpGuiCore:
                 'pins are none, so the axis the gesture names is not a '
                 'row of it, and the one it drew is on screen rather than '
                 'a control to move -- the span of the axes it drew is '
-                'what set_axis_range pins.' % figure_key)
+                'what configure_axes(operation="range") pins.'
+                % figure_key)
         if not word:
             raise ValueError(
                 'The axis of the row to move is named in the words the '
@@ -3310,8 +3323,8 @@ class McpGuiCore:
             self._refuseUnknownEntry(uri, plugin, entry, offered)
         raise ValueError(
             'The case %s offers no entry of plugin "%s" on any of its %d IDS '
-            'roots: list_plugins names what a branch earns, and the log of the '
-            'case names the plugins it cannot offer at all.'
+            'roots: plugin(action="list") names what a branch earns, and the '
+            'log of the case names the plugins it cannot offer at all.'
             % (uri, plugin, len(view.IDSRoots)))
 
     def _refuseUnknownEntry(self, uri, plugin, entry, offered):
@@ -3321,8 +3334,8 @@ class McpGuiCore:
             byRoot.setdefault(root, []).append(one)
         raise ValueError(
             'The case %s does not offer entry %s of plugin "%s": that plugin is '
-            'offered on %s, whose entries are %s. list_plugins names the label of '
-            'each.'
+            'offered on %s, whose entries are %s. plugin(action="list") names '
+            'the label of each.'
             % (uri, entry, plugin, ', '.join(sorted(byRoot)),
                '; '.join('%s: %s' % (root, ', '.join('%s (%s)'
                                                      % (one.number, one.label)
@@ -3375,7 +3388,7 @@ class McpGuiCore:
             if chosen is None:
                 raise ValueError(
                     'The case %s does not offer entry %s of plugin "%s" on its '
-                    '%s branch: list_plugins names what it does.'
+                    '%s branch: plugin(action="list") names what it does.'
                     % (uri, entry, plugin, ids_name))
         standing = self.api.openWindowOfPluginEntry(uri, plugin, entry,
                                                     occurrence, time,
@@ -3471,7 +3484,8 @@ class McpGuiCore:
             raise ValueError(
                 '"%s" is not a configuration kind: the kinds this '
                 'application holds are plot and selection (the sessions '
-                'in the same folder are listed by list_sessions).'
+                'in the same folder are answered by '
+                'manage_session(action="list_sessions")).'
                 % kind)
         if kind is None:
             return {'plot': QVizConfigurationFile.listing('plot'),
@@ -3650,7 +3664,8 @@ class McpGuiCore:
         if not rows:
             raise ValueError(
                 'The tree of %s holds no curve: load the IDSs it holds '
-                'first (list_idss names them, load_ids builds the branch).'
+                'first (manage_idss(action="filled") names them, '
+                'manage_idss(action="load") builds the branch).'
                 % uri)
         path = self._namedReport(name, len(rows))
         self._writeReport(path,
@@ -3713,8 +3728,9 @@ class McpGuiCore:
                             'loaded': loaded, 'state': state})
         if not any(row['held'] for row in summary):
             raise ValueError(
-                'The case %s holds no data at all (list_case_idss answers '
-                'the same): there is nothing to report.' % uri)
+                'The case %s holds no data at all '
+                '(manage_idss(action="filled") answers the same): there is '
+                'nothing to report.' % uri)
 
         sections = []
         for key in sorted(view.ids_roots_occurrence):
@@ -4857,7 +4873,8 @@ class McpGuiCore:
             raise ValueError(
                 'The window "%s" is a picture window that drew no picture, '
                 'and a range needs the drawn picture to sit on: draw the '
-                'quantity first, and the span is the one set_axis_range '
+                'quantity first, and the span is the one '
+                'configure_axes(operation="range") '
                 'pins.' % (figure_key or 'this window'))
         pgPlot = getattr(frame, 'pgPlotWidget', None)
         if pgPlot is None or not hasattr(pgPlot, 'getViewBox'):
@@ -4887,7 +4904,8 @@ class McpGuiCore:
                 'The window "%s" is a picture window: the log and inversion '
                 'gestures address the figure a single curve was drawn in, '
                 'and this one holds pictures, whose span is the one '
-                'set_axis_range pins. Name the figure the curve was drawn '
+                'configure_axes(operation="range") pins. Name the figure '
+                'the curve was drawn '
                 'in.' % (figure_key or 'this window'))
         pgPlot = getattr(frame, 'pgPlotWidget', None)
         if pgPlot is None or not hasattr(pgPlot, 'getViewBox'):
@@ -5156,7 +5174,7 @@ class McpGuiCore:
                             for frame in self.api.DTVframeList]
                 raise ValueError(
                     'The case %r is not open in this session (it holds: %s). '
-                    'Open it with open_case first.'
+                    'Open it with manage_case(action="open") first.'
                     % (uri, ', '.join('"%s"' % u for u in openUris)
                        or 'nothing'))
         logs = []
@@ -5180,7 +5198,7 @@ class McpGuiCore:
                     for view in self.api.DTVlist]
         raise ValueError(
             'The case %r is not open in this session (it holds: %s). '
-            'Open it with open_case first.'
+            'Open it with manage_case(action="open") first.'
             % (uri, ', '.join('"%s"' % u for u in openUris) or 'nothing'))
 
     def lastLogLine(self, view=None):

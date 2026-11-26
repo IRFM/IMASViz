@@ -244,8 +244,12 @@ def test_tools_lists_the_tables_the_loop_offers(qapp, tmp_path):
     tools = resp.json()['tools']
     assert {t['name'] for t in tools} == {t['function']['name'] for t in TOOLS}
     by_name = {t['name']: t for t in tools}
-    assert 'plot_one' in by_name
-    assert by_name['plot_one']['parameters']['required'] == ['uri', 'path']
+    assert 'plot' in by_name
+    assert by_name['plot']['parameters']['required'] == ['mode', 'uri'], \
+        'the page shows the offer the loop is handed, discriminant first'
+    assert 'plot_one' not in by_name, \
+        'a merged gesture is not on the wire: the page would offer a name ' \
+        'the loop refuses'
 
 
 # ---------------------------------------------------------------------- the agent
@@ -255,14 +259,14 @@ def test_agent_streams_the_turn_then_the_images(qapp, tmp_path):
     writes them, and the images come with the end of the turn -- the figure
     the turn drew, because a capture of a turn is the figures it drew and
     asked for: the stand-in core here opens `SlicesPlot1` with the
-    `plot_one` the scripted loop issues, and the `done` event carries that
+    drawing the scripted loop issues, and the `done` event carries that
     PNG under the name the page serves it from. The stand-in holds no
     figure before the turn, which is what makes the assertion mean the turn
     drew it, not the session held it."""
     llm = ScriptedLLM([
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(content='La figure est tracée.', finish_reason='stop'),
     ])
@@ -287,7 +291,7 @@ def test_agent_streams_the_turn_then_the_images(qapp, tmp_path):
     # answer the loop gives.
     data_texts = [d.get('text') for event, d in blocks if event == 'line']
     joined = '\n'.join(data_texts)
-    assert 'plot_one' in joined
+    assert 'plot(' in joined
     assert 'La figure est tracée.' in joined
 
     # The `done` event carries the image the page draws and where it lives:
@@ -314,8 +318,9 @@ def test_agent_turn_that_writes_a_report_names_it_in_the_done_event(
     history read back, `GET /api/turns/<n>`, the key the record holds."""
     monkeypatch.setenv('HOME', str(tmp_path / 'home'))
     llm = ScriptedLLM([
-        LLMResponse(tool_calls=[{'name': 'plot_report',
-                                 'args': {'figure_key': 'SlicesPlot1',
+        LLMResponse(tool_calls=[{'name': 'generate_report',
+                                 'args': {'scope': 'plot',
+                                          'figure_key': 'SlicesPlot1',
                                           'name': 'agent_report'}}],
                      content=''),
         LLMResponse(content='Le rapport est écrit.', finish_reason='stop'),
@@ -341,7 +346,9 @@ def test_agent_turn_that_writes_no_report_names_none(qapp, tmp_path, monkeypatch
     key is what it had to guess at before this."""
     monkeypatch.setenv('HOME', str(tmp_path / 'home'))
     llm = ScriptedLLM([
-        LLMResponse(tool_calls=[{'name': 'list_cases', 'args': {}}], content=''),
+        LLMResponse(tool_calls=[{'name': 'manage_case',
+                                 'args': {'action': 'list'}}],
+                    content=''),
         LLMResponse(content='Le cas est ouvert.', finish_reason='stop'),
     ])
     session, _ = build(qapp, tmp_path, llm=llm)
@@ -399,8 +406,8 @@ def test_tool_refuses_an_unknown_parameter_by_name(qapp, tmp_path):
     session, _ = build(qapp, tmp_path)
     client = TestClient(buildApp(session), base_url='http://t')
     resp = makeRequest(client, qapp, 'POST', '/api/tool',
-                       json={'name': 'plot_one',
-                             'args': {'uri': CASE_URI, 'path': 'x',
+                       json={'name': 'plot',
+                             'args': {'mode': 'single', 'uri': CASE_URI, 'path': 'x',
                                       'timeindex': 7}})
     assert resp.status_code == 400
     body = resp.json()
@@ -527,8 +534,8 @@ def test_llm_set_max_turns_refused_when_below_the_floor(qapp, tmp_path):
 def test_turn_history_and_shot_read_back(qapp, tmp_path):
     llm = ScriptedLLM([
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(content='La figure est tracée.', finish_reason='stop'),
     ])
@@ -568,8 +575,8 @@ def _turnWithOneShot(qapp, tmp_path):
     the turn's directory -- the shape the delete asks of."""
     llm = ScriptedLLM([
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(content='La figure est tracée.', finish_reason='stop'),
     ])

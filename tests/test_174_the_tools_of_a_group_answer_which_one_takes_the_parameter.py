@@ -18,22 +18,32 @@ copies the group rows of the manual's tool table
 (``doc/source/manual/agentics.rst``, "The one core and the one tool set").
 A group that drifts from its row -- a tool renamed on one side, a new tool
 offered and grouped nowhere, a tool claimed by two groups -- is a table
-nobody can read, so the doc itself is parsed and asked. The catalogue of
-prompts is the one group the manual documents in its own section rather
-than in that table: it is grouped here (its six tools answer each other's
-parameters) and owes that row to the pass that redraws the table.
+nobody can read, so the doc itself is parsed and asked. A row names what a
+reader can call, which since the first merge is not always the group's
+member list: the reports row says ``generate_report``, because the three
+report tools it merged are off the wire. The comparison runs both ways: a
+row the table groups nowhere, and a group of the table the page draws no
+row for, are both refused -- which is what keeps a merge that adds a group
+(the catalogue of prompts, 2026-11-25) from landing on one side of the page
+only.
 
 **The grouping answers a question the flat schemas cannot.** The loop
-offers 84 tools and their 86 parameter names repeat (``figure_key`` in 18
-schemas, ``uri`` in 37, ``along`` in 12), so the likelier mistake is a real
-parameter put on the wrong neighbour, not a parameter invented out of
-nothing. The refusal that only lists what is *not* there -- what
+offers 23 names carrying 88 distinct parameter blocks, and those blocks
+repeat (``action`` and ``uri`` in 14 schemas each, ``path`` in 7,
+``figure_key`` in 6, ``along`` in 5); a merged schema moreover lists the
+**union** of its actions' parameters. So the likelier mistake is a real
+parameter put on the wrong action of the right tool, or on the wrong
+neighbour of the group -- not a parameter invented out of nothing. The
+refusal that only lists what is *not* there -- what
 ``test_117_dispatch_refuses_unknown_parameters.py`` pins -- leaves the
 model guessing which neighbour wanted it. ``time_index`` on ``plot_one``
 is the measured case: ``get_signal`` takes it, and said so.
 
-Nothing here changes what the loop is offered: each tool is still offered
-by its own name, and each is still validated against its own schema.
+What the grouping does NOT do is decide what a call runs: the merge of a
+group under one name is ``test_175``'s subject, and a group is offered as
+its row of ``FAMILIES`` says -- one name with a discriminant, or, for a
+group of one tool (the read, the export, the screen, the log), that tool by
+its own name.
 """
 
 import importlib.util
@@ -47,7 +57,11 @@ from imasviz.VizAgent.llm_client import LLMResponse
 from imasviz.VizAgent.tools import (
     FAMILIES,
     TOOLS,
+    actionsOf,
+    discriminatorOf,
     familyOf,
+    gestureOf,
+    resolveCall,
     siblingTaking,
     unknownParameterRefusal,
 )
@@ -100,18 +114,58 @@ def _names(cell):
 
 # --- the grouping -------------------------------------------------------
 
+def _row(label):
+    """The table's row for one group label."""
+    for familyLabel, members, offers in FAMILIES:
+        if familyLabel == label:
+            return members, offers
+    raise KeyError(label)
+
+
+def _onTheWire(label):
+    """The names of one group that the loop is offered today.
+
+    A group offered member by one answers all of them; a group merged
+    under one name answers that name and no longer offers the members it
+    merged -- so the wire list is neither the member list nor the offer
+    list, and the manual has to say what a reader can actually call."""
+    members, offers = _row(label)
+    offered = set(members) & set(TOOL_NAMES)
+    offered |= {offer[0] for offer in offers if offer[0] in TOOL_NAMES}
+    return offered
+
+
 def test_the_groups_partition_the_tools_on_offer():
-    """Every tool offered is in one group, and in only one. A tool added to
-    ``TOOLS`` and grouped nowhere is a tool whose stray parameters answer
-    nothing; a tool in two groups is a refusal that can point at either."""
-    members = [name for _, group in FAMILIES for name in group]
+    """Every tool of the vocabulary is in one group, and in only one; every
+    name on the wire is claimed by exactly one group; and a member that is
+    no longer on the wire is a member merged under an offer that is.
+
+    A tool added to ``TOOLS`` and grouped nowhere is a tool whose stray
+    parameters answer nothing; a tool in two groups is a refusal that can
+    point at either; and a member that left the wire without its group
+    coming onto it is a tool the model is no longer offered and nobody
+    replaced."""
+    members = [name for _, group, _offers in FAMILIES for name in group]
     assert len(members) == len(set(members)), \
         'a tool is claimed by two groups'
-    assert set(members) == set(TOOL_NAMES), \
-        ('the groups and the tools on offer are not the same list: %s'
-         % ', '.join(sorted(set(members) ^ set(TOOL_NAMES))))
-    labels = [label for label, _ in FAMILIES]
+    labels = [label for label, _, _ in FAMILIES]
     assert len(labels) == len(set(labels)), 'two groups share a label'
+
+    claimed = {}
+    for label, group, offers in FAMILIES:
+        for name in list(group) + [offer[0] for offer in offers]:
+            claimed.setdefault(name, set()).add(label)
+    for name in TOOL_NAMES:
+        assert len(claimed.get(name, [])) == 1, \
+            ('%s is claimed by %s' % (name, sorted(claimed.get(name, []))
+                                      or 'no group'))
+    for name in members:
+        if name in TOOL_NAMES:
+            continue
+        _members, offers = _row(sorted(claimed[name])[0])
+        assert any(offer[0] in TOOL_NAMES for offer in offers), \
+            ('%s is off the wire and its group offers nothing that is on it'
+             % name)
 
 
 def test_the_groups_are_the_manual_s():
@@ -119,7 +173,7 @@ def test_the_groups_are_the_manual_s():
     tools. This is what keeps the table in ``tools.py`` from becoming a
     second, quieter account of the surface."""
     manual = _manualGroups()
-    spelled = {label: set(group) for label, group in FAMILIES}
+    spelled = {label: _onTheWire(label) for label, _, _ in FAMILIES}
     missing = sorted(set(manual) - set(spelled))
     assert not missing, \
         'the manual groups tools the table does not: %s' % ', '.join(missing)
@@ -137,27 +191,45 @@ def test_the_groups_are_the_manual_s():
 def test_the_groups_are_in_the_manual_s_order():
     """The manual introduces its table with "the tools, in the order the
     faces group them". The table keeps that order, so a reader who has the
-    page open finds a group where they left it. The catalogue of prompts is
-    the one group the page documents in its own section rather than in that
-    table, so it is left out of the comparison."""
+    page open finds a group where they left it."""
     manual = _manualGroups()
-    spelled = [label for label, _ in FAMILIES if label in manual]
+    spelled = [label for label, _, _ in FAMILIES if label in manual]
     assert spelled == list(manual), \
         ('the groups are not in the order the manual draws them: %s'
          % ' / '.join(spelled))
 
 
+def test_the_manual_draws_a_row_for_every_group():
+    """The other half of the comparison, and the one that was missing.
+
+    A group the page draws no row for is a group a reader of the manual
+    cannot see: they get every other row, and the tools of the missing one
+    are named nowhere on the page. The catalogue of prompts sat in exactly
+    that state after its merge -- a section of its own, a row of none --
+    and the table grew a group while the page did not notice, because the
+    only direction asked was "does the table know the rows". It now asks
+    both."""
+    manual = _manualGroups()
+    missing = [label for label, _, _ in FAMILIES if label not in manual]
+    assert not missing, \
+        'the manual draws no row for: %s' % ', '.join(missing)
+
+
 # --- what the grouping answers -----------------------------------------
 
 def test_a_parameter_a_neighbour_takes_is_answered_by_naming_it():
-    """``columns`` is not a ``plot_one`` argument -- it is what a Table Plot
-    View takes. The refusal says both: what plot_one takes, and who takes
-    ``columns``."""
+    """``columns`` is not what a single quantity's drawing takes -- it is
+    what a Table Plot View takes. The refusal says both: what that mode
+    takes, and who takes ``columns``. Both sides are spelled as the model
+    may type them, because the drawing group answers one name now."""
     text = unknownParameterRefusal('plot_one', ['columns'])
-    assert '"columns" is not a parameter of the plot_one tool' in text
+    assert '"columns" is not a parameter of the plot(mode="single") call' \
+        in text
     assert 'along_time' in text, 'the parameters that are stay named'
-    assert 'plot_table' in text, \
+    assert 'plot(mode="table")' in text, \
         'the neighbour that takes the stray must be named'
+    assert 'plot_table' not in text, \
+        'the refusal named a name the model is not offered'
     assert siblingTaking('plot_one', 'columns') == ['plot_table']
 
 
@@ -182,13 +254,18 @@ def test_a_parameter_no_neighbour_takes_invents_no_neighbour():
 
 
 def test_a_tool_that_takes_nothing_says_so():
-    """``list_cases`` takes no argument: "it takes " is not an answer, and
-    the model needs to hear that no argument is the right one. The
-    neighbours of its group that do take the stray are named, because a
-    ``uri`` put on ``list_cases`` usually means one of them."""
+    """``manage_case(action="list")`` takes no argument: "it takes " is not
+    an answer, and the model needs to hear that no argument is the right
+    one. The neighbours of its group that do take the stray are named,
+    because a ``uri`` put on a list usually means one of them -- named as
+    the calls this group is offered by, never as the gestures behind them,
+    which is what the two member names below answer."""
     text = unknownParameterRefusal('list_cases', ['uri'])
     assert 'takes no parameter at all' in text, text
-    assert 'open_case' in text and 'close_case' in text
+    assert 'manage_case(action="open")' in text
+    assert 'manage_case(action="close")' in text
+    assert 'open_case' not in text and 'close_case' not in text, \
+        'the refusal named a name the model is no longer offered'
     assert siblingTaking('list_cases', 'uri') == ['open_case', 'close_case']
 
 
@@ -205,19 +282,25 @@ def test_a_name_that_is_not_a_tool_is_answered_as_such():
 
 
 def test_the_advice_stays_inside_the_group():
-    """``show_window`` takes ``key`` while the two tools of the *screen*
-    group take ``window`` -- one of the spellings the merge of the windows
-    will have to settle. Until it does, a ``window`` put on ``show_window``
-    is answered by the parameter that is (``key``) and by nothing else:
-    pointing across groups at a tool that raises a window instead of
-    showing it is a guess about what the caller meant, and a guess is what
-    a refusal exists to avoid."""
-    text = unknownParameterRefusal('show_window', ['window'])
-    assert 'it takes key' in text
-    assert siblingTaking('show_window', 'window') == []
-    for other in ('focus_window', 'get_screenshot'):
-        assert other not in text, \
-            'the advice left the group and reached %s' % other
+    """The windows are merged under one name now, and that name settled the
+    two spellings this test used to record: ``show_window`` asks ``window``
+    like every other member of the group and the rename turns it into the
+    ``key`` the gesture has always taken. A ``width`` put on a show is a
+    focus parameter, and the advice stays inside the group: the sibling that
+    takes it is named by the call the model can actually type, never by the
+    gesture's member name, and never by a tool outside the group -- the
+    capture names a window the same way, but pointing at it is a guess about
+    what the caller meant, and a guess is what a refusal exists to avoid."""
+    text = unknownParameterRefusal('show_window', ['width'])
+    assert 'it takes window' in text
+    assert siblingTaking('show_window', 'width') == ['focus_window']
+    assert 'manage_window(action="focus")' in text, \
+        'the neighbour that takes the stray must be named as a call'
+    assert 'focus_window' not in text, \
+        'a refusal naming a name the model is no longer offered sends it ' \
+        'to a call it would be refused for asking'
+    assert 'get_screenshot' not in text, \
+        'the advice left the group and reached %s' % 'the capture'
 
 
 # --- the loop, end to end ----------------------------------------------
@@ -272,21 +355,25 @@ def _oneTurnAgent(core, tool, args):
 
 
 def test_the_loop_names_the_neighbour_it_refused_a_parameter_for(qapp):
-    """``plot_one(columns=3)`` through the loop: the refusal the model reads
-    names the stray, what the tool takes, and the neighbour that takes the
-    stray. The core is never called."""
+    """``plot(mode="single", columns=3)`` through the loop: the refusal the
+    model reads names the stray, what that mode takes, and the neighbour
+    that takes the stray -- spelled as the model may type it. The core is
+    never called."""
     core = RecordingCore()
     agent, transcript, errors = _oneTurnAgent(
-        core, 'plot_one',
-        {'uri': 'imas:hdf5?path=/fake', 'path': 'equilibrium.f',
-         'columns': 3})
+        core, 'plot',
+        {'mode': 'single', 'uri': 'imas:hdf5?path=/fake',
+         'path': 'equilibrium.f', 'columns': 3})
     refusal = [ln for ln in transcript.splitlines()
-               if 'REFUSAL' in ln and 'plot_one' in ln]
+               if 'REFUSAL' in ln and 'plot:' in ln]
     assert refusal, 'the parameter was not refused: %r' % transcript
     assert 'columns' in refusal[0]
     assert 'along_time' in refusal[0]
-    assert 'plot_table' in refusal[0], \
-        'the loop must name the tool that does take the parameter'
+    assert 'plot(mode="table")' in refusal[0], \
+        'the loop must name the call that does take the parameter'
+    assert 'plot_table' not in refusal[0], \
+        'a refusal that names a name the model is no longer offered is not ' \
+        'an answer: the model would ask it and be refused for asking'
     assert core.calls == [], 'a refused call must not reach the core'
     assert errors == [None]
 
@@ -296,13 +383,56 @@ def test_a_call_the_core_answers_is_not_touched_by_the_grouping(qapp):
     its own parameters still reaches the core and answers its figure."""
     core = RecordingCore()
     agent, transcript, errors = _oneTurnAgent(
-        core, 'plot_one',
-        {'uri': 'imas:hdf5?path=/fake', 'path': 'equilibrium.f',
-         'along_time': 1})
+        core, 'plot',
+        {'mode': 'single', 'uri': 'imas:hdf5?path=/fake',
+         'path': 'equilibrium.f', 'along_time': 1})
     assert core.calls == [{'uri': 'imas:hdf5?path=/fake',
                            'path': 'equilibrium.f'}]
     assert 'REFUSAL' not in transcript
     assert errors == [None]
+
+
+def test_the_group_refusal_reads_for_every_group():
+    """A call that misses its group is refused in a sentence the model has
+    to re-read before it can answer again, so the sentence is part of the
+    interface. The first cut of that answer put an article in front of the
+    discriminant -- `manage_session answers no gesture without a action` --
+    which is a grammar mistake repeated for every group whose discriminant
+    happens to start with a vowel sound. The discriminant is a word of the
+    schema, so the sentence names it without dressing it.
+
+    Three calls per group: no discriminant at all, a member's name where
+    the action belongs, and a word that is neither. Each still names the
+    values to answer with, which is the whole use of the refusal. The
+    second call is asked only where a member name is not itself an action:
+    ``derived_quantity`` spells its actions as its gestures, so there the
+    member name is the right answer and asking for a refusal would ask for
+    a bug."""
+    for name in TOOL_NAMES:
+        discriminant = discriminatorOf(name)
+        if discriminant is None:
+            continue
+        choices = actionsOf(name)
+        members = [gestureOf(name, {discriminant: action})
+                   for action in choices]
+        stray = next((one for one in members if one not in choices), None)
+        asked = [{}, {discriminant: 'no_such_action'}]
+        if stray is not None:
+            asked.insert(1, {discriminant: stray})
+        refusals = []
+        for arguments in asked:
+            with pytest.raises(ValueError) as refused:
+                resolveCall(name, arguments)
+            refusals.append(str(refused.value))
+        for text in refusals:
+            for article in (' a %s' % discriminant,
+                            ' an %s' % discriminant):
+                assert article not in text, \
+                    ('%s: "%s" is not English. The discriminant is a word of '
+                     'the schema, not a noun to put an article in front of: '
+                     '%s' % (name, article, text))
+        assert choices[0] in refusals[0], \
+            '%s lost the values to answer with: %s' % (name, refusals[0])
 
 
 # --- the measurement script stays true to the surface ------------------
@@ -319,7 +449,27 @@ def test_the_measure_script_counts_what_the_loop_actually_offers():
     assert measured['tools'] == len(TOOLS)
     assert measured['groups'] == len(FAMILIES)
     assert measured['payloadChars'] > 0
-    # The two faces are one surface the manual describes; the loop offers
-    # what the MCP service does not, and that gap is a fact the script
-    # prints rather than hides.
-    assert set(measured['loopOnly']) <= set(TOOL_NAMES)
+    # The projection spells the vocabulary as the table's OFFERS, measured
+    # through the same envelope the endpoint sends. `test_175` refuses an
+    # offer the faces do not answer, so the table has no merge left to
+    # imagine and the projection answers the present -- and answering it to
+    # the character is what says the arithmetic lost nothing on the way. It
+    # used to be off by 1,873: a sum over `properties.values()` drops every
+    # parameter NAME (1,825 over the payload), a `- 2` shaved each
+    # description, and a `required: []` was written for the two schemas
+    # that carry no such key. A merge written into the table without being
+    # built makes this red as well, which is the same state seen from the
+    # other side.
+    assert measured['projectedPayloadChars'] == measured['payloadChars'], \
+        ('the table spells %d offers worth %d chars, the faces send %d'
+         % (measured['projectedTools'], measured['projectedPayloadChars'],
+            measured['payloadChars']))
+    # One vocabulary, and the endpoint builds its own list from it, so the
+    # script has no second list to compare any more. What it can still
+    # weigh is the residue: a tool declared by hand beside the generated
+    # ones, which is the shape the drift took before the generation.
+    # test_177 refuses one and compares the two faces on the wire; the
+    # script prints the same count so a quoted number says what it weighs.
+    assert measured['mcpHandWritten'] == [], \
+        'mcp_server/tools.py declares these tools by hand: %s' \
+        % measured['mcpHandWritten']

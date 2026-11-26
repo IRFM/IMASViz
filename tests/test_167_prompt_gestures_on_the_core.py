@@ -41,9 +41,9 @@ What is pinned:
   text when nobody declares them, an edit keeping the id, a delete taking the
   remembered values with it, a shared write refused when the folder is not
   named;
-* the **shape** -- the six ``TOOLS`` entries answer the parameters the six
-  methods take, so the loop cannot be offered a parameter the gesture
-  refuses.
+* the **shape** -- the one tool the loop is offered answers six actions, and
+  each action's row in the table carries the parameters its method takes, so
+  the loop cannot be offered a parameter the gesture refuses.
 """
 
 import inspect
@@ -321,26 +321,34 @@ def test_a_shared_prompt_is_read_and_answered_when_the_folder_is_named(
 
 # --------------------------------------------------------------------- the shape
 
-PROMPT_TOOLS = ('list_prompts', 'prompt_detail', 'fill_prompt', 'save_prompt',
-                'edit_prompt', 'delete_prompt')
+PROMPT_GESTURES = ('list_prompts', 'prompt_detail', 'fill_prompt',
+                   'save_prompt', 'edit_prompt', 'delete_prompt')
 
 
-def test_the_tools_answer_the_parameters_the_methods_take(core):
-    """The loop offers a parameter list, the core answers a signature: a
-    drift between them is a call the loop cannot make correctly."""
-    from imasviz.VizAgent.tools import TOOLS, unknownParameters
-    byName = {tool['function']['name']: tool
-              for tool in TOOLS if tool['function']['name'] in PROMPT_TOOLS}
-    assert set(byName) == set(PROMPT_TOOLS)
-    for name in PROMPT_TOOLS:
-        schema = byName[name]['function']['parameters']
-        offered = set(schema['properties'])
-        taken = set(inspect.signature(getattr(core, name)).parameters)
-        assert offered == taken - {'self'}, \
-            '%s: the tool offers %s, the method takes %s' % (
-                name, sorted(offered), sorted(taken))
-        assert schema['additionalProperties'] is False
-    # A parameter the tool does not offer is refused before the call.
+def test_the_catalogue_answers_one_name_whose_actions_answer_the_methods(core):
+    """The loop offers one tool whose ``action`` picks the ask, the core
+    answers six methods: a drift between what an action is offered with and
+    what its method takes is a call the loop cannot make correctly. Since the
+    merge, the parameters of an action live in the table's row for that
+    member, not in a schema of its own -- which is what test_175 checks
+    against the offered schema, and what is checked here against the
+    signature.
+    """
+    from imasviz.VizAgent.tools import (ACTION_PARAMETERS, TOOLS, memberNames,
+                                        unknownParameters)
+    offered = {tool['function']['name'] for tool in TOOLS}
+    assert 'manage_prompt' in offered
+    for gesture in PROMPT_GESTURES:
+        assert gesture not in offered, \
+            '%s is offered on its own and as an action' % gesture
+        assert gesture in memberNames(), \
+            '%s is no longer vocabulary of the loop' % gesture
+        declared = set(ACTION_PARAMETERS[gesture][0])
+        taken = set(inspect.signature(getattr(core, gesture)).parameters)
+        assert declared == taken - {'self'}, \
+            '%s: the action is offered with %s, the method takes %s' % (
+                gesture, sorted(declared), sorted(taken))
+    # A parameter the action does not take is refused before the call.
     assert unknownParameters('fill_prompt', {'name': 'x', 'coucou': 1}) == \
         ['coucou']
     assert unknownParameters('fill_prompt', {'name': 'x', 'values': {}}) == []

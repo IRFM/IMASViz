@@ -16,7 +16,7 @@ The terms and conditions of the CeCILL-C license are deemed to be accepted upon 
 This release turns IMASViz from a plotter into a session you can drive:
 
 - **The agent is in the application.** One LLM-driven agent operates the gestures of the application itself — no external agent and no MCP client needed — and it is reached five ways: the *Agent* line of the application's [File menu](#the-in-app-agent), the terminal *REPL* [`viz_cli`](#the-terminal-client-viz_cli), the browser page [`viz_web`](#the-web-interface-viz_web), the [multi-user gateway](#the-multi-user-gateway-viz_gateway) (one isolated instance per user, behind a token), and as [MCP tools](#driving-imasviz-from-an-agent-mcp-tools) for external clients such as Qwen Code. The [one-shot mode](#the-one-shot-agent-mode) runs a prompt on a node without a display and leaves the pictures and the transcript on disk.
-- **The multi-axis data, along the axis you want.** Any quantity can be traced where it lives — along the clock, or along the leaf's own coordinate (the `equilibrium` pressure profile as a function of `psi`), a slice at any instant (`plot_slice`), and slices stacked on the same figure with each curve's index fixed in the legend (`into_figure_key`) — the way `AGENT_HELP.md` at the repository root talks it through.
+- **The multi-axis data, along the axis you want.** Any quantity can be traced where it lives — along the clock, or along the leaf's own coordinate (the `equilibrium` pressure profile as a function of `psi`), a slice at any instant (`plot` with its `slice` mode), and slices stacked on the same figure with each curve's index fixed in the legend (`into_figure_key`) — the way `AGENT_HELP.md` at the repository root talks it through.
 - **A major cleanup.** The defects of the earlier releases were chased down and fixed; the fixes are pinned by the test suite under `tests/` (see `TESTING.md`), which is what keeps them fixed.
 
 
@@ -218,14 +218,16 @@ them for the user.
 
 | Group | Tools |
 | --- | --- |
-| cases | `open_case`, `list_cases`, `close_case` |
-| tree | `list_idss`, `list_case_idss` (the IDS the case actually holds), `load_ids`, `search_nodes`, `describe_node`, `describe_ids`, `list_quantities`, `select_signals`, `unselect_all`, `list_selection`, `select_from_configuration` |
-| plotting | `plot_one` (along the clock or a leaf coordinate, `time`/`time_interp` for a slice, `into_figure_key` to stack on an open figure), `plot_slice`, `plot_selection`, `plot_table`, `plot_stacked`, `get_signal`, `save_plot_configuration` |
-| windows | `list_windows`, `show_window`, `hide_window`, `close_window`, `focus_window` (bring a window to the front, at the size it holds — pixels only when named) |
-| plugins | `list_plugins`, `run_plugin` |
-| session | `save_session`, `restore_session`, `export_to_ids`, `list_sessions`, `list_configurations`, `save_selection` |
+| cases | `manage_case` — one tool, and its `action` picks the ask: `open` (one IMAS case by URI — an HDF5 path, or an UDA URI; `dd_version` pins the data dictionary the case is read at, and left out the case is asked which one its own IDSs were written with), `list` (the cases open, with their loaded occurrences), `close` (one open case, its view, its windows and its bookkeeping, for good) |
+| IDSs | `manage_idss` — one tool, and its `action` picks the ask: `declared` (every IDS the case's data dictionary declares, with the occurrences each one holds, the roots that hold no data included), `filled` (only the IDS the case **actually** holds, read through `DBEntry.list_all_occurrences` — the list to answer "what is in this case" with, never a recalled one), `load` (one occurrence of one IDS into the tree, `slices` being `first` for the slice a plain load keeps or `all` for the whole dynamic array) |
+| tree | `inspect_tree` — one tool, and its `action` picks the ask: `search` (the leaves whose spelling carries a word, each with its three spellings and the `kind` a plot would make of it), `node` (what one leaf holds: units, size, finite min/max, the zero/nan/inf counts, a bounded preview), `ids` (what the data dictionary says of an IDS), `quantities` (the filled tensors of one occurrence, grouped by the array that drives them) |
+| selection | `manage_selection` — one tool, and its `action` picks the ask: `select` (the named paths go in, as the tree clicks would; a path the case does not hold is refused by name, `additive=false` empties the selection first), `clear` (empty it, answering how many were dropped), `list` (read it back in the order it was put in — empty is `count: 0`, an answer and not a refusal) |
+| plotting | `plot` — one tool, and its `mode` picks the drawing: `single` (along the clock or a leaf coordinate, `time`/`time_interp` for a slice, `into_figure_key` to stack on an open figure), `slice` (one value at one instant, read by the Access Layer), `selection`, `table`, `stacked` — plus `get_signal` |
+| windows | `manage_window` — one tool, and its `action` picks the gesture: `list` (every window, in the order the menus draw them), `show`, `hide`, `close`, `focus` (bring a window to the front, at the size it holds — pixels only when named) |
+| plugins | `plugin` — one tool, and its `action` picks the ask: `list` (the entries an IDS root earns, in registration order, the plugins the case cannot offer **named alongside**), `run` (one entry, with the answers the entry would have asked the user — `occurrence`, and the `time` of an entry that asks an instant; the IDS branch left out is **resolved** from the case, and several branches earning that entry is refused with them named; what the entry drew comes back as `drawn`, and an entry whose window already stands is drawn **into that window** rather than opening a second over it) — and ask one per window: the two `equilibriumsurfaces` entries **are** `equilibrium(action="surfaces")` and `equilibrium(action="at_time")` |
+| session | `manage_session` — one tool, and its `action` picks the ask: `save` (the whole screen as the application writes it), `restore` (the cases open again, the loads replayed, the windows drawn as the file named them), `new` (every case view and every figure closed, **nothing written** — the clean slate the *File* menu offers), `list_sessions` (the `.vsess` files), `list_configurations` (the `.pcfg` and `.lsp` files, `kind` narrowing to one), `apply` (one saved configuration selected on the case, the missing IDSs loaded first), `save_selection`, `save_plot_configuration` — plus `export_to_ids` |
 | inspection | `get_screenshot` (PNG of a window — a figure key it does not hold is refused by name), `get_logs` (the case log panel) |
-| reports | `plot_report` (one window of curves as self-contained HTML with stats), `case_report` (the whole loaded tree as HTML with stats) |
+| reports | `generate_report` — one tool, and `scope` says which report: `plot` (a window of curves as self-contained HTML with stats), `case_loaded` (the whole loaded tree as HTML with stats), `case_ids` (the case itself: the IDSs it holds, the occurrences of each, what the session loaded) |
 
 Stylage and cursors are kept in the hands of the user; they are not offered
 as tools. The suite drives this layer in `tests/test_100_mcp_core_offscreen.py`
@@ -288,7 +290,7 @@ Inside the REPL, a line runs the agent; the `/` commands steer it:
   `/v1/models` entry, read on first use;
 - `/mcp [name]` — the services this session answers today (endpoint, models,
   tools) and, for one tool, its words and its parameters
-  (e.g. `/mcp plot_selection`);
+  (e.g. `/mcp plot`);
 - `/ids [URI]` — the IDS the open case actually holds, raw: the names and
   their occurrences read off the case's entry, with no LLM in between
   (with no URI, the one open case, refused by name when there is no
@@ -330,16 +332,16 @@ prompt, the transcript streamed in the order the loop writes it — refusals
 included, in the log colour they wear in the panel — the *Requests* list
 naming the turns the session has had, and beneath it a closed *Raw
 gestures* group (the rarely used one), one form per tool with its
-parameters, run the way the loop runs them (so `plot_one` given an
-argument it does not take is refused by name, the names it does hold
-beside it). The right column re-draws under *Screenshots* and *Reports*
+parameters, run the way the loop runs them (so `plot` given an
+argument its mode does not take is refused by name, the names that mode
+does hold beside it). The right column re-draws under *Screenshots* and *Reports*
 what each turn left on disk in `~/.imasviz/web/shots/<n>/` — its
 transcript, and the PNG of the application and of each of its windows:
 a turn's captures are the figures it drew, the ones its gestures moved,
 and the ones the user explicitly asked (a `get_screenshot`, or the
-`focus_window` of a "show me this") — a figure the agent merely named
-in its answer is not recaptured, because showing a figure is the
-user's command, not the agent's; the previous turns' pictures stay,
+`manage_window(action="focus")` of a "show me this") — a figure the agent
+merely named in its answer is not recaptured, because showing a figure is
+the user's command, not the agent's; the previous turns' pictures stay,
 folded under their name. The model's running parameters are read from
 and written to the same preferences through the page's own `/llm` line.
 

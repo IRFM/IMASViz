@@ -29,10 +29,11 @@ other:
   through a dialog bounded to the case's own range, and answered in the user's
   place when a session replays the entry.
 
-The gesture is `McpGuiCore` — the *same* two methods an MCP tool and the in-app
-agent drive (`equilibrium_surfaces`, `equilibrium_at_time`) — so what the menu
-does is what the manual describes and the suite pins, and a refusal is the
-named `ValueError` of the command rather than an empty window.
+The gesture is `McpGuiCore` — the *same* two methods the one `equilibrium`
+tool answers on both faces (`action="surfaces"`, `action="at_time"`; the
+methods themselves are `equilibrium_surfaces` and `equilibrium_at_time`) — so
+what the menu does is what the manual describes and the suite pins, and a
+refusal is the named `ValueError` of the command rather than an empty window.
 """
 
 from imasviz.VizPlugins.VizPlugin import (IDS, QVizPluginAction,
@@ -183,11 +184,12 @@ class equilibriumsurfaces(VizPlugin):
         if context.answers is not None:
             if context.answers.time is None:
                 raise ValueError(
-                    'equilibriumsurfaces entry 1 draws one instant and none was '
-                    'answered: hand it as the "time" of run_plugin, or ask '
-                    'equilibrium_at_time directly. Nothing is drawn on an instant '
-                    'nobody asked for, and no dialog is opened where nobody is '
-                    'there to answer it.')
+                    'equilibriumsurfaces entry 1 draws one instant and none '
+                    'was answered: hand it as the "time" of '
+                    'plugin(action="run"), or ask '
+                    'equilibrium(action="at_time") directly. Nothing is '
+                    'drawn on an instant nobody asked for, and no dialog is '
+                    'opened where nobody is there to answer it.')
             time_answer = float(context.answers.time)
         else:
             time_answer = self._askTime(reader.timeValues())

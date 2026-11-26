@@ -200,7 +200,8 @@ details.tool summary strong { color: var(--accent-strong); }
    the request drew. The newest request sits on top and the older ones
    are kept below -- the pictures are the point of the session, and the
    buttons on their caption act on the window the picture shows
-   (focus_window / get_screenshot take its name). Clicking a picture
+   (manage_window(action="focus") / get_screenshot take its name).
+   Clicking a picture
    enlarges it in the lightbox. */
 .shots { display: flex; flex-direction: column; gap: 10px; }
 .shots .shotGroup { margin: 0; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface); }
@@ -886,18 +887,22 @@ details.tool summary strong { color: var(--accent-strong); }
 
   /* --------------------------------------------------------------- the notes
 
-     The two journals — `search_journals` for the list (ranked for the
-     query or listed for the filters), `read_note` for the body of one,
-     `add_note` for the write, `edit_note` for a line the writers read
-     back changed in place (the note keeps the id it reads under, and
-     the fields you name take the place of the ones it held),
-     `delete_note` for the erase, and `journal_stats` for the overview
-     at the top. The scope is a two-button tab (personal / shared), the
-     filter row reads off the six filters the core already answers
-     (machine, campaign, shot, date_from, date_to, author), and the add
-     and edit forms at the foot are what the user fills to write one or
-     to change one of them. A note without the field the user did not
-     name is a match on the rest of its body, not a refusal. */
+     The notebook answers one tool on the tool set -- `manage_note` -- and
+     its `action` says which of the asks is meant: `search` for the list
+     ranked for the query, `list` for the same filters without one, `read`
+     for the body of one note, `add` for the write, `edit` for a line the
+     writers read back changed in place (the note keeps the id it reads
+     under, and the fields you name take the place of the ones it held),
+     `delete` for the erase, and `stats` for the overview at the top. The
+     page asks every one of them by that name, because the route it posts
+     to answers every ask through `resolveCall`: a button that spelled a
+     gesture the group took away would be refused that name. The scope is a
+     two-button tab (personal / shared), the filter row reads off the six
+     filters the core already answers (machine, campaign, shot, date_from,
+     date_to, author), and the add and edit forms at the foot are what the
+     user fills to write one or to change one of them. A note without the
+     field the user did not name is a match on the rest of its body, not a
+     refusal. */
 
   var notesTab = { scope: 'personal' };
 
@@ -936,7 +941,7 @@ details.tool summary strong { color: var(--accent-strong); }
   }
 
   function notesRefreshStats() {
-    return notesFetch('journal_stats', {}).then(function (j) {
+    return notesFetch('manage_note', { action: 'stats' }).then(function (j) {
       if (j.error) byId('notesStats').textContent = 'REFUSAL — ' + j.error;
       else notesRenderStats(j.result);
     });
@@ -985,10 +990,11 @@ details.tool summary strong { color: var(--accent-strong); }
     filters.scope = notesTab.scope;
     var query = (byId('notesQuery') || {}).value || '';
     if (query.trim()) filters.query = query.trim();
-    return (filters.query
-      ? notesFetch('search_journals', filters)
-      : notesFetch('list_notes', filters)
-    ).then(function (j) {
+    // The notebook answers one tool, and its `action` is the question the
+    // page is asking: a query ranks the notes it filtered, no query lists
+    // them newest first.
+    filters.action = filters.query ? 'search' : 'list';
+    return notesFetch('manage_note', filters).then(function (j) {
       var wrap = byId('notesList');
       wrap.innerHTML = '';
       if (j.error) {
@@ -1000,7 +1006,9 @@ details.tool summary strong { color: var(--accent-strong); }
   }
 
   function openNotesOne(scope, id) {
-    return notesFetch('read_note', { scope: scope, note_id: id }).then(function (j) {
+    return notesFetch('manage_note',
+                      { action: 'read', scope: scope, note_id: id })
+    .then(function (j) {
       var reader = byId('notesReader');
       reader.innerHTML = '';
       if (j.error) {
@@ -1018,18 +1026,23 @@ details.tool summary strong { color: var(--accent-strong); }
   }
 
   function notesDelete(scope, id) {
-    return notesFetch('delete_note', { scope: scope, note_id: id }).then(function (j) {
-      if (j.error) appendLine('  ← REFUSAL — delete_note: ' + j.error, 'refusal');
-      else appendLine('  ← delete_note: ' + id + ' is from ' + scope);
+    return notesFetch('manage_note',
+                      { action: 'delete', scope: scope, note_id: id })
+    .then(function (j) {
+      if (j.error) appendLine('  ← REFUSAL — manage_note(action="delete"): '
+                              + j.error, 'refusal');
+      else appendLine('  ← manage_note(action="delete"): ' + id
+                      + ' is from ' + scope);
       notesDoSearch();
       notesRefreshStats();
     });
   }
 
   /* The edit of one note, the way the add is: the form the note already
-     wears (read back through `read_note`, so the form holds what the
-     note holds, not what the list's snippet showed), and the Save the
-     user presses asks `edit_note` for it. The note keeps the id it
+     wears (read back through `manage_note(action="read")`, so the form
+     holds what the note holds, not what the list's snippet showed), and
+     the Save the user presses asks `manage_note(action="edit")` for it.
+     The note keeps the id it
      reads under: `scope` and `note_id` of the form are fixed to the one
      it was opened on, and only the fields the form names can move.
      A field the form leaves empty is cleared from the note, and a
@@ -1039,7 +1052,9 @@ details.tool summary strong { color: var(--accent-strong); }
   var notesEditing = null;
 
   function notesEditOpen(scope, id) {
-    return notesFetch('read_note', { scope: scope, note_id: id }).then(function (j) {
+    return notesFetch('manage_note',
+                      { action: 'read', scope: scope, note_id: id })
+    .then(function (j) {
       var box = byId('notesEdit');
       box.innerHTML = '';
       if (j.error) {
@@ -1098,6 +1113,7 @@ details.tool summary strong { color: var(--accent-strong); }
       return;
     }
     var args = {
+      action: 'edit',
       scope: scope, note_id: id, text: body,
       author: val('notesEditAuthor'),
       title: val('notesEditTitle'),
@@ -1106,11 +1122,13 @@ details.tool summary strong { color: var(--accent-strong); }
       shot: val('notesEditShot'),
       date: val('notesEditDate'),
     };
-    notesFetch('edit_note', args).then(function (j) {
+    notesFetch('manage_note', args).then(function (j) {
       if (j.error) {
-        appendLine('  ← REFUSAL — edit_note: ' + j.error, 'refusal');
+        appendLine('  ← REFUSAL — manage_note(action="edit"): ' + j.error,
+                   'refusal');
       } else {
-        appendLine('  ← edit_note: ' + id + ' is as you changed it, ' +
+        appendLine('  ← manage_note(action="edit"): ' + id
+                   + ' is as you changed it, ' +
           'under ' + j.result.path);
         byId('notesEdit').removeAttribute('open');
       }
@@ -1185,16 +1203,18 @@ details.tool summary strong { color: var(--accent-strong); }
     function val(id) { var i = byId(id); return i ? i.value.trim() : ''; }
     var text = val('notesAddBody');
     if (!text) { appendLine('A note needs a body.', 'refusal'); return; }
-    var args = { scope: notesTab.scope, text: text };
+    var args = { action: 'add', scope: notesTab.scope, text: text };
     ['title', 'author', 'machine', 'campaign', 'shot', 'date'].forEach(function (field) {
       var id = 'notesAdd' + field.charAt(0).toUpperCase() + field.slice(1);
       if (val(id)) args[field] = val(id);
     });
-    var j = await notesFetch('add_note', args);
+    var j = await notesFetch('manage_note', args);
     if (j.error) {
-      appendLine('  ← REFUSAL — add_note: ' + j.error, 'refusal');
+      appendLine('  ← REFUSAL — manage_note(action="add"): ' + j.error,
+                 'refusal');
     } else {
-      appendLine('  ← add_note: ' + j.result.id + '  under  ' + j.result.path);
+      appendLine('  ← manage_note(action="add"): ' + j.result.id
+                 + '  under  ' + j.result.path);
       var area = byId('notesAddBody');
       if (area) area.value = '';
       notesDoSearch();
@@ -1204,15 +1224,15 @@ details.tool summary strong { color: var(--accent-strong); }
 
   /* ------------------------------------------------------- the prompt catalogue
 
-     The prompts the user wrote once and keeps to ask again:
-     `list_prompts` for the catalogue (its categories, a word of search,
-     one catalogue or both), `prompt_detail` for the body of one and what
-     each of its holes would be answered from today, `fill_prompt` for
-     the text with the holes filled, and `save_prompt` / `edit_prompt` /
-     `delete_prompt` for the files under ~/.imasviz/prompts and under the
-     folder SharedPromptsDir names. They are asked through `/api/tool`,
-     like the notes and the raw gestures: the catalogue is a set of
-     gestures on the core, not a route of its own.
+     The prompts the user wrote once and keeps to ask again: one name,
+     `manage_prompt`, and its `action` says which ask: "list" for the
+     catalogue (its categories, a word of search, one catalogue or both),
+     "detail" for the body of one and what each of its holes would be
+     answered from today, "fill" for the text with the holes filled, and
+     "save" / "edit" / "delete" for the files under ~/.imasviz/prompts and
+     under the folder SharedPromptsDir names. They are asked through
+     `/api/tool`, like the notes and the raw gestures: the catalogue is a
+     set of gestures on the core, not a route of its own.
 
      There is no `run_prompt` gesture, and the page does not pretend
      there is one: a prompt is the user's own ask, so the catalogue fills
@@ -1225,7 +1245,8 @@ details.tool summary strong { color: var(--accent-strong); }
      stats line -- not the section. Every value already known is shown
      with the source it came from: a value the user did not type is a
      value they are entitled to see before it is sent. A hole nothing
-     answers stays an empty input and `fill_prompt` refuses by naming it
+     answers stays an empty input, and the
+     `manage_prompt(action="fill")` ask refuses by naming it
      -- the page never sends a prompt with `{shot}` still in it. */
 
   var promptsScope = '';       // '' asks the two catalogues at once
@@ -1312,7 +1333,9 @@ details.tool summary strong { color: var(--accent-strong); }
   }
 
   function promptsRefresh() {
-    return notesFetch('list_prompts', promptsArgs()).then(function (j) {
+    return notesFetch('manage_prompt',
+                      Object.assign({ action: 'list' },
+                                    promptsArgs())).then(function (j) {
       var stats = byId('promptsStats');
       var wrap = byId('promptsList');
       wrap.innerHTML = '';
@@ -1345,7 +1368,8 @@ details.tool summary strong { color: var(--accent-strong); }
   }
 
   function promptRunOpen(scope, id) {
-    return notesFetch('prompt_detail', { name: id, scope: scope })
+    return notesFetch('manage_prompt',
+                      { action: 'detail', name: id, scope: scope })
       .then(function (j) {
         var box = byId('promptRun');
         box.innerHTML = '';
@@ -1416,18 +1440,20 @@ details.tool summary strong { color: var(--accent-strong); }
       var input = byId('promptValue_' + name);
       if (input && input.value.trim()) values[name] = input.value.trim();
     });
-    var args = { name: promptsOpen.id, scope: promptsOpen.scope };
+    var args = { action: 'fill', name: promptsOpen.id,
+                 scope: promptsOpen.scope };
     if (Object.keys(values).length) args.values = values;
-    notesFetch('fill_prompt', args).then(function (j) {
+    notesFetch('manage_prompt', args).then(function (j) {
       if (j.error) {
-        appendLine('  ← REFUSAL — fill_prompt: ' + j.error, 'refusal');
+        appendLine('  ← REFUSAL — manage_prompt(action="fill"): ' + j.error,
+                   'refusal');
         return;
       }
       var r = j.result;
       var filled = Object.keys(r.values || {}).filter(function (name) {
         return r.values[name].value;
       });
-      appendLine('  ← fill_prompt: ' + r.name + (filled.length
+      appendLine('  ← manage_prompt(action="fill"): ' + r.name + (filled.length
         ? (' — ' + filled.map(function (name) {
             return '{' + name + '} from ' + r.values[name].source;
           }).join(', '))
@@ -1438,12 +1464,15 @@ details.tool summary strong { color: var(--accent-strong); }
   }
 
   function promptDelete(scope, id) {
-    return notesFetch('delete_prompt', { name: id, scope: scope })
+    return notesFetch('manage_prompt',
+                      { action: 'delete', name: id, scope: scope })
       .then(function (j) {
         if (j.error) {
-          appendLine('  ← REFUSAL — delete_prompt: ' + j.error, 'refusal');
+          appendLine('  ← REFUSAL — manage_prompt(action="delete"): '
+                     + j.error, 'refusal');
         } else {
-          appendLine('  ← delete_prompt: ' + id + ' is out of the ' + scope +
+          appendLine('  ← manage_prompt(action="delete"): ' + id
+                     + ' is out of the ' + scope +
             ' catalogue');
           if (promptsOpen && promptsOpen.id === id) {
             promptsOpen = null;
@@ -1460,16 +1489,19 @@ details.tool summary strong { color: var(--accent-strong); }
      prompt from scratch, and the one that changes a prompt in place --
      which keeps the id its remembered values sit under, because an id is
      not a field an edit moves. */
-  /* The edit reads the prompt back through `prompt_detail` before the
+  /* The edit reads the prompt back through
+     `manage_prompt(action="detail")` before the
      form opens: the catalogue line carries the name, the category and the
      description, not the body -- so the form holds what the file holds,
      not what the list showed. The same reading the notes' Edit answers
      by, for the same reason. */
   function promptEditOpen(scope, id) {
-    return notesFetch('prompt_detail', { name: id, scope: scope })
+    return notesFetch('manage_prompt',
+                      { action: 'detail', name: id, scope: scope })
       .then(function (j) {
         if (j.error) {
-          appendLine('  ← REFUSAL — prompt_detail: ' + j.error, 'refusal');
+          appendLine('  ← REFUSAL — manage_prompt(action="detail"): '
+                     + j.error, 'refusal');
           return;
         }
         var p = j.result;
@@ -1576,14 +1608,16 @@ details.tool summary strong { color: var(--accent-strong); }
     // a new prompt left empty has no declaration to clear, and the
     // catalogue reads its holes off the text.
     if (variables || promptsEditing) args.variables = variables;
-    var tool = promptsEditing ? 'edit_prompt' : 'save_prompt';
-    notesFetch(tool, args).then(function (j) {
+    var action = promptsEditing ? 'edit' : 'save';
+    args.action = action;
+    notesFetch('manage_prompt', args).then(function (j) {
       if (j.error) {
-        appendLine('  ← REFUSAL — ' + tool + ': ' + j.error, 'refusal');
+        appendLine('  ← REFUSAL — manage_prompt(action="' + action + '"): '
+                   + j.error, 'refusal');
         return;
       }
-      appendLine('  ← ' + tool + ': ' + j.result.id + '  under  ' +
-        j.result.path);
+      appendLine('  ← manage_prompt(action="' + action + '"): '
+        + j.result.id + '  under  ' + j.result.path);
       promptsEditing = null;
       byId('promptForm').removeAttribute('open');
       promptsRefresh();
@@ -1631,8 +1665,9 @@ details.tool summary strong { color: var(--accent-strong); }
 
      One card per picture, grouped per request: the newest request on
      top, the previous ones kept below, and every card addressed to the
-     window it shows -- the name the `focus_window` and `get_screenshot`
-     gestures take. A group is closed by default: the request names
+     window it shows -- the name the `manage_window(action="focus")` and
+     `get_screenshot` gestures take. A group is closed by default: the
+     request names
      itself and its count, and it reveals its pictures when it is
      opened. The pictures are served from the request's directory on
      disk (`/api/turns/{n}/shots/{name}`), which is what makes them
@@ -1660,7 +1695,7 @@ details.tool summary strong { color: var(--accent-strong); }
     var cap = el('figcaption', {}, [el('span', { 'class': 'shotName' }, [name])]);
     if (window) {
       var focus = el('button', { type: 'button' }, ['Focus']);
-      focus.addEventListener('click', function () { gesture('focus_window', { window: window }); });
+      focus.addEventListener('click', function () { gesture('manage_window', { action: 'focus', window: window }); });
       var shot = el('button', { type: 'button' }, ['Screenshot']);
       shot.addEventListener('click', function () { gesture('get_screenshot', { window: window }); });
       cap.appendChild(focus);
@@ -1826,7 +1861,7 @@ details.tool summary strong { color: var(--accent-strong); }
           appendLine('  ← REFUSAL — ' + j.error, 'refusal');
           return null;
         }
-        if (name === 'focus_window') {
+        if (name === 'manage_window') {
           appendLine('  ← ' + JSON.stringify(j.result || j));
         }
         if (name === 'get_screenshot') {
@@ -2091,10 +2126,11 @@ details.tool summary strong { color: var(--accent-strong); }
     });
     byId('clearBtn').addEventListener('click', clearAll);
     byId('themeBtn').addEventListener('click', toggleTheme);
-    // The clean slate: the `new_session` the agent dispatches, asked of
-    // the core by its same name on `/api/tool` -- `closeAll` under the
-    // hood, nothing saved. A gesture that closes every figure without
-    // leaving a session behind is asked once, by name, before it runs.
+    // The clean slate: the `manage_session(action="new")` the agent
+    // dispatches, asked of the core by the same call on `/api/tool` --
+    // `closeAll` under the hood, nothing saved. A gesture that closes
+    // every figure without leaving a session behind is asked once, by
+    // name, before it runs.
     byId('newSessionBtn').addEventListener('click', function () {
       // The click answers before it asks: a `confirm` its browser blocks
       // (kiosk, popup blocker) returns false with no dialog on screen, and
@@ -2119,7 +2155,8 @@ details.tool summary strong { color: var(--accent-strong); }
       }
       fetch('/api/tool', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'new_session', args: {} }),
+        body: JSON.stringify({ name: 'manage_session',
+                               args: { action: 'new' } }),
       }).then(function (r) {
         return r.json().catch(function () { return {}; });
       }).then(function (j) {

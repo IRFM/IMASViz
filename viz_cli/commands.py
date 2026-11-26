@@ -298,7 +298,7 @@ def _mcp(cmd, session):
     else:
         raise ValueError(
             '/mcp takes at most one name: /mcp prints the list, and /mcp '
-            'open_case one of it.')
+            'manage_case one of it.')
 
 
 def _mcpOverview(session):

@@ -21,11 +21,13 @@ the way ``test_45`` joins the gestures into a continuous one:
   and an index in the same turn, and the search that follows is the one
   the index answers (``indexed: True``), not the read the run builds;
 * **the corpus is found the moment it is indexed** — the documents the user
-  drops in the corpus folder are read by ``reindex_documents``, and
-  ``search_documents`` ranks their chunks;
+  drops in the corpus folder are read by
+  ``manage_documents(action="reindex")``, and
+  ``manage_documents(action="search")`` ranks their chunks;
 * **a guarded index is named** — the corpus written under an embedding
   endpoint the run is no longer under answers ``guarded`` and the keyword
-  alone stands, and ``reindex_documents`` is the one that sets it right.
+  alone stands, and ``manage_documents(action="reindex")`` is the one that
+  sets it right.
 
 The stand-in ``EmbeddingClient`` (a fixed table) is in place of the one
 under a llama-server, and a private ``HOME``/``AgentDocsDir`` are the two
@@ -111,9 +113,10 @@ def test_the_note_is_indexed_before_the_search_is_asked(journey):
 
 def test_the_corpus_is_found_the_moment_it_is_indexed(journey):
     """The documents the user drops in the corpus folder are read by
-    ``reindex_documents`` and ranked by ``search_documents``: the journey
-    writes a markdown and a text, indexes the corpus, and the two searches
-    each answer their own document (the one that names it, by its words —
+    ``manage_documents(action="reindex")`` and ranked by
+    ``manage_documents(action="search")``: the journey writes a markdown and
+    a text, indexes the corpus, and the two searches each answer their own
+    document (the one that names it, by its words —
     the hybrid the two lists fuse)."""
     api = journey['api']
     docs_dir = journey['docs_dir']
@@ -138,7 +141,8 @@ def test_the_corpus_is_found_the_moment_it_is_indexed(journey):
     assert plasma['hits'] and plasma['hits'][0]['rel'] == 'tuning.md', plasma
     probe = api.search_documents('probe calibration heater')
     assert probe['hits'] and probe['hits'][0]['rel'] == 'probe.txt', probe
-    # And read_document gives the full text of the one a search hit names.
+    # And ``manage_documents(action="read")`` gives the full text of the one
+    # a search hit names.
     text = api.read_document('tuning.md')['text']
     assert 'plasma' in text.lower()
 
@@ -147,8 +151,9 @@ def test_a_guarded_corpus_is_named_and_set_right(journey, monkeypatch):
     """The guard, end to end: the corpus written under an embedding endpoint
     the run is no longer under answers ``guarded`` and the keyword alone
     stands (the vector lists are in a different space), the reason names
-    the embedder, and ``reindex_documents`` is the one that sets the two in
-    step (after which the same search ranks with the vectors)."""
+    the embedder, and ``manage_documents(action="reindex")`` is the one that
+    sets the two in step (after which the same search ranks with the
+    vectors)."""
     api = journey['api']
     docs_dir = journey['docs_dir']
     with open(os.path.join(docs_dir, 'tuning.md'), 'w') as f:
@@ -183,9 +188,9 @@ def test_a_guarded_corpus_is_named_and_set_right(journey, monkeypatch):
 
 def test_a_corpus_with_no_folder_is_a_refusal(monkeypatch):
     """A corpus the run cannot read (no folder named) is the named refusal
-    the caller reads — ``list_documents``, ``search_documents`` and
-    ``read_document`` each say it (the same shape the shared journal answers
-    for its folder), not a crash and not a zero it would read as "no
+    the caller reads — the ``list``, ``search`` and ``read`` actions of
+    ``manage_documents`` each say it (the same shape the shared journal
+    answers for its folder), not a crash and not a zero it would read as "no
     document"."""
     from imasviz.VizUtils import QVizPreferences
     monkeypatch.setattr(QVizPreferences, 'AgentDocsDir', '', raising=False)

@@ -202,9 +202,9 @@ def test_cli_refuses_an_argument_the_core_does_not_take(home):
 def test_the_loop_dispatch_reaches_the_core(home):
     """The agent's own tool call for the search reaches the core, the
     same ``AgentLoop._dispatch`` the page's button reaches through:
-    the model's named call is routed to ``core.search_journals`` with
-    its arguments, and the list that comes back is the one the store
-    reads off the disk."""
+    the model's named call is the notebook's one name with its search
+    action, routed to ``core.search_journals`` with its arguments, and
+    the list that comes back is the one the store reads off the disk."""
     note = JournalStore.add_note(
         'personal', 'Plasma instability after 0.4 s.',
         author=USER, machine='WEST', shot='54924')
@@ -213,13 +213,15 @@ def test_the_loop_dispatch_reaches_the_core(home):
                      main_window=None, api=None)
     # The model's call is the one the loop dispatches: `requested_by` is
     # the model (its own gesture), the loop's own dispatch is where the
-    # refusal and the read both live.
-    loop._dispatch('search_journals',
-                   {'scope': 'personal', 'query': 'plasma',
-                    'shot': '54924', 'machine': 'WEST'})
+    # refusal and the read both live. The notebook answers one tool, so
+    # this is the spelling a model can type; the stand-in core records
+    # the gesture it answered, under its own name.
+    loop._dispatch('manage_note',
+                   {'action': 'search', 'scope': 'personal',
+                    'query': 'plasma', 'shot': '54924', 'machine': 'WEST'})
 
     call = [c for c in core.calls if c[0] == 'search_journals']
-    assert call, 'the loop must reach the core through search_journals'
+    assert call, 'the loop must reach the core through the search gesture'
     assert call[0][1]['scope'] == 'personal'
     assert call[0][1]['query'] == 'plasma'
     assert call[0][1]['shot'] == '54924'
@@ -242,8 +244,8 @@ def test_all_surfaces_read_the_same_note(home):
     loop_core = RecordingCore()
     loop = AgentLoop(core=loop_core, llm=object(),
                      dispatcher=FakeDispatcher(), main_window=None, api=None)
-    loop._dispatch('search_journals', {'scope': 'personal',
-                                       'query': 'plasma'})
+    loop._dispatch('manage_note', {'action': 'search', 'scope': 'personal',
+                                   'query': 'plasma'})
     loop_list = loop_core.calls[0][1] if loop_core.calls else None
     _ = loop_list  # routed: the loop reached the core
 

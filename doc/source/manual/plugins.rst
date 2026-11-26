@@ -346,18 +346,20 @@ with the slice's global quantities (``ip`` in kA, ``q_95``, ``q_axis``,
    open that dialog a second time.
 
 .. note::
-   A tool call is not a click. The ``run_plugin`` tool hands the instant as its
-   ``time`` rather than asking for it, and an entry that asks one and is handed
+   A tool call is not a click. The ``plugin(action="run")`` call hands the
+   instant as its ``time`` rather than asking for it, and an entry that asks
+   one and is handed
    none is **refused by name** -- naming the parameter and the
-   ``equilibrium_at_time`` tool that draws the same window -- because a dialog
-   opened where nobody is there to answer it is a session that stops. The
-   question above is what a hand on the menu line earns.
+   ``equilibrium(action="at_time")`` call that draws the same window --
+   because a dialog opened where nobody is there to answer it is a session
+   that stops. The question above is what a hand on the menu line earns.
 
 Also available as tools, not just the menu
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The same two surfaces are the two gestures the in-app agent and the MCP server
-drive (``equilibrium_surfaces`` and ``equilibrium_at_time``), so the agent can
+The same two surfaces are one gesture the in-app agent and the MCP server
+drive -- ``equilibrium``, whose ``action`` is ``surfaces`` for the frames side
+by side and ``at_time`` for the instant with its profiles -- so the agent can
 open them from a conversation and an external client over MCP can draw them
 without a GUI. What they draw and how they refuse is the code this menu line
 runs -- and a refusal is the named reason rather than an empty window.
@@ -551,8 +553,10 @@ instead of one line per event. :guilabel:`Retirer les marques` takes the marks
 back off, and says how many it took.
 
 The same three reads are tools, so the agent can mark a figure it drew, or answer
-the count without opening one: ``detect_events`` (with ``figure_key`` to mark, or
-without it to count), ``clear_event_marks`` and ``events_report``.
+the count without opening one: ``analyze_signal(action="events")`` (with
+``figure_key`` to mark, or without it to count),
+``analyze_signal(action="clear_events")`` and
+``analyze_signal(action="events_report")``.
 
 The spectrum of the live curve
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -578,11 +582,13 @@ It refuses, in words, a series that is flat (it answers no power off its mean), 
 series too short to spread a power over (fewer than eight samples left), and an
 abscissa that is not a strictly increasing clock -- two equal or out-of-order
 points would make every frequency ambiguous. Two things the menu does not offer
-are offered by the tools: ``spectrum`` with a **band** named answers how much of
-the power lives between its two bounds, and ``cross_correlation`` answers how far
+are offered by the tools: ``analyze_signal(action="spectrum")`` with a **band**
+named answers how much of the power lives between its two bounds, and
+``analyze_signal(action="correlate")`` answers how far
 one leaf **lags or leads** another, at what the two oscillate together, and what
-their shared dominant frequency is. ``spectrum_report`` writes the same facts to
-a self-contained HTML page under :file:`~/.imasviz/reports`.
+their shared dominant frequency is. ``analyze_signal(action="spectrum_report")``
+writes the same facts to a self-contained HTML page under
+:file:`~/.imasviz/reports`.
 
 The derived quantities of a case
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -620,8 +626,9 @@ The window answers the **mean, the peak and the floor** of the series over the
 time it is held, with how many points were read and the path they came from. For
 the Greenwald fraction it answers the fraction and the limit at the first instant
 the three leaves read, and names the three paths so a different ``n_e`` or a
-different area can be asked for through the ``greenwald`` tool, which takes the
-three leaves as arguments and answers the whole series.
+different area can be asked for through
+``derived_quantity(quantity="greenwald")``, which takes the three leaves as
+arguments and answers the whole series.
 
 The trend across the shots of a session
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -643,9 +650,11 @@ words, as is a campaign whose values are all equal -- a flat campaign says
 neither rising nor falling. ``Exporter le rapport`` writes the same answer, with
 the per-shot table, to a self-contained HTML page under :file:`~/.imasviz/reports`.
 
-The tools go further than the menu on one point: ``campaign`` takes the **leaf**
-and how the per-shot value is taken -- ``at`` an index of the curve, or ``which``
-of ``mean`` / ``max`` / ``min`` -- and the shots themselves, in campaign order,
-which is what lets the agent run a trend over a list the user dictated rather
-than over the windows that happen to be open.
+The tools go further than the menu on one point: ``trend_campaign`` takes the
+**leaf** and how the per-shot value is taken -- ``at`` an index of the curve,
+or ``which`` of ``mean`` / ``max`` / ``min`` -- and the shots themselves, in
+campaign order, which is what lets the agent run a trend over a list the user
+dictated rather than over the windows that happen to be open. Its ``action``
+says which of the two answers is asked for: ``values`` is the trend above,
+``report`` the same answer written as a page.
 

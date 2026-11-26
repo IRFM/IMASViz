@@ -39,18 +39,27 @@ IDS_NAME = 'equilibrium'
 EQUILIBRIUM_OCCURRENCES = [0, 1, 2, 3]
 
 EXPECTED_TOOLS = {
-    'open_case', 'list_cases', 'close_case',
-    'list_idss', 'load_ids', 'search_nodes', 'select_signals',
-    'unselect_all', 'list_selection', 'describe_node',
-    'describe_ids', 'list_quantities',
-    'plot_one', 'plot_selection', 'plot_table', 'plot_stacked',
+    # The three asks about the cases of the session answer one name, with
+    # `action` saying which, as they do on the loop face.
+    'manage_case',
+    # The three asks about the IDSs of a case answer one name too, with
+    # `action` saying which.
+    'manage_idss', 'inspect_tree',
+    # The three asks about the selection answer one name, as they do on the
+    # loop face.
+    'manage_selection',
+    'plot',
     'get_signal',
-    'list_windows', 'show_window', 'hide_window', 'close_window',
-    'list_plugins', 'run_plugin',
-    'save_session', 'restore_session',
-    'list_sessions', 'list_configurations', 'select_from_configuration',
-    'save_selection', 'save_plot_configuration',
-    'plot_report', 'case_report',
+    # The one tool of the equilibrium reads -- a different thing from the
+    # IDS name above, which is a value of an `ids_name` parameter.
+    'equilibrium',
+    'manage_window',
+    # The two asks about the plugins of a case answer one name, with `action`
+    # saying which: "list" names the plugin and numbers the entry that "run"
+    # then takes.
+    'plugin',
+    'manage_session',
+    'generate_report',
     'export_to_ids',
     'get_screenshot', 'get_logs',
 }
@@ -184,16 +193,17 @@ def _payload(result):
 
 
 def _openCase(session):
-    return session.call_tool('open_case', {
+    return session.call_tool('manage_case', {
+        'action': 'open',
         'uri': CASE_URI, 'dd_version': CASE_DATA_DICTIONARY_VERSION})
 
 
-def _listIdss(session, uri):
-    return session.call_tool('list_idss', {'uri': uri})
+def _listIdss(session, uri, action):
+    return session.call_tool('manage_idss', {'action': action, 'uri': uri})
 
 
 def _listCases(session):
-    return session.call_tool('list_cases', {})
+    return session.call_tool('manage_case', {'action': 'list'})
 
 
 def _getLogs(session):
@@ -219,7 +229,8 @@ def test_the_transport_lists_every_tool_and_says_the_method(mcpSession):
     names = {tool.name for tool in listed.tools}
     assert EXPECTED_TOOLS <= names, names
     assert 'imasviz' in (init.serverInfo.name or '').lower(), init.serverInfo
-    assert 'open_case' in (init.instructions or ''), (init.instructions or '')[:80]
+    instructions = init.instructions or ''
+    assert 'manage_case' in instructions, instructions[:80]
 
 
 def test_open_case_comes_back_over_the_wire(mcpSession):
@@ -229,11 +240,21 @@ def test_open_case_comes_back_over_the_wire(mcpSession):
     assert 'equilibrium' in data['ids'], 'the ids the case holds are not in the answer'
 
 
-def test_list_idss_answers_the_case_itself(mcpSession):
-    result = mcpSession['invoke']([lambda s: _listIdss(s, CASE_URI)])[1]
-    data = _payload(result)
-    entry = next(item for item in data['idss'] if item['name'] == IDS_NAME)
+def test_the_two_idss_lists_answer_the_case_itself(mcpSession):
+    """Both lists of the group come back over the wire under one name: the
+    dictionary's declaration and the shorter list of what the case actually
+    holds. Each stays a value under `idss` -- the SDK would answer a
+    top-level list as one content block per element."""
+    _, declared, held = mcpSession['invoke']([
+        lambda s: _listIdss(s, CASE_URI, 'declared'),
+        lambda s: _listIdss(s, CASE_URI, 'filled'),
+    ])
+    entry = next(item for item in _payload(declared)['idss']
+                 if item['name'] == IDS_NAME)
     assert entry['occurrences'] == EQUILIBRIUM_OCCURRENCES, entry
+    filled = next(item for item in _payload(held)['idss']
+                  if item['name'] == IDS_NAME)
+    assert filled['occurrences'], filled
 
 
 def test_get_logs_reads_the_panel(mcpSession):
@@ -248,7 +269,8 @@ def test_get_logs_reads_the_panel(mcpSession):
 
 def test_a_refusal_is_named_over_the_wire(mcpSession):
     result = mcpSession['invoke']([
-        lambda s: _listIdss(s, 'imas:hdf5?path=/no/such/case')])[1]
+        lambda s: _listIdss(s, 'imas:hdf5?path=/no/such/case', 'declared')
+    ])[1]
     assert result.isError is True, 'a refused case is an error the tool says so'
     assert 'is not open in this session' in _text(result), _text(result)
 

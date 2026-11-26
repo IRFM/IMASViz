@@ -89,14 +89,19 @@ def _oneTool(name, args, then):
 # ---------------------------------------------------------- the model path
 
 def test_an_unasked_close_window_is_refused_and_the_figure_stands(agent_kwargs):
-    """'trace la pression' names no closure. A model that calls
-    `close_window` on that turn is refused by name, the gesture never
-    runs, and the figure it named is still on the other side of the
-    refusal -- the "Plot2/Plot3 créées puis disparues" of the field is
-    this with no ask in between."""
+    """'trace la pression' names no closure. A model that closes a figure
+    on that turn is refused by name, the gesture never runs, and the figure
+    it named is still on the other side of the refusal -- the "Plot2/Plot3
+    créées puis disparues" of the field is this with no ask in between.
+
+    The close is asked the way the windows group answers it
+    (`manage_window(action="close")`): the guard decides on the GESTURE
+    behind that call, so a scripted call to the old member name would be
+    refused for naming a tool that is no longer offered and would leave the
+    destructive gate unexercised."""
     core = ClosingCore()
     llm = FakeLLMClient(_oneTool(
-        'close_window', {'key': 'Plot2'},
+        'manage_window', {'action': 'close', 'window': 'Plot2'},
         'Le tracage est ouvert (Plot1). Je n’ai pas fermé Plot2 : '
         'veux-tu que je le ferme ?'))
     agent = AgentLoop(core=core, llm=llm, dispatcher=FakeDispatcher(),
@@ -108,7 +113,8 @@ def test_an_unasked_close_window_is_refused_and_the_figure_stands(agent_kwargs):
     assert errors == [None], \
         'the answer is what reaches the user, not a crash on the guard'
     assert 'REFUSAL' in joined, 'the refusal is named, not a silence'
-    assert 'close_window' in joined, 'it names the gesture it refused'
+    assert 'manage_window(action="close")' in joined, \
+        'it names the call it refused, in the spelling the tool set offers'
     assert 'ask' in joined.lower(), \
         'the rule is stated: a closure is asked for, not taken'
 
@@ -117,10 +123,12 @@ def test_the_same_close_is_run_once_the_request_asks_for_it(agent_kwargs):
     """'ferme Plot2' IS the ask: the guard stands aside, the gesture runs,
     and the answer is let stand -- a refusal here would be the same
     failure in the other direction (a window the user asked to close,
-    still open because the loop second-guessed)."""
+    still open because the loop second-guessed). The call names the group;
+    what reaches the core is the member behind it, under the `key` its
+    gesture has always taken (`ACTION_RENAMES`)."""
     core = ClosingCore()
     llm = FakeLLMClient(_oneTool(
-        'close_window', {'key': 'Plot2'},
+        'manage_window', {'action': 'close', 'window': 'Plot2'},
         'Plot2 est fermée.'))
     agent = AgentLoop(core=core, llm=llm, dispatcher=FakeDispatcher(),
                       **agent_kwargs)
@@ -131,18 +139,19 @@ def test_the_same_close_is_run_once_the_request_asks_for_it(agent_kwargs):
 
 
 def test_an_unasked_new_session_is_refused_and_the_memory_stands(agent_kwargs):
-    """A `new_session` with no reset in the request refuses the same way,
-    and the loop's own memory -- the state `5dcd55a` cleared on an
-    allowed one -- survives the refused one: a reset that never ran is not
-    a slate cleared."""
+    """A `manage_session(action="new")` with no reset in the request
+    refuses the same way, and the loop's own memory -- the state `5dcd55a`
+    cleared on an allowed one -- survives the refused one: a reset that
+    never ran is not a slate cleared."""
     core = ClosingCore()
     loop = AgentLoop(core=core, llm=FakeLLMClient(_oneTool(
-        'new_session', {},
+        'manage_session', {'action': 'new'},
         'Je n’ai rien refermé, la session tient : les figures sont '
         'encore là.')),
         dispatcher=FakeDispatcher())
     loop.history = [{'role': 'user', 'content': 'trace la pression'}]
-    loop.transcriptLine.connect(lambda line: None)
+    lines = []
+    loop.transcriptLine.connect(lines.append)
     loop.askFinished.connect(lambda reason: None)
     loop.ask('montre-moi les figures ouvertes')
     assert core.closed == [], \
@@ -151,6 +160,11 @@ def test_an_unasked_new_session_is_refused_and_the_memory_stands(agent_kwargs):
     assert loop.history, \
         'a refused new session is not a clean slate: the loop still held ' \
         'the turns it served'
+    joined = ' '.join(lines)
+    assert 'manage_session(action="new")' in joined, \
+        'the guard decides on the gesture and speaks the CALL: a refusal ' \
+        'naming `new_session` sends the model to a name it is refused ' \
+        'for asking: %s' % joined
 
 
 def test_an_asked_new_session_runs_and_clears_the_memory(agent_kwargs):
@@ -158,10 +172,11 @@ def test_an_asked_new_session_runs_and_clears_the_memory(agent_kwargs):
     the loop's memory goes with it: the turns served before the reset are
     the clean slate, not the conversation about the reset itself (the
     loop keeps the turn it is in: the ask that ran the reset and the
-    answer it owes to it)."""
+    answer it owes to it). The call is the group's; what reaches the core
+    is the `new_session` the guard and the memory reset are keyed on."""
     core = ClosingCore()
     loop = AgentLoop(core=core, llm=FakeLLMClient(_oneTool(
-        'new_session', {}, 'La session est à neuf.')),
+        'manage_session', {'action': 'new'}, 'La session est à neuf.')),
         dispatcher=FakeDispatcher())
     # Two turns served before the reset: a request of the case and the
     # figure it drew. That is the memory the next turn must not be able
@@ -188,10 +203,14 @@ def test_an_asked_new_session_runs_and_clears_the_memory(agent_kwargs):
 def test_an_unasked_close_case_is_refused_and_the_case_stands(agent_kwargs):
     """The third of the three, the one that takes the whole case and its
     own figures: the same refusal, on the same request that does not
-    name it."""
+    name it. The closure is asked the way the cases group answers it
+    (`manage_case(action="close")`) -- the guard decides on the GESTURE
+    behind that call, so a scripted call to the member name would be
+    refused for naming a tool that is no longer offered and would leave
+    the gate unexercised."""
     core = ClosingCore()
     llm = FakeLLMClient(_oneTool(
-        'close_case', {'uri': 'imas:hdf5?path=/fake'},
+        'manage_case', {'action': 'close', 'uri': 'imas:hdf5?path=/fake'},
         'Le cas est encore ouvert, je ne l’ai pas refermé.'))
     agent = AgentLoop(core=core, llm=llm, dispatcher=FakeDispatcher(),
                       **agent_kwargs)
@@ -200,24 +219,30 @@ def test_an_unasked_close_case_is_refused_and_the_case_stands(agent_kwargs):
         'a close_case on a request that does not ask for it does not ' \
         'run: %r' % core.closed
     assert errors == [None]
-    assert 'REFUSAL' in joined and 'close_case' in joined
+    assert ('REFUSAL' in joined
+            and 'manage_case(action="close")' in joined)
 
 
 # ------------------------------------------------------------ the button
 
 def test_the_button_path_asks_no_question(agent_kwargs):
-    """The page's New-session button and its per-figure close act
-    `callGesture` -> `AgentLoop._dispatch(requested_by='user')`: the
+    """The page's New-session button and a closure the user's own face asks
+    act `callGesture` -> `AgentLoop._dispatch(requested_by='user')`: the
     click IS the ask, and there is no user-prompt text to check. A guard
     that asks the button for a word it cannot give would be the refusal
     in the wrong direction, and a button that could not close a window is
-    a window it cannot take away."""
+    a window it cannot take away. The closure is spelled the way every
+    other face spells it -- the group's name and its `action` -- because
+    `_dispatch` answers a member asked on its own as a tool no longer
+    offered, whoever the caller is."""
     core = ClosingCore()
     agent = AgentLoop(core=core, llm=FakeLLMClient([]),
                       dispatcher=FakeDispatcher(), **agent_kwargs)
-    out = agent._dispatch('close_window', {'key': 'Plot5'},
+    out = agent._dispatch('manage_window',
+                          {'action': 'close', 'window': 'Plot5'},
                           requested_by='user')
     assert out == {'closed': 'Plot5'}, out
     assert core.closed == [('close_window', 'Plot5')], core.closed
-    out = agent._dispatch('new_session', {}, requested_by='user')
+    out = agent._dispatch('manage_session', {'action': 'new'},
+                          requested_by='user')
     assert core.closed[-1] == ('new_session', None), core.closed

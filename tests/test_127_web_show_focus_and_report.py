@@ -9,9 +9,10 @@
 """Two web-interface complaints, reproduced on stand-ins.
 
 * **"montre moi le plot4"** -- the agent answers "show me figure N" with
-  `focus_window` (the "bring it forward" gesture, the preparation of a
-  screenshot). In the desktop app a focus is enough: the figure comes to
-  the front of the screen. In the web there is **no screen** -- the only
+  `manage_window(action="focus")` (the "bring it forward" gesture, the
+  preparation of a screenshot). In the desktop app a focus is enough: the
+  figure comes to the front of the screen. In the web there is **no
+  screen** -- the only
   way a figure reaches the user is the PNG the turn saves -- so a focus,
   like the `get_screenshot` that follows it, is a capture of a figure. A
   figure an earlier turn drew is not among the ones this turn drew: it is
@@ -26,7 +27,8 @@
 
 Nothing drives a real case or a real model: the scripted LLM answers the
 gestures and `CoreWithFocus` is the `FakeCore` of `test_119` with the
-`focus_window` gesture it lacks added.
+`focus_window` gesture it lacks added -- the gesture, not the name on the
+wire: the turn asks the windows group and the core still answers the member.
 """
 
 import base64
@@ -41,10 +43,10 @@ class CoreWithFocus(FakeCore):
     """`FakeCore` plus `focus_window`, the "bring a window forward" gesture.
 
     `FakeCore` answers `plot_one`, `get_screenshot` and `plot_report` --
-    the three the `test_119` turns need -- but not `focus_window`, and the
-    "show me figure N" turn dispatches under exactly that name, so the
-    stand-in answers it the way the core does, and refuses a window it
-    does not hold the way the core does."""
+    the three the `test_119` turns need -- but not the focus, and the
+    "show me figure N" turn reaches it through the windows group's name,
+    so the stand-in answers the member the way the core does, and refuses
+    a window it does not hold the way the core does."""
 
     def focus_window(self, window='app', width=None, height=None):
         if any(record['key'] == window for record in self._windows):
@@ -57,7 +59,7 @@ def _draw(qapp, session):
     """The one figure the session will hold: drawn by a turn whose
     scripted LLM calls `plot_one` and then answers."""
     session.agent.llm = FakeLLM([
-        ('plot_one', {'uri': CASE_URI, 'path': 'core.ion[0].temp'}),
+        ('plot', {'mode': 'single', 'uri': CASE_URI, 'path': 'core.ion[0].temp'}),
         ('say', 'Tracé.'),
     ])
     record = inWorker(lambda: session.runTurn('trace une figure'), qapp)
@@ -86,19 +88,20 @@ def FakeLLM(scripted):
 def test_focus_an_older_figure_is_a_capture_the_turn_keeps(qapp, tmp_path):
     """The repro of "montre moi le plot4": the figure is drawn by one turn
     and *shown* by the next, which draws nothing and only asks
-    (`focus_window`) for an older figure. The ask is what makes the figure
-    a capture of this turn -- the same rule `get_screenshot` of an older
-    `SlicesPlot1` already pins. Before the fix `focus_window` was none of
-    the gestures `onGestureSlot` read as a capture ask, so the figure the
-    turn was told to show was the one it did not keep, and the page had
-    nothing to draw. After, the focused figure stands in the turn's files
-    and its address, the way the screenshot of it does."""
+    (`manage_window(action="focus")`) for an older figure. The ask is what
+    makes the figure a capture of this turn -- the same rule
+    `get_screenshot` of an older `SlicesPlot1` already pins. Before the fix
+    the focus was none of the gestures `onGestureSlot` read as a capture
+    ask, so the figure the turn was told to show was the one it did not
+    keep, and the page had nothing to draw. After, the focused figure
+    stands in the turn's files and its address, the way the screenshot of
+    it does."""
     session, core = build(qapp, tmp_path, core=CoreWithFocus())
     first = _draw(qapp, session)
     assert first['image_files'] == ['SlicesPlot1.png']
 
     session.agent.llm = FakeLLM([
-        ('focus_window', {'window': 'SlicesPlot1'}),
+        ('manage_window', {'action': 'focus', 'window': 'SlicesPlot1'}),
         ('say', 'Voilà la figure 1.'),
     ])
     second = inWorker(lambda: session.runTurn('show me figure 1'), qapp)
@@ -114,7 +117,7 @@ def test_focus_an_older_figure_is_a_capture_the_turn_keeps(qapp, tmp_path):
 
 def test_focus_and_screenshot_one_figure_is_one_capture(qapp, tmp_path):
     """A turn that both focuses and screenshots one figure keeps it once.
-    `focus_window` is the preparation of the `get_screenshot`, not a
+    The group's "focus" is the preparation of the `get_screenshot`, not a
     second picture: the capture is the figure, addressed to it, and
     deduplicated the way the two `get_screenshot` asks of one window
     would be -- not the figure twice."""
@@ -122,7 +125,7 @@ def test_focus_and_screenshot_one_figure_is_one_capture(qapp, tmp_path):
     _draw(qapp, session)
 
     session.agent.llm = FakeLLM([
-        ('focus_window', {'window': 'SlicesPlot1'}),
+        ('manage_window', {'action': 'focus', 'window': 'SlicesPlot1'}),
         ('get_screenshot', {'window': 'SlicesPlot1'}),
         ('say', 'Voilà, en grand.'),
     ])
@@ -137,18 +140,26 @@ def test_focus_and_screenshot_one_figure_is_one_capture(qapp, tmp_path):
 def test_a_report_the_turn_writes_is_on_disk_and_in_the_record(qapp,
                                                                 tmp_path,
                                                                 monkeypatch):
-    """The half the web can check on a report, pinned: the `plot_report`
-    the turn writes is **on disk** in the reports folder and named in the
+    """The half the web can check on a report, pinned: the report the turn
+    writes is **on disk** in the reports folder and named in the
     record -- the two places the page's Reports section reads (the folder
     via `/api/reports`, the turn via its `reports`). A report that is
     neither on disk nor in the turn is one no tool wrote; that is a model
-    decision this suite does not make."""
+    decision this suite does not make.
+
+    The page's turn spells the call the model is offered,
+    `generate_report(scope="plot")`; what the record's `reports` keys on is
+    the gesture that ran. Both ends of that seam are pinned by this one
+    assertion: a report that reaches the disk and not the record is a page
+    that lost the file the turn wrote."""
     monkeypatch.setenv('HOME', str(tmp_path / 'home'))
     session, core = build(qapp, tmp_path, core=CoreWithFocus())
     _draw(qapp, session)
 
     session.agent.llm = FakeLLM([
-        ('plot_report', {'figure_key': 'SlicesPlot1', 'name': 'le-rapport'}),
+        ('generate_report', {'scope': 'plot',
+                             'figure_key': 'SlicesPlot1',
+                             'name': 'le-rapport'}),
         ('say', 'Le rapport est écrit.'),
     ])
     record = inWorker(lambda: session.runTurn('rapport de la figure'), qapp)

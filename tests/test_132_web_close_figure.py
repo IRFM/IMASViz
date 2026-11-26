@@ -75,8 +75,8 @@ def test_closing_a_figure_takes_it_out_of_the_records_of_the_session(qapp,
     llm = FakeLLMClient([
         # First: the figure is drawn, and the interface is asked.
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(tool_calls=[
             {'name': 'get_screenshot', 'args': {'window': 'app'}}],
@@ -85,7 +85,8 @@ def test_closing_a_figure_takes_it_out_of_the_records_of_the_session(qapp,
                     finish_reason='stop'),
         # Second: the figure is closed -- the interface stays named.
         LLMResponse(tool_calls=[
-            {'name': 'close_window', 'args': {'key': 'SlicesPlot1'}}],
+            {'name': 'manage_window',
+             'args': {'action': 'close', 'window': 'SlicesPlot1'}}],
             content=''),
         LLMResponse(content='La figure est fermée.', finish_reason='stop'),
     ])
@@ -101,9 +102,11 @@ def test_closing_a_figure_takes_it_out_of_the_records_of_the_session(qapp,
     # The application side of the closure: the window is gone, and the
     # loop said so in the transcript the page reads.
     assert not any(r['key'] == 'SlicesPlot1' for r in core.list_windows()), \
-        'close_window ran: the core must hold the window no more'
+        'the close ran: the core must hold the window no more'
     text = '\n'.join(second['lines'])
-    assert 'close_window' in text
+    assert 'manage_window' in text, \
+        'the transcript names the call the model made, not the gesture ' \
+        'behind it'
     assert 'closed=SlicesPlot1' in text or "'closed': 'SlicesPlot1'" in text
     # The page's side of the truth: the record of the turn that drew
     # it no longer names the figure -- and it keeps the capture the
@@ -135,17 +138,21 @@ def test_closing_a_figure_takes_it_out_of_the_records_of_the_session(qapp,
 def test_the_page_asking_the_close_updates_the_records_the_same_way(qapp,
                                                                     tmp_path):
     """`callGesture` is the direct ask of the page (`POST /api/tool`):
-    a `close_window` it answers runs the same core gesture, and the
-    figure it closes leaves the records the same way the loop's turn
-    takes it out -- the two asks cannot leave two different truths in
-    the gallery behind them. And a key the core does not hold is the
-    refusal of the core, named, with the records left as they are:
-    there is no card to drop for a figure that is not there."""
+    a `manage_window(action="close")` it answers runs the same core
+    gesture, and the figure it closes leaves the records the same way the
+    loop's turn takes it out -- the two asks cannot leave two different
+    truths in the gallery behind them. And a key the core does not hold is
+    the refusal of the core, named, with the records left as they are:
+    there is no card to drop for a figure that is not there.
+
+    The page asks with the group's name because `callGesture` answers every
+    ask through `resolveCall`: a member spelled on its own would come back
+    to the user as a refusal, whoever the caller is."""
     session, core = build(qapp, tmp_path)
     llm = FakeLLMClient([
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(content='La figure est tracée.', finish_reason='stop'),
     ])
@@ -154,7 +161,7 @@ def test_the_page_asking_the_close_updates_the_records_the_same_way(qapp,
     assert first['image_files'] == ['SlicesPlot1.png']
 
     out = inWorker(lambda: session.callGesture(
-        'close_window', {'key': 'SlicesPlot1'}), qapp)
+        'manage_window', {'action': 'close', 'window': 'SlicesPlot1'}), qapp)
     assert out['error'] is None
     assert not any(r['key'] == 'SlicesPlot1' for r in core.list_windows())
     assert session.turns[0]['image_windows'] == [], \
@@ -168,7 +175,7 @@ def test_the_page_asking_the_close_updates_the_records_the_same_way(qapp,
     # The key the session no longer holds is refused by name -- and a
     # refusal of a close is not a close: nothing is taken out.
     out2 = inWorker(lambda: session.callGesture(
-        'close_window', {'key': 'SlicesPlot1'}), qapp)
+        'manage_window', {'action': 'close', 'window': 'SlicesPlot1'}), qapp)
     assert out2['error'] is not None
     assert 'SlicesPlot1' in out2['error']
 
@@ -182,13 +189,18 @@ def test_new_session_marks_every_capture_the_records_hold(qapp, tmp_path):
     screen rebuilds from on the reload, so the clean slate must be in
     them, or the reload brings the session back.
 
+    The page asks with the group's name and its `action`, the same way it
+    asks the close two tests above: `callGesture` answers every ask
+    through `resolveCall`, and the marker that empties the records is
+    keyed on the gesture behind that word, not on the word.
+
     (The turn that drew the capture keeps its transcript on disk:
     what leaves is the figure the record names, not the request it
     was the answer to.)"""
     llm = FakeLLMClient([
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(tool_calls=[
             {'name': 'get_screenshot', 'args': {'window': 'app'}}],
@@ -202,7 +214,8 @@ def test_new_session_marks_every_capture_the_records_hold(qapp, tmp_path):
     assert first['error'] is None
     assert sorted(first['image_files']) == ['00_app.png', 'SlicesPlot1.png']
 
-    out = inWorker(lambda: session.callGesture('new_session', {}), qapp)
+    out = inWorker(lambda: session.callGesture(
+        'manage_session', {'action': 'new'}), qapp)
     assert out['error'] is None
     assert core.list_windows() == [] or all(
         r['key'] is None for r in core.list_windows())

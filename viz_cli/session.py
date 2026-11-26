@@ -133,7 +133,7 @@ class CliSession:
         # mode (`transcriptLine` -- quiet under `hide`), the file is the full
         # render the `fullLine` carries whatever the mode hides. Splitting
         # them is the whole point of `fullLine`: the reader who audits the
-        # turn needs the `get_screenshot(…)` / `← focus_window: …` the mode
+        # turn needs the `get_screenshot(…)` / `← manage_window: …` the mode
         # cut from the view, and the mode is not what decides what lands on
         # disk.
         lines = []

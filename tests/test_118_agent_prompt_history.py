@@ -53,12 +53,12 @@ class _LLM:
 class _Core:
     """A stand-in gesture surface; the scripted turn never reaches it.
 
-    It carries ``list_prompts`` because the panel tests below build the
-    panel, and it asks the catalogue while it is being built -- a core
-    that cannot answer it is a panel that cannot be built, the contract
-    ``tests/test_111_agent_panel.py`` pins on its own core. What the
-    core itself answers is pinned by ``test_167``; here the shelf is
-    empty.
+    The PANEL does reach it, though, and before the turn: a panel built on
+    an agent fills its prompt box from ``list_prompts``, so a core that
+    cannot answer that is a panel that cannot be built. The shelf stays
+    empty here -- what the catalogue answers is ``test_166`` (the store)
+    and ``test_167`` (the gesture), and what the panel does with the answer
+    is ``test_170``.
     """
     def list_prompts(self, scope=None, category=None, query=None,
                      limit=None):

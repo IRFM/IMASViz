@@ -30,6 +30,14 @@ carries: the in-app rule in its strict-form words, the MCP rule in the
 shared sentences it still carries. What must never leave either copy
 is the direction: a claim of work stands only on the call that made
 it, a refusal is reported with its reason, and nothing is invented.
+
+The prose budget of T7 makes the two copies the place where the shared
+vocabulary is said: a tool description is now measured in words, so
+what every tool would otherwise repeat -- what ``uri``, ``path``,
+``indices``, ``along``, ``time``, ``figure_key`` mean, that a group's
+discriminant is never guessed, that a refusal is an answer -- is said
+once, in a block both copies carry. That trade only pays while the
+block stands on both faces, which the last test of this file is.
 """
 
 from imasviz.VizAgent.tools import SYSTEM_INSTRUCTIONS
@@ -98,3 +106,44 @@ def test_the_refusal_is_an_answer_in_both_copies():
     mcp = _text(INSTRUCTIONS)
     assert 'report the exact refusal reason' in in_app
     assert 'it is an answer, with the reason' in mcp
+
+
+# The words every call is answered with. They are defined ONCE, in the
+# block both copies carry, so that a tool's own sentence no longer has to
+# re-say them: measured before this block, the parameter notes alone cost
+# 10 712 characters, and `uri` by itself was spelled seven different ways
+# across fourteen tools.
+_ADDRESSING_WORDS = ('uri', 'ids_name', 'occurrence', 'path', 'indices',
+                     'along', 'time', 'figure_key', 'window')
+
+# The two directions of that block, in words both copies carry identically.
+_ADDRESSING_RULES = (
+    'a call that leaves it out is refused, never run on a guess',
+    'a refusal is an answer: report its reason, then answer again in the '
+    'spelling that refusal names',
+)
+
+
+def _plain(instructions):
+    """Collapsed like `_text`, with the in-app copy's backticks off: the
+    two copies mark a parameter name differently -- `uri` there, uri on
+    the MCP page -- and the shape this asks is the definition, not the
+    markup."""
+    return ' '.join(instructions.replace('`', '').split()).lower()
+
+
+def test_both_copies_define_the_words_a_call_is_answered_with():
+    """Each word of the shared vocabulary is defined, in both copies. This
+    is what lets a tool description be short: the tool no longer carries
+    the definition, so a copy that loses the block loses the meaning of
+    every parameter that word names, on every face at once."""
+    for label, copy in (('in-app', SYSTEM_INSTRUCTIONS),
+                        ('mcp', INSTRUCTIONS)):
+        plain = _plain(copy)
+        missing = [word for word in _ADDRESSING_WORDS
+                   if ('%s:' % word) not in plain]
+        assert not missing, \
+            'the %s copy no longer defines %s' % (label, ', '.join(missing))
+        for rule in _ADDRESSING_RULES:
+            assert rule in _text(copy), \
+                'the %s copy lost the addressing rule: %s' % (label, rule)

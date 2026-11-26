@@ -40,6 +40,9 @@ from PySide6.QtWidgets import QMainWindow, QMdiArea
 from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
 from imasviz.VizDataAccess.QVizEquilibriumRead import QVizEquilibriumRead, PROFILES
 from imasviz.VizAgent.core import McpGuiCore
+from imasviz.VizAgent.tools import (argumentsForMember, gestureOf,
+                                    resolveCall, unknownParameterRefusal,
+                                    unknownParameters)
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizMainMenuController \
     import QVizMainMenuController
 from imasviz.VizGUI.VizGUICommands.VizSession.QVizSaveSession import QVizSaveSession
@@ -426,3 +429,43 @@ def test_a_session_puts_the_instant_window_back_under_its_key(session, tmp_path)
     # Entry 1 came back drawn on the instant the file held, not the one it opens on.
     assert nonEmptyGrab(session.api.figureframes[KIND + '2'])
     assert session.api.figureframes[KIND + '2'].profilePanels() == 8
+
+
+# --------------------------------------------------------------------------
+# The one name a turn types today, asked of the case's own equilibrium
+# --------------------------------------------------------------------------
+
+def test_the_spelling_a_turn_types_reaches_the_read_it_means(session):
+    """`equilibrium` answers both reads and its ``action`` says which, so the
+    group schema holds a ``times`` and a ``time`` at once -- and the row of
+    the action is what tells them apart. A list handed to the single-instant
+    read is refused before the core is asked, naming the call that does take
+    it. The two calls that answer are run on the case, so the seam stands on
+    a real read and not on a stub: each opens its own window.
+    """
+    core = McpGuiCore(api=session.api)
+
+    typed = {'action': 'at_time', 'uri': CASE_URI, 'times': [MIDDLE_TIME]}
+    assert gestureOf('equilibrium', typed) == 'equilibrium_at_time'
+    args = {field: value
+            for field, value in typed.items() if field != 'action'}
+    stray = unknownParameters('equilibrium_at_time', args)
+    assert stray == ['times'], stray
+    refusal = unknownParameterRefusal('equilibrium_at_time', stray)
+    assert 'equilibrium(action="at_time")' in refusal, refusal
+    assert 'equilibrium(action="surfaces")' in refusal, refusal
+
+    member, args = resolveCall('equilibrium', {
+        'action': 'surfaces', 'uri': CASE_URI,
+        'times': [MIDDLE_TIME, MIDDLE_TIME + 2.0]})
+    assert member == 'equilibrium_surfaces'
+    surfaces = core.equilibrium_surfaces(**argumentsForMember(member, args))
+    assert surfaces['figure'].startswith(KIND), surfaces
+
+    member, args = resolveCall('equilibrium', {
+        'action': 'at_time', 'uri': CASE_URI, 'time': MIDDLE_TIME})
+    assert member == 'equilibrium_at_time'
+    atTime = core.equilibrium_at_time(**argumentsForMember(member, args))
+    assert atTime['figure'].startswith(KIND), atTime
+    assert atTime['figure'] != surfaces['figure'], \
+        'two asks, two windows: the group name opens neither of them twice'

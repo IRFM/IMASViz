@@ -11,7 +11,7 @@
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
 
-"""The tool schemas of `plot_one` and `get_signal` both name the unified
+"""The tool schemas of ``plot`` and ``get_signal`` both name the unified
 schema: `along` (the axis a quantity runs along) and `indices` (the index
 each other axis is pinned at, one entry per nested array of structures).
 
@@ -19,9 +19,19 @@ Pinned against the `TOOLS` the LLM is handed, because a param the schema
 does not name is a param the model cannot reach even when the code has no
 opinion about where its name sits: the `along`/`indices` pair is the user-
 facing half of the shared resolver, and if a tool the user asks for cannot
-take it (or one of `plot_one` / `get_signal` can but the other does not),
+take it (or one of `plot` / `get_signal` can but the other does not),
 the two halves stop naming the same element and the bug the resolver
 exists for moves.
+
+The drawing answers one name and a `mode` now, so what is per mode is
+written on the parameter that carries it. What the PAIR means is no
+longer written where it is typed: T7 gave the tool descriptions a word
+budget and lifted the definition into the shared ADDRESSING block of the
+instruction (`test_147` keeps that block on both faces). What is pinned
+here is the half only the schema can answer -- that a tool the user asks
+for DECLARES `along` and `indices`, so the model may type them at all --
+and that the definition it reads stands in the one block sent with every
+turn rather than in N tool sentences that drift apart.
 
 Both halves are also refused together with `time` (the value the user asked
 at, not the value the case holds); the schema keeps that refusal the tool
@@ -40,7 +50,13 @@ def _schemaOf(name):
     raise AssertionError('no tool named %r in TOOLS' % name)
 
 
-@pytest.mark.parametrize('toolName', ['plot_one', 'get_signal'])
+def _declares(toolName, word):
+    """The tool's schema names the parameter, which is what says the model
+    may type it at all."""
+    return word in _schemaOf(toolName).get('properties', {})
+
+
+@pytest.mark.parametrize('toolName', ['plot', 'get_signal'])
 def test_the_tools_both_name_the_unified_schema(toolName):
     schema = _schemaOf(toolName)
     props = schema.get('properties', {})
@@ -55,22 +71,27 @@ def test_the_tools_both_name_the_unified_schema(toolName):
     assert 'integer' in props['indices'].get('additionalProperties', {}).get('type', [])
 
 
-def test_the_tools_refuse_time_and_the_unified_schema_together():
+def test_the_definition_of_the_pair_is_said_once_for_every_tool():
     """`time` pins one slice; `along` / `indices` run along an axis. The
-    schema is the refusal the tool answers. The 2026-11-24 rewrite of the
-    in-app prompt names the half the user actually reaches for
-    (`indices={"psi": 50}`), and the tool descriptions of `plot_one` and
-    `get_signal` name both halves for the model -- `along` and `indices`
-    alike -- so the loop the user saw does not close on a second ask.
+    schema is where a tool says it takes them; the shared block of the
+    instruction is where what they MEAN is said -- once, for every tool
+    that takes them, instead of once per tool sentence. The 2026-11-24
+    rewrite put the half the user actually reaches for
+    (`indices={"psi": 50}`) in a tool description; T7 lifted that sentence
+    into the block, so this guard follows it to where it now stands. A
+    definition asked of a description is a definition rewritten for every
+    tool that takes the word: 10 712 characters of parameter notes, with
+    `uri` alone spelled seven ways across fourteen tools, is what that
+    measured before the block.
     """
-    system = SYSTEM_INSTRUCTIONS
-    assert 'indices' in system, 'the system prompt does not name `indices`'
-    # The unified schema is named for `plot_one` and for `get_signal`
-    # alike, in the tool description the model reads at the call.
-    for toolName in ('plot_one', 'get_signal'):
-        description = next((t.get('function', {}).get('description', '')
-                            for t in TOOLS
-                            if t.get('function', {}).get('name') == toolName),
-                           '')
-        assert 'along' in description and 'indices' in description, \
-            (toolName, description)
+    for word in ('along', 'indices', 'time'):
+        assert '`%s`:' % word in SYSTEM_INSTRUCTIONS, \
+            'the instruction no longer defines `%s`' % word
+    assert 'indices={"psi": 50}' in SYSTEM_INSTRUCTIONS, \
+        'the half the user reaches for is gone from the instruction'
+    # What only the schema can answer stays asked of the schema, for the
+    # two tools the field failure came in on.
+    for toolName in ('plot', 'get_signal'):
+        for word in ('along', 'indices'):
+            assert _declares(toolName, word), \
+                '%s cannot be typed at %s' % (word, toolName)

@@ -70,7 +70,8 @@ def test_the_step_text_stands_beside_the_tool_call(qapp):
     step = "Je vais d'abord lister les cas de la session."
     llm = FakeLLMClient([
         LLMResponse(content=step,
-                    tool_calls=[{'name': 'list_cases', 'args': {}}],
+                    tool_calls=[{'name': 'manage_case',
+                                 'args': {'action': 'list'}}],
                     finish_reason='tool_calls'),
         LLMResponse(content='Here are the cases you asked for.',
                     tool_calls=None, finish_reason='stop'),
@@ -104,7 +105,8 @@ def test_the_content_stays_none_when_the_model_said_nothing(qapp):
     out of the record."""
     llm = FakeLLMClient([
         LLMResponse(content='',
-                    tool_calls=[{'name': 'list_cases', 'args': {}}],
+                    tool_calls=[{'name': 'manage_case',
+                                 'args': {'action': 'list'}}],
                     finish_reason='tool_calls'),
         LLMResponse(content='Here are the cases you asked for.',
                     tool_calls=None, finish_reason='stop'),

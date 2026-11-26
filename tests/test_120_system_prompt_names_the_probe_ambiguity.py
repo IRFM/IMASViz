@@ -17,9 +17,9 @@ The 2026-11-24 rewrite of the instruction keeps the field rules in their
 own words:
 
 * the three words, kept apart: an ``occurrence`` is a version of an IDS
-  (passed to ``load_ids``); ``indices`` is the 0-based index of a tensor
-  dimension or nested array; a ``path`` is a specific member of a
-  structure array;
+  (passed to ``manage_idss(action="load")``); ``indices`` is the 0-based
+  index of a tensor dimension or nested array; a ``path`` is a specific
+  member of a structure array;
 * a family member is picked by its OWN path, never by ``indices`` -- the
   prompt says "never put ``flux_loop`` in ``indices``", the same
   direction the old prompt spelled with ``magnetics.bpol_probe[3]``;
@@ -29,8 +29,8 @@ own words:
   ([0] to [4])`` in the old prompt, ``bpol_probe (5 occurrences : 0 à 4)``
   on screen where the case holds 130 elements);
 * a loose ordinal over one array of structures is an ambiguity, not a
-  fact: "sonde 2" names the options ``search_nodes`` found and asks the
-  user to choose, instead of picking one by feel.
+  fact: "sonde 2" names the options ``inspect_tree(action="search")``
+  found and asks the user to choose, instead of picking one by feel.
 
 Pinning the prompt text is the shape the surface contracts use elsewhere
 (``test_116`` pins the tool names, this one pins these words), because
@@ -53,10 +53,12 @@ def _text():
 def test_the_prompt_keeps_the_three_words_apart():
     """The three words the model mixes are each defined, in the direction
     of the application: an occurrence is a version of an IDS passed to
-    load_ids; indices is the 0-based index of a tensor dimension or nested
-    array; a path is a specific member of a structure array."""
+    ``manage_idss(action="load")``; indices is the 0-based index of a
+    tensor dimension or nested array; a path is a specific member of a
+    structure array."""
     text = _text()
-    assert '`occurrence`: version of an ids (passed to `load_ids`)' in text
+    assert '`occurrence`: version of an ids (passed to ' \
+           '`manage_idss(action="load")`)' in text
     assert '0-based index of a tensor dimension or nested array' in text
     assert 'specific member of a structure array' in text
 
@@ -68,7 +70,7 @@ def test_a_family_member_is_its_own_path_not_an_index():
     ``indices``."""
     text = _text()
     assert 'magnetics.flux_loop[2].flux.data' in text
-    assert 'call `plot_one` twice using `into_figure_key`' in text
+    assert 'call `plot(mode="single")` twice using `into_figure_key`' in text
     assert 'never put `flux_loop` in `indices`' in text
     # No number of a family member as a count: an index in brackets is an
     # index, a word or digit before the name is the count the old prompt
@@ -93,9 +95,10 @@ def test_the_prompt_anchors_every_fact_to_the_tools():
 def test_the_prompt_keeps_the_probe_ambiguity_a_question():
     """The ambiguity stays a question to the user, not a pick: "sonde 2"
     with several probes standing is named as an ambiguity, and the rule
-    ends asking the user to choose among the exact paths search_nodes
-    found."""
+    ends asking the user to choose among the exact paths
+    ``inspect_tree(action="search")`` found."""
     text = _text()
     assert '"sonde 2" when multiple probes exist' in text
-    assert 'list the exact paths found by `search_nodes`' in text
+    assert ('list the exact paths found by '
+            '`inspect_tree(action="search")`') in text
     assert 'ask the user to choose' in text

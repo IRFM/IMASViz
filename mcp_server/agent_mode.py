@@ -47,6 +47,10 @@ from imasviz.VizAgent.agent import AgentLoop
 from imasviz.VizAgent.core import McpGuiCore, resolveFigureKey
 from imasviz.VizAgent.dispatcher import GuiDispatcher
 from imasviz.VizAgent.llm_client import LLMClient
+# A turn spells a merged group by its one name; the capture rule below is
+# written gesture by gesture, so the name it is asked about is resolved
+# here, on the way in.
+from imasviz.VizAgent.tools import gestureOf
 
 
 def _apiOf(window):
@@ -150,7 +154,7 @@ def captureAsk(name, args):
       default `app` is the application, the interface extra). A
       `focus_window` reaches here only when the user asked it -- the
       "montre-moi Plot1" command -- not after the turn drew a figure;
-    * `plot_one` asks for the figure it draws onto when it names one
+    * a draw asks for the figure it draws onto when it names one
       (`into_figure_key`): the redraw adds no new key, so without it the
       delta the turn drew would be empty while the loop printed the
       trace;
@@ -167,8 +171,16 @@ def captureAsk(name, args):
     is the one the turn was about, and asking to see it stands even when
     the move was refused named -- the same the redraw's target earns
     today.
+
+    The question is asked about the GESTURE, not about the spelling the
+    turn typed: a merged group answers one name (``plot``, and the next
+    families that follow it), and the capture rule was written gesture by
+    gesture. A turn that drew through ``plot(mode="single")`` moved a
+    figure exactly as ``plot_one`` did, and a capture list that missed it
+    is a turn that leaves the user a transcript and no picture.
     """
     args = args or {}
+    name = gestureOf(name, args)
     if name in ('get_screenshot', 'focus_window'):
         return args.get('window', 'app')
     if name == 'plot_one':

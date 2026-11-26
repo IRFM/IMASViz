@@ -57,8 +57,9 @@ def test_two_local_users_are_isolated(tmp_path):
         # User A opens the reference case.
         openByA = client.post(
             '/api/tool',
-            json={'name': 'open_case',
-                  'args': {'uri': uri,
+            json={'name': 'manage_case',
+                  'args': {'action': 'open',
+                           'uri': uri,
                            'dd_version': CASE_DATA_DICTIONARY_VERSION}},
             headers=authA)
         assert openByA.status_code == 200, openByA.text

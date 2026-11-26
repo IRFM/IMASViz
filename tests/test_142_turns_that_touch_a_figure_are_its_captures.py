@@ -14,9 +14,10 @@ souvent que je dise que je ne vois pas le plot pour que cela déclenche
 une capture (et ca n'a marche pas tout le temps même en disant ça). »
 
 The repro this file pins, word for word: « trace 2 boucles sur la même
-figure » then « multiplie la première courbe par 3 » (a `scale_curve`).
+figure » then « multiplie la première courbe par 3 » (a
+`transform_curve` whose `operation` is `scale`).
 Before the fix the second prompt left a transcript and nothing else:
-`scale_curve` changes what the figure SHOWS without redrawing it, so it
+that call changes what the figure SHOWS without redrawing it, so it
 was neither the figure the turn drew (the key was held before and after)
 nor a window the turn asked to see -- the figure reached the screen only
 if the model decided to call `focus_window` on top, with the key exactly
@@ -78,6 +79,13 @@ def test_captureAsk_reads_the_figure_of_the_mutation_gestures():
     for name in ('curve_stats', 'export_curve'):
         assert captureAsk(name, {'figure_key': 'SlicesPlot1'}) is None, \
             'a read is not a figure the user must see: %s' % name
+    # The same two reads spelled as a turn spells them today: one name and
+    # an ``action`` saying which. A turn that read the numbers back must not
+    # end with a capture ask any more than the gesture it means does.
+    for action in ('stats', 'export'):
+        assert captureAsk('read_figure',
+                          {'action': action,
+                           'figure_key': 'SlicesPlot1'}) is None, action
 
 
 def test_captureAsk_reads_the_other_ask_shapes_and_the_absences():
@@ -91,6 +99,20 @@ def test_captureAsk_reads_the_other_ask_shapes_and_the_absences():
     assert captureAsk('plot_one',
                       {'uri': CASE_URI, 'path': 'core.ion[0].temp',
                        'into_figure_key': 'SlicesPlot1'}) == 'SlicesPlot1'
+    # The same two shapes spelled as a turn spells them today: a merged
+    # group answers one name and a discriminant, while the rule above is
+    # written gesture by gesture. A ``plot(mode="single")`` that reached a
+    # different answer than the ``plot_one`` it means is a turn that leaves
+    # the user a transcript and no picture.
+    assert captureAsk('plot', {'mode': 'single', 'uri': CASE_URI,
+                               'path': 'core.ion[0].temp'}) is None
+    assert captureAsk('plot', {'mode': 'single', 'uri': CASE_URI,
+                               'path': 'core.ion[0].temp',
+                               'into_figure_key': 'SlicesPlot1'}) \
+        == 'SlicesPlot1'
+    assert captureAsk('plot', {'mode': 'slice', 'uri': CASE_URI,
+                               'path': 'core.ion[0].temp',
+                               'time': 3.0}) is None
     assert captureAsk('get_screenshot', {'window': 'SlicesPlot1'}) \
         == 'SlicesPlot1'
     assert captureAsk('get_screenshot', {}) == 'app'
@@ -148,14 +170,15 @@ def test_a_prompt_that_moved_a_figure_keeps_its_capture(qapp, tmp_path):
     directory, the PNG the user acts on."""
     llm = CliLLMClient([
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(content='Les deux boucles sont tracées.',
                     finish_reason='stop'),
         LLMResponse(tool_calls=[
-            {'name': 'scale_curve',
-             'args': {'figure_key': 'SlicesPlot1', 'factor': 3}}],
+            {'name': 'transform_curve',
+             'args': {'figure_key': 'SlicesPlot1', 'operation': 'scale',
+                      'factor': 3}}],
             content=''),
         LLMResponse(content='C\'est fait, la courbe est triplée.',
                     finish_reason='stop'),
@@ -186,8 +209,8 @@ def test_a_prompt_that_only_named_a_figure_saves_the_answer_alone(
     that drew it, where the user already has it."""
     llm = CliLLMClient([
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(content='La figure est tracée.',
                     finish_reason='stop'),
@@ -212,18 +235,18 @@ def test_a_prompt_that_only_named_a_figure_saves_the_answer_alone(
 def test_an_explicit_show_of_a_held_figure_is_a_capture(qapp, tmp_path):
     """The half this rule still owes to the user: when the prompt
     ASKS to see the held figure — the "montre-moi SlicesPlot1" that
-    reaches it — the `focus_window` it earned is the capture ask, and
+    reaches it — the focus it earned is the capture ask, and
     the figure is in this prompt's directory like any other ask."""
     llm = CliLLMClient([
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(content='La figure est tracée.',
                     finish_reason='stop'),
         LLMResponse(tool_calls=[
-            {'name': 'focus_window',
-             'args': {'window': 'SlicesPlot1'}}],
+            {'name': 'manage_window',
+             'args': {'action': 'focus', 'window': 'SlicesPlot1'}}],
             content='C’est devant.',
         ),
         LLMResponse(content='C’est devant.', finish_reason='stop'),
@@ -253,18 +276,19 @@ class MutatingWebCore(WebFakeCore):
 def test_the_web_turn_that_moved_a_figure_keeps_its_capture(qapp, tmp_path):
     """The same hole reported on the web surface, the one the user
     tested: the figure is captured in the turn that drew it, and AGAIN
-    in the turn that moved its curve -- `scale_curve` asking nothing --
+    in the turn that moved its curve -- the transform asking nothing --
     and a mention the turn does not act on is neither a picture nor a
     refusal, as in the REPL."""
     llm = FakeLLMClient([
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': WEB_CASE_URI, 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': WEB_CASE_URI, 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(content='La figure est tracée.', finish_reason='stop'),
         LLMResponse(tool_calls=[
-            {'name': 'scale_curve',
-             'args': {'figure_key': 'SlicesPlot1', 'factor': 3}}],
+            {'name': 'transform_curve',
+             'args': {'figure_key': 'SlicesPlot1', 'operation': 'scale',
+                      'factor': 3}}],
             content=''),
         LLMResponse(content='La courbe est triplée.',
                     finish_reason='stop'),

@@ -202,12 +202,14 @@ def test_the_loop_dispatches_the_personal_edit_to_the_core(home):
     not a refusal: the gate holds for the shared journal only, and
     the dispatch reaches the core with the fields it was named — the
     same ``AgentLoop._dispatch`` the page's Save button reaches
-    through, with the same note answered on the disk it is under."""
+    through, with the same note answered on the disk it is under. The
+    notebook answers one tool, so this is the spelling both faces can
+    type; the gesture the core answers is the edit."""
     note = _note(home, machine='WEST', shot='54924')
     loop = _loop(McpGuiCore.__new__(McpGuiCore))
     answer = loop._dispatch(
-        'edit_note',
-        {'scope': 'personal', 'note_id': note['id'],
+        'manage_note',
+        {'action': 'edit', 'scope': 'personal', 'note_id': note['id'],
          'text': 'edited by the loop.'},
         requested_by='model',
         user_prompt='change that line about the plasma')
@@ -224,18 +226,21 @@ def test_the_loop_refuses_an_unknown_parameter_of_edit_note(home):
     caller gave and the ones the tool holds — the same guard test_119
     pins for the page's direct calls, because the loop and the page
     run the one ``_dispatch``; a ``bogus`` the caller invented is the
-    named refusal, not a ``TypeError`` the caller cannot read."""
+    named refusal, not a ``TypeError`` the caller cannot read. The
+    refusal spells the group, because that is the call the caller made."""
     note = _note(home, machine='WEST')
     loop = _loop(McpGuiCore.__new__(McpGuiCore))
     with pytest.raises(ValueError) as exc:
-        loop._dispatch('edit_note',
-                       {'scope': 'personal', 'note_id': note['id'],
-                        'bogus': 'a word'},
+        loop._dispatch('manage_note',
+                       {'action': 'edit', 'scope': 'personal',
+                        'note_id': note['id'], 'bogus': 'a word'},
                        requested_by='model',
                        user_prompt='edit that note')
     refusal = str(exc.value)
     assert 'bogus' in refusal, \
         'the refusal names the parameter the caller gave: %r' % refusal
+    assert 'manage_note(action="edit")' in refusal, \
+        'the refusal names the call as it is offered: %r' % refusal
     for held in ('scope', 'note_id', 'text', 'author', 'machine',
                  'campaign', 'shot', 'date', 'title'):
         assert held in refusal, \

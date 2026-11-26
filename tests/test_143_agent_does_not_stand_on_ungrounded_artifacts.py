@@ -147,8 +147,8 @@ def test_a_fresh_figure_claim_is_reanchored_to_the_draw(qapp):
         LLMResponse(content='Plot3 shows the flux loop: value 1.2 W.',
                     tool_calls=None, finish_reason='stop'),
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': 'imas:hdf5', 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': 'imas:hdf5', 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(content='Plot1 shows the flux loop.',
                     tool_calls=None, finish_reason='stop'),
@@ -164,15 +164,21 @@ def test_a_fresh_figure_claim_is_reanchored_to_the_draw(qapp):
 
 def test_a_fabricated_report_is_reanchored_to_the_write(qapp):
     """A report the answer claims but no report call wrote is refused by
-    name, naming the two report tools; the redo that actually writes
-    stands and its path then reads back in the answer, unflagged."""
+    name, naming the tool that writes one; the redo that actually writes
+    stands and its path then reads back in the answer, unflagged.
+
+    The re-anchor text is spelled from the tool table, so what it names is
+    ``generate_report(scope=...)`` -- the one report call the model is
+    offered. A re-anchor naming a merged-away tool would be answered with a
+    call refused for its name, and the guard would look like the bug."""
     out = runTurn(Core(), [
         LLMResponse(
             content='Le rapport HTML est écrit dans '
                     'rapport_pression.html, 12 courbes.',
             tool_calls=None, finish_reason='stop'),
         LLMResponse(tool_calls=[
-            {'name': 'case_report', 'args': {'uri': 'imas:hdf5'}}],
+            {'name': 'generate_report',
+             'args': {'scope': 'case_loaded', 'uri': 'imas:hdf5'}}],
             content=''),
         LLMResponse(content='Le rapport est dans case-report.html.',
                     tool_calls=None, finish_reason='stop'),
@@ -180,8 +186,8 @@ def test_a_fabricated_report_is_reanchored_to_the_write(qapp):
     assert out['finished'] == [None]
     joined = ' '.join(out['lines'])
     assert 'REFUSAL' in joined
-    assert 'plot_report' in joined or 'case_report' in joined, \
-        'the refusal must name the tools that write a report'
+    assert 'generate_report' in joined, \
+        'the refusal must name the call that writes a report: %s' % joined
     assert out['core'].written, 'the redo must actually write the report'
 
 
@@ -213,11 +219,12 @@ def test_a_real_figure_and_a_real_report_stand(qapp):
     core = Core()
     out = runTurn(core, [
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': 'imas:hdf5', 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': 'imas:hdf5', 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(tool_calls=[
-            {'name': 'plot_report', 'args': {'figure_key': 'Plot1'}}],
+            {'name': 'generate_report',
+             'args': {'scope': 'plot', 'figure_key': 'Plot1'}}],
             content=''),
         LLMResponse(content='Plot1 montre la pression; le rapport est dans '
                             'plot-report.html, 3 courbes.',
@@ -232,12 +239,17 @@ def test_a_closed_figure_mentioned_stands(qapp):
     """The close of a real figure is not a fabrication: the model closes
     Plot2 (the user asked for it, so the destructive gate lets it) and
     reports it. Plot2 is in the ground set the loop tracked, so the
-    mention stands -- the guard must not refuse an honest close."""
+    mention stands -- the guard must not refuse an honest close.
+
+    The close is asked as the windows group answers it, and the closed key
+    is read back off the `window` of that call: the loop watches what the
+    model typed, not what the gesture behind it was renamed to."""
     core = Core()
     core._open = {'Plot1', 'Plot2'}
     out = runTurn(core, [
         LLMResponse(tool_calls=[
-            {'name': 'close_window', 'args': {'key': 'Plot2'}}],
+            {'name': 'manage_window',
+             'args': {'action': 'close', 'window': 'Plot2'}}],
             content=''),
         LLMResponse(content='Plot2 est fermée, Plot1 reste ouverte.',
                     tool_calls=None, finish_reason='stop'),

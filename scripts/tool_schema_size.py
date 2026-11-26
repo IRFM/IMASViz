@@ -20,11 +20,26 @@ payload, and they are prose, not plumbing. This script says which part
 of the payload is which, tool by tool and group by group, so a proposed
 merge can be quoted as a number instead of a feeling.
 
-It reads the two faces off their **source**, not by importing them:
+It reads the vocabulary off its **source**, not by importing it:
 ``imasviz.VizAgent.tools`` sits behind a package ``__init__`` that pulls
-Qt and the IMAS HLI, and ``mcp_server.tools`` imports the MCP SDK. A
-measurement that needs the module stack loaded is a measurement nobody
-re-runs.
+Qt and the IMAS HLI. A measurement that needs the module stack loaded is a
+measurement nobody re-runs.
+
+There is **one** vocabulary to read. Since T6 ``mcp_server/tools.py``
+builds its tools by walking ``TOOLS``, so its names, its descriptions and
+its parameter notes are these entries and cannot be measured beside them;
+what is read there is the residue -- a tool declared by hand, which is the
+shape the drift took before that pass, and which ``test_177`` refuses.
+``test_174`` asks that the residue stays empty.
+
+The last line of the loop face is the same vocabulary spelled as the
+table's **offers** rather than as its tools. That used to be a projection
+-- what a merge still to come would cost. ``test_175`` refuses an offer the
+faces answer nowhere, so there is no merge left to imagine and the line
+answers the present: it must equal the payload to the character, and
+``test_174`` pins that equality. A line that used to read "-6.2 %" was not
+a saving; it was this script forgetting to count the names of its own
+parameters.
 
     python3 scripts/tool_schema_size.py
     python3 scripts/tool_schema_size.py --json /tmp/tools.json
@@ -51,18 +66,36 @@ MCP_SOURCE = os.path.join(REPO, 'mcp_server', 'tools.py')
 # docstring: the exact numbers this script reports are characters.
 CHARS_PER_TOKEN = 4.0
 
-# What one tool costs before a word of its own: the OpenAI-shape envelope
-# the schema is wrapped in. Measured, not guessed -- see `_plumbing`.
-def _plumbing():
-    return len(_json({
+# The OpenAI-shape envelope one tool travels in, filled or empty. `_json`
+# of the empty one is what a tool costs before a word of its own.
+def _envelope(name, description, properties, required):
+    """One tool as the endpoint sends it, filled or empty.
+
+    The projection is measured through this and never by adding its parts,
+    because a sum over ``properties.values()`` drops every parameter NAME:
+    that is 16 of the 39 characters the old arithmetic was off by on
+    ``manage_case``, and 1 825 over the whole payload. The envelope is what
+    travels, so measuring it cannot be off by a piece of the shape it
+    describes.
+
+    ``required`` is the list, or ``None`` for a schema that carries no such
+    key at all -- which two of this vocabulary's tools do (``get_screenshot``,
+    ``get_logs``: nothing is mandatory about a screen or a log). Inventing an
+    empty one there writes 14 characters the wire never sends.
+    """
+    parameters = {'type': 'object', 'properties': properties,
+                  'additionalProperties': False}
+    if required is not None:
+        parameters['required'] = required
+    return {
         'type': 'function',
-        'function': {
-            'name': '',
-            'description': '',
-            'parameters': {'type': 'object', 'properties': {},
-                           'required': [], 'additionalProperties': False},
-        },
-    }))
+        'function': {'name': name, 'description': description,
+                     'parameters': parameters},
+    }
+
+
+def _plumbing():
+    return len(_json(_envelope('', '', {}, [])))
 
 
 def _json(value):
@@ -106,41 +139,42 @@ def _sourceConstants(path, literalNames):
     return [namespace[name] for name in literalNames]
 
 
-def _mcpFace(path):
-    """The tools the MCP face declares, and the prose each one carries.
+def _handWrittenTools(path):
+    """The tools ``mcp_server/tools.py`` declares for itself.
 
-    FastMCP builds that face's schema from the decorated function: its
-    description is the docstring and its parameters come from the
-    signature. So the docstring lengths and the signature lengths are what
-    that face sends, and the count is what its client is offered.
+    Since T6 the honest answer is an empty list: that file walks ``TOOLS``
+    and assembles one tool per entry, so its name list, its descriptions
+    and its parameter notes ARE these entries -- there is nothing beside
+    the table to weigh. What is read here is the residue: a ``server.tool``
+    call naming a tool with a literal, in either shape (a decorator or the
+    registration line the generator uses). One of those coming back is a
+    second spelling of one gesture, which is how the two faces drifted
+    apart before the pass that merged them, and it is refused by
+    ``test_177`` -- this script only prints the count, so that a number
+    quoted from it says what it is measuring.
     """
     tree = ast.parse(open(path, encoding='utf-8').read())
-    tools = []
+    spelled = []
     for node in ast.walk(tree):
-        if not isinstance(node, ast.FunctionDef):
+        if not isinstance(node, ast.Call):
             continue
-        for decorator in node.decorator_list:
-            if not isinstance(decorator, ast.Call):
-                continue
-            names = [kw.value.value for kw in decorator.keywords
-                     if kw.arg == 'name']
-            if not names:
-                continue
-            doc = ast.get_docstring(node) or ''
-            arguments = [a.arg for a in node.args.args
-                         if a.arg not in ('self', 'ctx')]
-            tools.append({'name': names[0],
-                          'docstringChars': len(doc),
-                          'docstringWords': _words(doc),
-                          'signatureChars': len(ast.unparse(node.args)),
-                          'parameters': arguments})
-    return tools
+        function = node.func
+        if not (isinstance(function, ast.Attribute)
+                and function.attr == 'tool'):
+            continue
+        for keyword in node.keywords:
+            if keyword.arg == 'name' and isinstance(keyword.value,
+                                                    ast.Constant) \
+                    and isinstance(keyword.value.value, str):
+                spelled.append(keyword.value.value)
+    return spelled
 
 
 def measure(loopSource=LOOP_SOURCE, mcpSource=MCP_SOURCE):
     """Every number the report prints, in one dictionary."""
-    tools, families, instructions = _sourceConstants(
-        loopSource, ['TOOLS', 'FAMILIES', 'SYSTEM_INSTRUCTIONS'])
+    tools, families, instructions, shared = _sourceConstants(
+        loopSource, ['TOOLS', 'FAMILIES', 'SYSTEM_INSTRUCTIONS',
+                     'SHARED_NOTES'])
 
     payload = _json(tools)
     descriptions = {t['function']['name']: t['function']['description']
@@ -160,37 +194,99 @@ def measure(loopSource=LOOP_SOURCE, mcpSource=MCP_SOURCE):
     parameterChars = sum(max(lengths) for lengths in blocks.values()) \
         + repeated
 
-    # The projection: every group of `FAMILIES` offered under one name.
-    # The members' descriptions are kept verbatim (a merge that drops what
-    # a tool answers is not a merge, it is a loss), and one block per
-    # parameter name -- the longest, which is the one worth keeping. So the
-    # saving is the plumbing and the duplicated blocks, and nothing else:
-    # the prose is untouched, which is the point of printing it separately.
+    # The prose of the notes alone, told apart from the plumbing of the
+    # block that carries it (a name, a type, the `description` key): the
+    # half a shorter wording reduces, and the half of the parameter cost
+    # that no wording can touch.
+    notes = [block.get('description')
+             for tool in tools
+             for block in tool['function']['parameters'].get(
+                 'properties', {}).values()]
+    noteChars = sum(len(note) for note in notes if note)
+    noteWords = sum(_words(note) for note in notes if note)
+    silentParameters = sum(1 for note in notes if not note)
+
+    # The spelling to compare: the vocabulary as the table's OFFERS, which
+    # is what a merged group is actually offered as -- "the drawing" is
+    # `plot(mode=...)` AND `get_signal`, not one name. The members'
+    # descriptions are kept verbatim (a merge that drops what a tool
+    # answers is not a merge, it is a loss), one block per parameter name --
+    # the longest, which is the one worth keeping -- plus the discriminant's
+    # own block, which a merge ADDS: `mode` is a parameter no member had.
+    # The prose is therefore untouched by a merge, which is the point of
+    # printing it separately above.
+    #
+    # It is measured as one envelope per offer, never as a sum of parts,
+    # and `test_175` is why that matters here: every offer the table spells
+    # is an offer the faces answer, so there is no pending merge left to
+    # imagine -- this answers the present, and `projectedPayloadChars ==
+    # payloadChars` is the reading that says so. An offer still to come
+    # would be the union of its members' schemas and would keep their prose
+    # verbatim; that branch is arithmetic too, it just has no ground truth
+    # to be checked against until it is built.
     plumbing = _plumbing()
+    schemaOf = {t['function']['name']: t['function']['parameters']
+                for t in tools}
     merged = 0
-    for _, members in families:
-        props = {}
-        required = set()
-        for member in members:
-            schema = next(t['function']['parameters']
-                          for t in tools if t['function']['name'] == member)
-            for name, block in schema.get('properties', {}).items():
-                if len(_json(block)) > len(_json(props.get(name, {}))):
-                    props[name] = block
-            required.update(schema.get('required', []))
-        merged += plumbing
-        merged += len(_json(descriptions.get(members[0], ''))) - 2
-        merged += sum(len(_json(descriptions[m])) - 2 for m in members[1:])
-        merged += sum(len(_json(b)) for b in props.values())
-        merged += len(_json(sorted(required)))
+    offered = 0
+    for _label, members, offers in families:
+        spelled = list(offers) if offers else [
+            (name, None, ()) for name in members]
+        for offerName, discriminator, actions in spelled:
+            offered += 1
+            names = [member for _action, member in actions] or [offerName]
+            # An offer already on the wire carries its own schema and its
+            # own prose; an offer still to come is the union of its
+            # members'.
+            if offerName in schemaOf:
+                sources = [schemaOf[offerName]]
+                prose = [descriptions[offerName]]
+            else:
+                sources = [schemaOf[m] for m in names if m in schemaOf]
+                prose = [descriptions[m] for m in names if m in descriptions]
+            props = {}
+            required = set()
+            hasRequired = any('required' in schema for schema in sources)
+            for schema in sources:
+                for name, block in schema.get('properties', {}).items():
+                    if len(_json(block)) > len(_json(props.get(name, {}))):
+                        props[name] = block
+                required.update(schema.get('required', []))
+            if discriminator and discriminator not in props:
+                props[discriminator] = {
+                    'type': 'string',
+                    'enum': [action for action, _member in actions]}
+                required.add(discriminator)
+                hasRequired = True
+            merged += len(_json(_envelope(offerName, '\n'.join(prose),
+                                          props,
+                                          sorted(required) if hasRequired
+                                          else None)))
+    # The projection is spelled as a list too, because that is what a turn
+    # carries: the brackets around the envelopes and the comma between them,
+    # or the two halves of the comparison are not the same shape.
+    merged += offered + 1
+
+    # What a group costs TODAY is the sum of the schemas it has on the wire
+    # today: its members while they are still offered one by one, or its
+    # offer once the merge is done. A merged member is in no schema any
+    # more, so it counts for nothing here -- which is the point: the
+    # reports group's cost moved from three tools to one.
+    def offeredToday(members, offers):
+        names = [name for name in members if name in sizes]
+        names += [offer[0] for offer in (offers or ()) if offer[0] in sizes]
+        return names
 
     groups = [{'label': label, 'members': list(members),
-               'currentChars': sum(sizes[m] for m in members)}
-              for label, members in families]
+               'offers': len(offers) if offers else len(members),
+               'currentChars': sum(sizes[name]
+                                   for name in offeredToday(members, offers))}
+              for label, members, offers in families]
 
-    mcp = _mcpFace(mcpSource)
-    loopNames = {t['function']['name'] for t in tools}
-    mcpNames = {t['name'] for t in mcp}
+    # One vocabulary, two faces. The endpoint's tool list IS this list --
+    # it walks the table -- so the only thing to read in that file is
+    # whether a tool escaped the generation and answers its own name again.
+    hand = _handWrittenTools(mcpSource)
 
     return {
         'tools': len(tools),
@@ -201,10 +297,19 @@ def measure(loopSource=LOOP_SOURCE, mcpSource=MCP_SOURCE):
         'parameterChars': parameterChars,
         'distinctParameters': len(blocks),
         'repeatedParameterChars': repeated,
+        'parameterNoteChars': noteChars,
+        'parameterNoteWords': noteWords,
+        'silentParameters': silentParameters,
+        'sharedParameterWords': len(shared),
         'plumbingCharsPerTool': plumbing,
+        'plumbingCharsWithoutRequired': len(
+            _json(_envelope('', '', {}, None))),
+        'toolsWithoutRequiredList': sum(
+            1 for t in tools if 'required' not in t['function']
+            ['parameters']),
         'systemInstructionsChars': len(instructions),
         'groups': len(families),
-        'projectedTools': len(families),
+        'projectedTools': offered,
         'projectedPayloadChars': merged,
         'projectedPayloadTokens': int(merged / CHARS_PER_TOKEN),
         'asciiEscapeChars': len(_json(tools)) - len(
@@ -212,18 +317,21 @@ def measure(loopSource=LOOP_SOURCE, mcpSource=MCP_SOURCE):
         'largest': sorted(((sizes[n], n) for n in sizes), reverse=True)[:10],
         'perTool': sizes,
         'groupBreakdown': groups,
-        'mcpTools': len(mcp),
-        'mcpDocstringChars': sum(t['docstringChars'] for t in mcp),
-        'mcpSignatureChars': sum(t['signatureChars'] for t in mcp),
-        'mcpOnly': sorted(mcpNames - loopNames),
-        'loopOnly': sorted(loopNames - mcpNames),
+        # The face the socket answers with: the same 23 entries, the same
+        # descriptions, the same notes -- the payload of a ``tools/list``
+        # round-trip, which is a one-off for a client and not a cost per
+        # turn. What is counted here is what escaped the generation.
+        'mcpTools': len(tools),
+        'mcpProseChars': sum(len(d) for d in descriptions.values()),
+        'mcpHandWritten': sorted(hand),
     }
 
 
 def _delta(current, baseline):
     lines = []
     for key in ('tools', 'payloadChars', 'payloadTokens', 'descriptionChars',
-                'repeatedParameterChars', 'projectedTools', 'mcpTools'):
+                'parameterNoteChars', 'repeatedParameterChars',
+                'projectedTools', 'mcpTools'):
         before, after = baseline.get(key), current.get(key)
         if isinstance(before, int) and isinstance(after, int):
             sign = after - before
@@ -246,37 +354,43 @@ def report(m):
           % (format(m['parameterChars'], ','),
              format(m['repeatedParameterChars'], ','),
              m['distinctParameters']))
+    print('  notes        : %s chars / %s words of that, %d blocks carrying '
+          'no note, %d shared words spelled once'
+          % (format(m['parameterNoteChars'], ','),
+             format(m['parameterNoteWords'], ','),
+             m['silentParameters'], m['sharedParameterWords']))
     print('  plumbing     : %d chars per tool before a word of its own'
-          % m['plumbingCharsPerTool'])
+          ' (%d for the %d that carry no required list)'
+          % (m['plumbingCharsPerTool'], m['plumbingCharsWithoutRequired'],
+             m['toolsWithoutRequiredList']))
     print('  instructions : %s chars (once per turn, beside the schemas)'
           % format(m['systemInstructionsChars'], ','))
-    print('  the MCP face declares %d tools (%s chars of docstring, %s of '
-          'signature)' % (m['mcpTools'],
-                          format(m['mcpDocstringChars'], ','),
-                          format(m['mcpSignatureChars'], ',')))
-    if m['mcpOnly'] or m['loopOnly']:
-        print('  the two faces are NOT the same list: %d named only by the '
-              'MCP face, %d only by the loop' % (len(m['mcpOnly']),
-                                                 len(m['loopOnly'])))
-        for label, names in (('mcp only', m['mcpOnly']),
-                             ('loop only', m['loopOnly'])):
-            if names:
-                print('    %s: %s' % (label, ', '.join(names)))
-    print('  projected on %d groups (one name each, descriptions kept, one '
-          'block per parameter): %d tools, %s chars (~%d tokens, %+.1f%%)'
-          % (m['groups'], m['projectedTools'],
+    print('  the MCP face is generated from these %d entries: same names, '
+          'same %s chars of description, same notes (test_177 pins that on '
+          'list_tools); %d declared by hand in mcp_server/tools.py'
+          % (m['mcpTools'], format(m['mcpProseChars'], ','),
+             len(m['mcpHandWritten'])))
+    if m['mcpHandWritten']:
+        print('    declared by hand, and therefore spelled twice: %s'
+              % ', '.join(m['mcpHandWritten']))
+    print('  spelled as the %d offers of those %d groups (a merged group '
+          'answers one name with a discriminant, the rest answer themselves;'
+          ' descriptions kept, one block per parameter): %d tools, %s chars '
+          '(~%d tokens, %+.1f%% -- test_175 leaves no merge to project, so '
+          'these are the same %s characters read two ways)'
+          % (m['projectedTools'], m['groups'], m['projectedTools'],
              format(m['projectedPayloadChars'], ','),
              m['projectedPayloadTokens'],
              100.0 * (m['projectedPayloadChars'] - m['payloadChars'])
-             / m['payloadChars']))
+             / m['payloadChars'], format(m['payloadChars'], ',')))
     print('\nthe %d biggest tools' % len(m['largest']))
     for size, name in m['largest']:
         print('  %-26s %5d chars' % (name, size))
     print('\nthe groups, by what they cost today')
     for group in sorted(m['groupBreakdown'],
                         key=lambda g: -g['currentChars']):
-        print('  %-38s %2d tools  %6d chars'
-              % (group['label'], len(group['members']),
+        print('  %-38s %2d tools -> %2d offered  %6d chars'
+              % (group['label'], len(group['members']), group['offers'],
                  group['currentChars']))
 
 

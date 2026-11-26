@@ -245,12 +245,12 @@ def test_an_answered_turn_keeps_the_figure_it_drew(qapp, tmp_path):
     is the ask (a `get_screenshot` of the loop, or an `EXTRA_SHOTS` of
     the one-shot), not the by-product of the turn. The figure the turn
     drew is addressed, and the one the turn did not ask for is not among
-    its files -- here the figure is the one its own `plot_one` opened
+    its files -- here the figure is the one its own drawing opened
     in the same turn, and the stand-in held none before it."""
     llm = FakeLLMClient([
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(content='La figure est tracée.', finish_reason='stop'),
     ])
@@ -259,7 +259,7 @@ def test_an_answered_turn_keeps_the_figure_it_drew(qapp, tmp_path):
 
     text = '\n'.join(record['lines'])
     assert 'La figure est tracée.' in text
-    assert 'plot_one' in text
+    assert 'plot:' in text
 
     # The figure is on disk under a directory the session names, and its
     # base64 is in the record -- the `data:` URI the page draws from.
@@ -299,8 +299,8 @@ def test_a_turn_captures_what_it_drew_or_asked_and_only_that(qapp, tmp_path):
     llm = FakeLLMClient([
         # First: the figure is drawn, then the interface is asked.
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(tool_calls=[
             {'name': 'get_screenshot', 'args': {'window': 'app'}}],
@@ -308,7 +308,9 @@ def test_a_turn_captures_what_it_drew_or_asked_and_only_that(qapp, tmp_path):
         LLMResponse(content='La figure est tracée, et l''interface.',
                     finish_reason='stop'),
         # Second: nothing is drawn and nothing is asked.
-        LLMResponse(tool_calls=[{'name': 'list_cases', 'args': {}}], content=''),
+        LLMResponse(tool_calls=[{'name': 'manage_case',
+                                 'args': {'action': 'list'}}],
+                    content=''),
         LLMResponse(content='Le cas est ouvert.', finish_reason='stop'),
         # Third: the capture of the older figure is asked.
         LLMResponse(tool_calls=[
@@ -347,16 +349,23 @@ def test_a_turn_captures_what_it_drew_or_asked_and_only_that(qapp, tmp_path):
 
 
 def test_a_turn_that_writes_a_report_names_it_in_the_record(qapp, tmp_path, monkeypatch):
-    """The self-contained HTML the turn's `plot_report` writes is named
+    """The self-contained HTML the turn's report call writes is named
     in the record -- the `done` event the page reads, and what the
     Reports section fills from -- not a file the user has to find on
     disk themselves. The folder the core's `_namedReport` resolves is
     under $HOME, so pointing HOME at the test's own tree points it there
-    too (the pattern `test_39` applies to the configuration files)."""
+    too (the pattern `test_39` applies to the configuration files).
+
+    The page spells the call the model is offered (`generate_report` with
+    a `scope`); the record keys on the gesture that ran, because that is
+    what the loop's account of the turn holds. A report that reaches the
+    disk and never the record is a Reports section that stays empty over a
+    file that exists."""
     monkeypatch.setenv('HOME', str(tmp_path / 'home'))
     llm = FakeLLMClient([
-        LLMResponse(tool_calls=[{'name': 'plot_report',
-                                 'args': {'figure_key': 'SlicesPlot1',
+        LLMResponse(tool_calls=[{'name': 'generate_report',
+                                 'args': {'scope': 'plot',
+                                          'figure_key': 'SlicesPlot1',
                                           'name': 'tour_report'}}],
                      content=''),
         LLMResponse(content='Le rapport est écrit.', finish_reason='stop'),
@@ -377,7 +386,9 @@ def test_a_turn_that_writes_no_report_names_none(qapp, tmp_path, monkeypatch):
     from -- not a missing key the page would have to guess at."""
     monkeypatch.setenv('HOME', str(tmp_path / 'home'))
     llm = FakeLLMClient([
-        LLMResponse(tool_calls=[{'name': 'list_cases', 'args': {}}], content=''),
+        LLMResponse(tool_calls=[{'name': 'manage_case',
+                                 'args': {'action': 'list'}}],
+                    content=''),
         LLMResponse(content='Le cas est ouvert.', finish_reason='stop'),
     ])
     session, core = build(qapp, tmp_path, llm=llm)
@@ -396,8 +407,8 @@ def test_a_refused_turn_is_named_and_still_saves(qapp, tmp_path):
     turn has is the one its `plot_one` opened in it."""
     llm = FakeLLMClient([
         LLMResponse(tool_calls=[
-            {'name': 'plot_one',
-             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            {'name': 'plot',
+             'args': {'mode': 'single', 'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
             content=''),
         LLMResponse(content='partial...', finish_reason='length'),
     ])
@@ -416,7 +427,9 @@ def test_max_turns_stops_the_loop_and_names_it(qapp, tmp_path):
     (here 6, four more than the limit of 2, so a loop that does not stop
     would run them off and the record would carry no error at all)."""
     llm = FakeLLMClient(
-        [LLMResponse(tool_calls=[{'name': 'list_cases', 'args': {}}], content='')
+        [LLMResponse(tool_calls=[{'name': 'manage_case',
+                                  'args': {'action': 'list'}}],
+                     content='')
          for _ in range(6)])
     session, core = build(qapp, tmp_path, llm=llm, max_turns=2)
     record = inWorker(lambda: session.runTurn('une demande qui ne s''arrête pas'), qapp)
@@ -426,7 +439,7 @@ def test_max_turns_stops_the_loop_and_names_it(qapp, tmp_path):
     assert len(llm.responses) == 4
     # The last action -- the gesture that ran when the budget ran out -- is
     # named in the stop, so the run reads as delivered-and-limited, not failed.
-    assert 'list_cases' in record['error']
+    assert 'manage_case' in record['error']
 
 
 def test_the_context_survives_between_two_turns(qapp, tmp_path):
@@ -435,9 +448,13 @@ def test_the_context_survives_between_two_turns(qapp, tmp_path):
     `test_113` pins the same rule for the REPL; this pins it for the session
     the page drives."""
     llm = FakeLLMClient([
-        LLMResponse(tool_calls=[{'name': 'list_cases', 'args': {}}], content=''),
+        LLMResponse(tool_calls=[{'name': 'manage_case',
+                                 'args': {'action': 'list'}}],
+                    content=''),
         LLMResponse(content='Premier : le cas est ouvert.', finish_reason='stop'),
-        LLMResponse(tool_calls=[{'name': 'list_cases', 'args': {}}], content=''),
+        LLMResponse(tool_calls=[{'name': 'manage_case',
+                                 'args': {'action': 'list'}}],
+                    content=''),
         LLMResponse(content='Deuxieme : toujours le meme cas.', finish_reason='stop'),
     ])
     session, core = build(qapp, tmp_path, llm=llm)
@@ -482,20 +499,25 @@ def test_call_gesture_refuses_an_unknown_tool_by_name(qapp, tmp_path):
 
 
 def test_call_gesture_refuses_an_unknown_parameter_by_name(qapp, tmp_path):
-    """An argument a tool does not take is named, with the names it does
-    hold -- the same guard the agent's path takes, because `callGesture`
-    runs the loop's `_dispatch`. The page reads the reason, and the gesture
-    is not run."""
-    from imasviz.VizAgent.tools import TOOLS
-    plot_one = next(t for t in TOOLS if t['function']['name'] == 'plot_one')
-    allowed = list(plot_one['function']['parameters']['properties'])
+    """An argument a gesture does not take is named, with the names that
+    mode does hold -- the same guard the agent's path takes, because
+    `callGesture` runs the loop's `_dispatch`. The page reads the reason,
+    and the gesture is not run. The reason is spelled as the page typed it:
+    a group answers one name, so it is that name with the asked mode that
+    the refusal has to send back."""
+    from imasviz.VizAgent.tools import parametersOf
+    allowed = sorted(parametersOf('plot_one')['properties'])
     session, _ = build(qapp, tmp_path)
     out = inWorker(lambda: session.callGesture(
-        'plot_one', {'uri': CASE_URI, 'path': 'x', 'timeindex': 7}), qapp)
+        'plot', {'mode': 'single', 'uri': CASE_URI, 'path': 'x',
+                 'timeindex': 7}), qapp)
     assert out['error'] is not None
     assert 'timeindex' in out['error']
     for name in allowed:
         assert name in out['error']
+    assert 'plot(mode="single")' in out['error'], \
+        'the refusal names the call the page can type back, not the ' \
+        'gesture behind it'
 
 
 def test_call_gesture_forwarding_the_tensor_addressing(qapp, tmp_path):
@@ -536,7 +558,7 @@ def test_call_gesture_forwarding_the_tensor_addressing(qapp, tmp_path):
     for gesture, args in (
             ('get_signal', {'uri': uri, 'path': path,
                             'along': 'psi', 'indices': {'psi': 50}}),
-            ('plot_one', {'uri': uri, 'path': path,
+            ('plot', {'mode': 'single', 'uri': uri, 'path': path,
                           'along': 'psi', 'indices': {'psi': 50}})):
         out = inWorker(lambda g=gesture, a=args: session.callGesture(g, a), qapp)
         assert out['error'] is None, out.get('error')

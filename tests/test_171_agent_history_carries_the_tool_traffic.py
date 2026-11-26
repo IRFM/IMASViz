@@ -73,7 +73,8 @@ def test_an_accepted_turn_leaves_its_tool_traffic_in_the_history(qapp):
     the last line."""
     llm = FakeLLMClient([
         LLMResponse(content='',
-                    tool_calls=[{'name': 'list_cases', 'args': {}}],
+                    tool_calls=[{'name': 'manage_case',
+                                 'args': {'action': 'list'}}],
                     finish_reason='tool_calls'),
         LLMResponse(content='Here are the cases you asked for.',
                     tool_calls=None, finish_reason='stop'),
@@ -94,12 +95,12 @@ def test_an_accepted_turn_leaves_its_tool_traffic_in_the_history(qapp):
     assert assistant is not None, \
         'the assistant message with its tool_calls is the amnesia: ' \
         'the next ask cannot see the call the turn made'
-    assert assistant['tool_calls'][0]['function']['name'] == 'list_cases'
+    assert assistant['tool_calls'][0]['function']['name'] == 'manage_case'
     tool = next((m for m in history if m.get('role') == 'tool'), None)
     assert tool is not None, \
         'the tool result is gone from the history: the answer stands on ' \
         'a call the next ask cannot see'
-    assert tool['name'] == 'list_cases'
+    assert tool['name'] == 'manage_case'
     assert history[-1] == {'role': 'assistant',
                            'content': 'Here are the cases you asked for.'}
 
@@ -110,7 +111,8 @@ def test_the_next_ask_reads_the_previous_turns_calls(qapp):
     had cut away."""
     llm = FakeLLMClient([
         LLMResponse(content='',
-                    tool_calls=[{'name': 'list_cases', 'args': {}}],
+                    tool_calls=[{'name': 'manage_case',
+                                 'args': {'action': 'list'}}],
                     finish_reason='tool_calls'),
         LLMResponse(content='Here are the cases you asked for.',
                     tool_calls=None, finish_reason='stop'),
@@ -122,7 +124,7 @@ def test_the_next_ask_reads_the_previous_turns_calls(qapp):
     agent.ask('and what else does the session hold?', tools_mode='hide')
 
     second = llm.calls[2]['messages']
-    assert any(m.get('role') == 'tool' and m.get('name') == 'list_cases'
+    assert any(m.get('role') == 'tool' and m.get('name') == 'manage_case'
                for m in second), \
         'the second ask does not receive the first turn tool result: ' \
         'the follow-up stands on the amnesia'
@@ -140,7 +142,8 @@ def test_the_reanchor_is_not_in_the_history(qapp):
     must not carry it."""
     llm = FakeLLMClient([
         LLMResponse(content='',
-                    tool_calls=[{'name': 'list_cases', 'args': {}}],
+                    tool_calls=[{'name': 'manage_case',
+                                 'args': {'action': 'list'}}],
                     finish_reason='tool_calls'),
         # The deflection: the work is done, and the answer gives it back.
         LLMResponse(content='No pending task here; give me the case URI '

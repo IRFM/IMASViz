@@ -374,8 +374,8 @@ def _turnEvent(record):
             'refusals': record['refusals'],
             'images': record['images'],
             # The address of every picture of this turn -- the page's
-            # Focus and Screenshot buttons take that name to focus_window
-            # and get_screenshot.
+            # Focus and Screenshot buttons take that name to
+            # manage_window(action="focus") and get_screenshot.
             'image_windows': record.get('image_windows', []),
             # The windows this turn closed for good: the page drops the
             # cards they named from its gallery, so a close the loop did
@@ -390,7 +390,8 @@ def _turnSummary(record):
 
     `image_windows` is what the page rebuilds its gallery from on load:
     every picture of every turn, with the name the buttons send to
-    `focus_window` and `get_screenshot` -- the pictures are on disk under
+    `manage_window(action="focus")` and `get_screenshot` -- the pictures
+    are on disk under
     the turn's `dir`, and `/api/turns/{n}/shots/{name}` serves them.
     """
     return {'n': record['n'],

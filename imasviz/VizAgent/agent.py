@@ -32,6 +32,16 @@ from imasviz.VizAgent.tools import (
     SYSTEM_INSTRUCTIONS,
     CHAT_INSTRUCTIONS,
     TOOLS,
+    argumentsForMember,
+    callSpelling,
+    callSpellings,
+    gestureOf,
+    memberNames,
+    missingParameterRefusal,
+    missingParameters,
+    offeredNames,
+    offerHead,
+    resolveCall,
     unknownParameterRefusal,
     unknownParameters,
 )
@@ -133,7 +143,19 @@ def _userAskedForAPublish(user_prompt):
 # are the agent's own vocabulary, not names it recites from the case.
 # `_unfoundedIdsRefusal` keeps them out of its count for exactly that
 # reason: a "how do I do it later" answer is not a list.
-_TOOL_NAMES = frozenset(t['function']['name'] for t in TOOLS)
+#
+# Three spellings belong in that stop-list, and the seam is why. The names
+# on offer, the names the groups answer, and every gesture name the table
+# holds -- a gesture whose group is merged away is no longer something the
+# model may CALL, but a saved prompt (`~/.imasviz/agent_prompts`), a journal
+# line from before the merge, or a "how did I do it last time" answer may
+# still name it in words. Counting such a name as one the model invented
+# would refuse an honest answer for a spelling this application wrote itself.
+_TOOL_NAMES = frozenset(
+    [tool['function']['name'] for tool in TOOLS]
+    + list(offeredNames())
+    + list(memberNames())
+)
 
 
 def _serialisable(value):
@@ -384,6 +406,23 @@ class AgentLoop(QObject):
                 for i, tc in enumerate(response.tool_calls):
                     name = tc['name']
                     args = tc['args']
+                    # Two vocabularies, and the line between them is which
+                    # reader is on the other side. Everything the MODEL
+                    # reads back -- these two transcript lines, `last_action`
+                    # in the max-turns message, the `name` of the tool result
+                    # -- is spelled as the call was made: a model that is
+                    # answered in a vocabulary it was never offered answers
+                    # in that vocabulary next turn, and the next turn's call
+                    # is refused. Everything the loop's own guards ask --
+                    # which report wrote a file, which close took a figure
+                    # away, which note a journal line stands on, which figure
+                    # a turn worked on -- is asked about the GESTURE, because
+                    # that is what ran: `generate_report(scope="plot")`
+                    # grounded a `plot_report`, and a guard reading the group
+                    # name would refuse an honest answer about a file that
+                    # stands on disk. The guards' vocabulary is unchanged by
+                    # this; only how a call reaches them is.
+                    gesture = gestureOf(name, args)
                     # The call and its result are the traffic a `hide` run
                     # runs and hides: they stay in the artifact (the
                     # `fullLine`), they are cut from the live view. In
@@ -406,13 +445,20 @@ class AgentLoop(QObject):
                         # that earned them: a report path the answer may
                         # name, a figure the close ran. Grounded by a
                         # success -- a refused call is not a deliverable.
-                        if (name in ('plot_report', 'case_report',
-                                    'case_ids_report')
+                        if (gesture in ('plot_report', 'case_report',
+                                        'case_ids_report')
                                 and isinstance(result, dict)
                                 and result.get('saved_to')):
                             reports_written.add(result['saved_to'])
-                        if name == 'close_window':
-                            key = (args or {}).get('key')
+                        if gesture == 'close_window':
+                            # The key is read under the word the CALL spells
+                            # it: the windows group asks for a `window` and
+                            # the gesture behind it has always taken a `key`
+                            # (`ACTION_RENAMES`), and these are the arguments
+                            # the model typed, not the ones the core was
+                            # handed. A reader of `key` here would record no
+                            # figure and refuse an honest "Plot2 est fermée".
+                            key = (args or {}).get('window')
                             if key:
                                 closed_figures.add(key)
                         # The journal line, on the strength of the call that
@@ -420,8 +466,8 @@ class AgentLoop(QObject):
                         # because a call of this request wrote it -- a note
                         # no call wrote is what the guard refuses. Grounded
                         # on the success -- a refused call grounds nothing.
-                        if name in SHARED_JOURNAL_GESTURES:
-                            journals_written.add(name)
+                        if gesture in SHARED_JOURNAL_GESTURES:
+                            journals_written.add(gesture)
                         # The work and the reads of the request, per
                         # figure: a claim of a change on a figure stands
                         # on a successful call that did it (a draw into
@@ -429,10 +475,10 @@ class AgentLoop(QObject):
                         # that read it back -- grounded on the success,
                         # the way the report path is: a refused call
                         # grounds nothing.
-                        if name in _WORK_GESTURES:
+                        if gesture in _WORK_GESTURES:
                             acted_on.update(
                                 _groundedFigureKeys(args, result))
-                        elif name in _READ_GESTURES:
+                        elif gesture in _READ_GESTURES:
                             read_from.update(
                                 _groundedFigureKeys(args, result))
                     except Exception as e:
@@ -558,7 +604,8 @@ class AgentLoop(QObject):
             # wear the shape of a recited inventory -- yet no call of this
             # request did the work the answer reports, and no read of the
             # figure checked it: the state of a figure is what the call
-            # that changed it, or curve_stats, answers, not what was said.
+            # that changed it, or read_figure(action="stats"), answers,
+            # not what was said.
             # It runs after them, so a fabricated figure with its value
             # table is met by the guard whose re-anchor sends the model to
             # the read that would ground it first, and the claim of a
@@ -663,16 +710,22 @@ class AgentLoop(QObject):
         ]
         if len(names) < 3 and len(table_rows) < 3:
             return None
+        # The calls this names are spelled from the table, not by hand: an
+        # instruction naming a tool the model is no longer offered is a
+        # refusal that manufactures the next refused call.
         return (
             'your answer presents a list of names, or a figure and a '
             'table of values, but no tool was called this request to '
             'ground it; a list, curve or number you recite is not the '
             'truth of this session. Ground it: the case\'s IDS with '
-            'list_case_idss(uri) or list_idss(uri), the saved sessions '
-            'with list_sessions(), the profile\'s arrays with '
+            '%s or %s, the saved sessions '
+            'with %s, the profile\'s arrays with '
             'get_signal(uri, path, ...) -- and show its curve with '
-            'plot_one(uri, path, ...) -- and answer only from what those '
-            'calls return.')
+            '%s -- and answer only from what those '
+            'calls return.' % (callSpelling('list_case_idss'),
+                               callSpelling('list_idss'),
+                               callSpelling('list_sessions'),
+                               callSpelling('plot_one')))
 
     def _deflectionRefusal(self, content, last_action):
         """A final answer, after a successful tool, that gives the work back
@@ -721,7 +774,7 @@ class AgentLoop(QObject):
 
         This is the confabulation branch of ``ask``: the work behind the
         claim was never done. The instruction is to *do* it -- read the
-        arrays with ``get_signal``, draw the figure with ``plot_one`` --
+        arrays with ``get_signal``, draw the figure with ``plot`` --
         and answer only from what those calls return, so the next turn is
         either a real, tool-grounded answer or a repeated fabrication that
         the named refusal below finally turns away.
@@ -730,8 +783,9 @@ class AgentLoop(QObject):
             '[SYSTEM FEEDBACK] That answer named lists, figures, or '
             'values this request never read. Do the work: read the arrays '
             'with get_signal(uri, path, ...) and draw the owed curves '
-            'with plot_one(uri, path, ...), and answer only from what '
-            'those calls return. Request: "%s".' % user_prompt)
+            'with %s, and answer only from what '
+            'those calls return. Request: "%s".'
+            % (callSpelling('plot_one'), user_prompt))
 
     def _heldFigureKeys(self):
         """The figure keys the session holds now, through the
@@ -776,10 +830,9 @@ class AgentLoop(QObject):
             return (
                 'the answer says a report was written, but no '
                 'report call succeeded this request -- the file it '
-                'names was never produced. Write it: call '
-                'plot_report(figure_key), case_report(uri) or '
-                'case_ids_report(uri) and answer with the path that '
-                'call returns.')
+                'names was never produced. Write it: call %s and '
+                'answer with the path that call returns.'
+                % callSpellings('the reports'))
         # Only when the core can say which figures stand: with no ground
         # truth to answer against, a figure claim cannot be accused. A
         # core that can list but holds none (a fresh session) still does
@@ -789,12 +842,15 @@ class AgentLoop(QObject):
             if invented:
                 return (
                     'the answer presents %s with a curve it does not '
-                    'hold: the session has no such figure open -- '
-                    'list_windows() names what is, and it is not among '
-                    'them. Draw it: call plot_one(uri, path, ...), '
+                    'hold: the session has no such figure open -- %s '
+                    'names what is, and it is not among '
+                    'them. Draw it: call %s, '
                     'pill it onto its figure with into_figure_key where '
                     'a curve belongs, and answer from what that call '
-                    'returns.' % ' and '.join(sorted(invented)))
+                    'returns.'
+                    % (' and '.join(sorted(invented)),
+                       callSpelling('list_windows'),
+                       callSpelling('plot_one')))
         return None
 
     def _artifactReanchor(self, user_prompt):
@@ -804,11 +860,11 @@ class AgentLoop(QObject):
         return (
             '[SYSTEM FEEDBACK] That figure or report does not stand: '
             'no call of this request produced it. Do the work -- '
-            'plot_one(uri, path, ...) for the figure, or '
-            'plot_report(figure_key) / case_report(uri) / '
-            'case_ids_report(uri) for the report -- and answer '
-            'only from what those calls return. Request: "%s".'
-            % user_prompt)
+            '%s for the figure, or %s for the '
+            'report -- and answer only from what those calls return. '
+            'Request: "%s".'
+            % (callSpelling('plot_one'),
+               callSpellings('the reports'), user_prompt))
 
     def _unperformedWorkRefusal(self, content, acted_on, read_from,
                                 closed_figures):
@@ -841,14 +897,16 @@ class AgentLoop(QObject):
             'transform applied, an axis moved -- but no call of this '
             'request did that work on that figure, and no read of the '
             'figure checked it: the state of a figure is what the call '
-            'that changed it, or curve_stats, answers -- not what was '
-            'said. If the call ran and was refused, report the refusal '
-            'it named; otherwise do the work -- plot_one(uri, path, '
-            '...) with into_figure_key to add the curve, '
-            'scale_curve / shift_curve / normalize_curve for a '
-            'transform, set_axis_range / set_log_scale / invert_axis '
-            'for the axes -- or read it back with curve_stats, and '
-            'answer only from what those calls return.' % keys)
+            'that changed it, or read_figure(action="stats"), answers -- '
+            'not what was said. If the call ran and was refused, report '
+            'the refusal it named; otherwise do the work -- %s '
+            'with into_figure_key to add the curve, '
+            'transform_curve(operation=...) for a transform, '
+            'configure_axes(operation=...) '
+            'for the axes -- or read it back with '
+            'read_figure(action="stats"), and '
+            'answer only from what those calls return.'
+            % (keys, callSpelling('plot_one')))
 
     def _workReanchor(self, user_prompt):
         """The one re-anchor for a claimed-but-unperformed work on a
@@ -857,11 +915,12 @@ class AgentLoop(QObject):
         """
         return (
             '[SYSTEM FEEDBACK] That work on the figure did not run, '
-            'and no read verified it. Do it -- plot_one(uri, path, '
-            '...) with into_figure_key, the curve transforms, the axis '
-            'tools -- or read it back with curve_stats(figure_key), '
+            'and no read verified it. Do it -- %s with into_figure_key '
+            'to add a curve, the curve transforms, the axis '
+            'tools -- or read it back with '
+            'read_figure(action="stats", figure_key), '
             'and answer only from what those calls return. '
-            'Request: "%s".' % user_prompt)
+            'Request: "%s".' % (callSpelling('plot_one'), user_prompt))
 
     def _unmadeNoteRefusal(self, content, journals_written):
         """A journal line claimed but not written this request, refused
@@ -882,6 +941,10 @@ class AgentLoop(QObject):
         and the refusal words the other guards keep out are the same
         ones ``noteClaimed`` reads.
 
+        The prose names the CALL the model can still type: the notebook
+        answers one tool whose ``action`` says which write is meant, so
+        the spelling comes from the table rather than from the gesture.
+
         Returns the refusal reason, or None when the answer may stand.
         """
         if journals_written:
@@ -890,14 +953,16 @@ class AgentLoop(QObject):
             return None
         return (
             'the answer says a note was added to the journal, but no '
-            'call of this request wrote one: add_note, edit_note and '
-            'delete_note did not run this turn, so the line is not in '
-            'the journal -- the user will look for it and not find it. '
-            'Do the work instead: write it with add_note(scope, text, '
-            'author=..., ...) or change it with edit_note(scope, '
-            'note_id, ...) -- and answer only from what that call '
-            'returns. If the call was refused, report the refusal it '
-            'named.')
+            'call of this request wrote one: %s, %s and %s did not run '
+            'this turn, so the line is not in the journal -- the user '
+            'will look for it and not find it. Do the work instead: '
+            'write it with %s -- author, title and the rest being '
+            'optional -- or change it with %s, and answer only from '
+            'what that call returns. If the call was refused, report '
+            'the refusal it named.'
+            % (offerHead('add_note'), offerHead('edit_note'),
+               offerHead('delete_note'), callSpelling('add_note'),
+               callSpelling('edit_note')))
 
     def _noteReanchor(self, user_prompt):
         """The one re-anchor for a claimed-but-unwritten journal line:
@@ -905,23 +970,30 @@ class AgentLoop(QObject):
         """
         return (
             '[SYSTEM FEEDBACK] That line is not in the journal: no '
-            'call of this request wrote it. Write it -- add_note('
-            'scope, text, ...) or edit_note(scope, note_id, ...) -- '
-            'and answer only from what that call returns. '
-            'Request: "%s".' % user_prompt)
+            'call of this request wrote it. Write it -- %s -- or edit '
+            'it -- %s -- and answer only from what that call returns. '
+            'Request: "%s".' % (callSpelling('add_note'),
+                                callSpelling('edit_note'), user_prompt))
 
     def _destructiveRefusal(self, name, user_prompt):
         """The named refusal a destructive gesture receives on a request
         that does not ask for it.
 
         The rule the model sees, in the shape ``test_115``'s refusals
-        wear: who is refused (the gesture, by name), what it costs
-        (the figure, the case and its own figures, or the whole session),
-        that the refusal did not run the gesture (the same thing the user
-        sees on screen still stands), and the one word that unblocks it
-        (an ask in the user's own words, either language). The field
-        report it answers: a figure that "created and then disappears"
-        -- a close the model ran, on a request that did not name one.
+        wear: who is refused (the call it made, spelled as the tool set
+        offers it), what it costs (the figure, the case and its own
+        figures, or the whole session), that the refusal did not run the
+        gesture (the same thing the user sees on screen still stands), and
+        the one word that unblocks it (an ask in the user's own words,
+        either language). The field report it answers: a figure that
+        "created and then disappears" -- a close the model ran, on a
+        request that did not name one.
+
+        The guard is asked about the GESTURE (``DESTRUCTIVE_GESTURES``) and
+        the words name the CALL: the windows group answers
+        ``manage_window(action="close")``, and a refusal naming
+        ``close_window`` would send the model to a name it is refused for
+        asking.
         """
         taken = {
             'close_window': 'the figure it names',
@@ -937,21 +1009,29 @@ class AgentLoop(QObject):
             'the window and the session still stand. Run it only once '
             'the user asks for it in their own words ("close Plot5", '
             '"ferme la figure", "nouvelle session"), and answer from '
-            'what that call returns.' % (name, taken, user_prompt))
+            'what that call returns.' % (offerHead(name), taken,
+                                         user_prompt))
 
     def _sharedJournalRefusal(self, name, user_prompt):
         """The named refusal a shared-journal write receives on a
         request that does not ask for it.
 
         The rule the model sees, in the shape the rest of this file's
-        refusals wear: who is refused (the gesture, by name), where the
-        write would land (the shared journal the writers all read --
-        the note the user sees in the application, the viz_web page
-        and the other writers' sessions), that the refusal did not run
-        the gesture (the line is not in the journal), and the one word
-        that unblocks it (an ask in the user's own words). The write
-        the model reaches for on a "note down what I said" goes to
-        the PERSONAL journal.
+        refusals wear: who is refused, where the write would land (the
+        shared journal the writers all read -- the note the user sees in
+        the application, the viz_web page and the other writers'
+        sessions), that the refusal did not run the gesture (the line is
+        not in the journal), and the one word that unblocks it (an ask in
+        the user's own words). The write the model reaches for on a "note
+        down what I said" goes to the PERSONAL journal.
+
+        The two vocabularies of a merged group apply here: the gate is
+        asked about the GESTURE (``SHARED_JOURNAL_GESTURES`` holds
+        members, and it is the gesture that wrote the line), while the
+        words name the CALL -- the journals answer one name and their
+        ``action`` says which write is meant, so a refusal naming
+        ``add_note`` would send the model to a name it is refused for
+        asking.
         """
         taken = {
             'add_note': 'a line the writers all read',
@@ -960,7 +1040,7 @@ class AgentLoop(QObject):
             'reindex_journals': 'an index the writers all read',
         }[name]
         return (
-            'the %s gesture writes to the shared journal, and this '
+            'the %s gesture writes %s to the shared journal, and this '
             'request does not ask for it: "%s" does not name a '
             'journal to put a line in -- not a "publier au journal '
             'partagé", not a "share this", not a "cahier de manip". '
@@ -971,7 +1051,7 @@ class AgentLoop(QObject):
             'the user asks for it in their own words ('
             '("publier au journal partagé", "share this", '
             '"cahier de manip"), and answer from what that call '
-            'returns.' % (name, user_prompt))
+            'returns.' % (offerHead(name), taken, user_prompt))
 
     def _dispatch(self, name, args, requested_by='model', user_prompt=''):
         """Run one tool by name on the calling thread (the GUI thread,
@@ -999,13 +1079,17 @@ class AgentLoop(QObject):
         turn -- and it names the gesture and the rule, in the shape the
         rest of this file's refusals wear.
         """
+        name, args = resolveCall(name, args or {})
         method = getattr(self.core, name, None)
         if method is None:
             raise ValueError(
                 'the tool "%s" is not a gesture of this session' % name)
-        unknown = unknownParameters(name, args or {})
+        unknown = unknownParameters(name, args)
         if unknown:
             raise ValueError(unknownParameterRefusal(name, unknown))
+        missing = missingParameters(name, args)
+        if missing:
+            raise ValueError(missingParameterRefusal(name, missing))
         if (name in DESTRUCTIVE_GESTURES
                 and requested_by == 'model'
                 and not _userAskedForAClosure(user_prompt)):
@@ -1024,8 +1108,16 @@ class AgentLoop(QObject):
                 and requested_by == 'model'
                 and not _userAskedForAPublish(user_prompt)):
             raise ValueError(self._sharedJournalRefusal(name, user_prompt))
-        self.gestureIssued.emit(name, args or {})
-        result = method(**args)
+        # The last step of the seam, and the only one that leaves the
+        # offered vocabulary: a merged group is offered one spelling for an
+        # idea its gestures were written under another (`plot` asks every
+        # mode for a `path`; the slice gesture has always taken a `leaf`).
+        # The checks above ran on the spelling the MODEL typed, so a refusal
+        # never names a parameter it was never offered; the core is handed
+        # the one it takes.
+        spelled = argumentsForMember(name, args)
+        self.gestureIssued.emit(name, spelled)
+        result = method(**spelled)
         if name == 'new_session':
             # A new session is a clean slate for the loop's own memory too,
             # not just for the core it closed. The core answered the reset

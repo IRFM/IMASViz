@@ -14,10 +14,13 @@ the screen, and the session is **not saved** -- the one on disk is
 untouched. The web session and the agent do not have the same question:
 the page has no *File* menu, and the agent no screen to clear -- so the
 gesture the loop dispatches (`new_session`) and the page acts on
-(`POST /api/tool {name: new_session}`) must be the core's own, answering
-by name what it closes, without writing a single session file: "nettoyer
-une session sans la sauvegarder" is the contract, and a refusal of a
-name the core does not answer is the one `test_116` pins for the loop.
+(`POST /api/tool {name: manage_session, args: {action: "new"}}`) must be
+the core's own, answering by name what it closes, without writing a single
+session file: "nettoyer une session sans la sauvegarder" is the contract,
+and a refusal of a name the core does not answer is the one `test_116`
+pins for the loop. The sessions group is offered one name now, so the CALL
+is `manage_session(action="new")` on both faces while the guard still
+decides on the gesture behind that word.
 
 And a *new session* is a clean slate for the **loop's own memory** too,
 not just for the core's state. The core closes every case view and figure
@@ -39,7 +42,7 @@ import os
 
 from PySide6.QtWidgets import QMdiArea
 
-from imasviz.VizAgent.tools import TOOLS, unknownParameters
+from imasviz.VizAgent.tools import ACTION_PARAMETERS, TOOLS, unknownParameters
 
 from test_122_screenshots_size_and_focus import embeddedFrame, makeCore
 
@@ -121,34 +124,52 @@ def test_new_session_closes_every_window_and_saves_none(qapp, qtbot,
                 in os.listdir(str(tmp_path / 'home')))
 
 
-def test_new_session_is_a_named_tool_the_loop_may_call():
-    """`new_session` in `TOOLS`: the agent may answer "nouvelle session"
-    with it (a named tool, the `test_116` resolution of a TOOLS name on
-    the core), and an argument it does not take is refused by name the
-    way the loop refuses a stray one -- not invented."""
+def test_the_clean_slate_is_an_action_the_loop_may_call():
+    """The sessions group answers one name, and its `action="new"` is the
+    clean slate: the agent may answer "nouvelle session" with it (a named
+    tool, the `test_116` resolution of a TOOLS name on the core), the
+    gesture takes no argument of its own, and a stray one is refused by
+    name the way the loop refuses it everywhere -- not invented."""
     names = [one['function']['name'] for one in TOOLS]
-    assert 'new_session' in names, \
+    assert 'manage_session' in names, \
         'the agent cannot say "nouvelle session" without the tool it ' \
         'closes by'
+    assert 'new_session' not in names, \
+        'the group is offered one name; the member is vocabulary, not a call'
     spec = next(one['function']['parameters'] for one in TOOLS
-                if one['function']['name'] == 'new_session')
-    assert spec['required'] == [], \
-        'a new session takes no argument: %r' % spec['required']
-    # `unknownParameters` answers the names the tool does not take (the
-    # loop is what refuses them from here by name, `test_117`).
+                if one['function']['name'] == 'manage_session')
+    assert 'new' in spec['properties']['action']['enum']
+    assert ACTION_PARAMETERS['new_session'][1] == (), \
+        'a new session takes no argument: %r' \
+        % (ACTION_PARAMETERS['new_session'][1],)
+    # The checks are asked with the GESTURE's own row, so the action that
+    # takes nothing is measured against nothing (`test_175`).
     assert unknownParameters('new_session', {'keep': 'figures'}) == ['keep'], \
         'the stray argument must be named: %r' % (
             unknownParameters('new_session', {'keep': 'figures'}),)
 
 
+def _newSessionHandler(page):
+    """The click handler of the page's *New session* button, from its
+    `byId` line to the lightbox comment that ends it."""
+    head = page.index("byId('newSessionBtn')")
+    return page[head:page.index('// The lightbox', head)]
+
+
 def test_the_page_offers_the_clean_slate(qapp):
     """The page asks the same gesture of the core it offers through its
-    button: `new_session` on `/api/tool` -- the refusal a name earns
-    reads the same in the page as in the agent's transcript -- and after
-    it, the page clears its own transcript, its captures and its turn
-    list: the clean slate the user asked for, on the surface they
-    clicked. Pinned the way `test_121` pins the page's behaviour: the
-    button exists, it names the gesture, and it clears."""
+    button: `manage_session` with `action: "new"` on `/api/tool` -- the
+    refusal a name earns reads the same in the page as in the agent's
+    transcript -- and after it, the page clears its own transcript, its
+    captures and its turn list: the clean slate the user asked for, on the
+    surface they clicked. Pinned the way `test_121` pins the page's
+    behaviour: the button exists, it names the call, and it clears.
+
+    A `confirm` its browser blocks (kiosk, popup blocker) comes back false
+    with no dialog and no word: a handler that wrote nothing before it was
+    its user's click never happening. So the ask is on the transcript
+    first, a refusal is named where the user reads it, and a browser
+    without `confirm` proceeds and says it could not have asked."""
     import re
 
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -159,18 +180,14 @@ def test_the_page_offers_the_clean_slate(qapp):
         'the page has no New session button: the clean slate is on the ' \
         'File menu of the application, and the user asked for it on the ' \
         'page'
-    assert re.search(r"newSessionBtn',\s*\{[^}]*name", page) or \
-        'new_session' in page, \
-        'the button must ask the core for the new_session gesture'
-
-    # The handler of the button. A `confirm` its browser blocks (kiosk,
-    # popup blocker) comes back false with no dialog and no word: a
-    # handler that wrote nothing before it was its user's click never
-    # happening. So the ask is on the transcript first, a refusal is
-    # named where the user reads it, and a browser without `confirm`
-    # proceeds and says it could not have asked.
-    head = page.index("byId('newSessionBtn')")
-    handler = page[head:page.index('// The lightbox', head)]
+    # The call the page is OFFered: the group's name and the action that
+    # means the clean slate. The member name it used to post is a call the
+    # core refuses for a name no longer on the menu.
+    handler = _newSessionHandler(page)
+    assert ("name: 'manage_session'" in handler
+            and "action: 'new'" in handler), \
+        'the button must ask the core the call the tool set offers, not ' \
+        'the name the sessions group merged away'
     ask = handler.index('appendLine(')
     dialog = handler.index('confirm(')
     assert ask < dialog, \
@@ -227,8 +244,11 @@ def test_new_session_clears_the_loop_memory(qapp):
     # session" the request names): `requested_by='user'` is the ask, so
     # the destructive guard stands aside and the reset runs. `test_135`
     # pins the model's unasked new_session the other way (refused, memory
-    # kept); this one keeps the clean-slate half the reset was owed.
-    loop._dispatch('new_session', {}, requested_by='user')
+    # kept); this one keeps the clean-slate half the reset was owed. The
+    # call is the group's name and its action -- what `_dispatch` answers
+    # by running the `new_session` guard was written for.
+    loop._dispatch('manage_session', {'action': 'new'},
+                   requested_by='user')
     assert loop.history == [], \
         'a new session is a clean slate for the loop too: it still held ' \
         'the turns it served before the reset (%r), and the next turn ' \

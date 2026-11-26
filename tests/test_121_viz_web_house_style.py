@@ -181,8 +181,8 @@ def test_the_page_keeps_its_screenshots_and_can_act_on_them():
     load -- served from the request's directory on disk
     (`/api/turns/{n}/shots/…`), which is what makes a reload of the page
     cost nothing. Each picture is addressed to the window it shows (the
-    name `focus_window` and `get_screenshot` take), and a click
-    enlarges it in the lightbox.
+    name `manage_window(action="focus")` and `get_screenshot` take), and a
+    click enlarges it in the lightbox.
     """
     with open(INDEX, 'r', encoding='utf-8') as f:
         text = f.read()
@@ -191,9 +191,13 @@ def test_the_page_keeps_its_screenshots_and_can_act_on_them():
     assert '/api/turns' in text, 'the gallery is not served from the request history'
     assert '/shots/' in text, 'the pictures are not served from the request directories'
     assert 'prependTurnShots' in text, 'a request replaces the previous ones, not joins them'
-    # The address of a picture, and the two gestures it answers.
+    # The address of a picture, and the two gestures it answers. The Focus
+    # button speaks the name the tool set offers: the page's click goes
+    # through `resolveCall` like any other face's, so a member asked by its
+    # old name comes back to the user as a refusal.
     assert 'image_windows' in text, 'the cards are not addressed to the window they show'
-    assert 'focus_window' in text, 'no Focus button on the screenshot cards'
+    assert "gesture('manage_window', { action: 'focus'" in text, \
+        'no Focus button on the screenshot cards'
     assert 'get_screenshot' in text, 'no Screenshot button on the screenshot cards'
     # And the one that takes it away: the card names the capture it
     # stands on, and the ask goes to the address the picture was served
@@ -242,9 +246,9 @@ def test_the_page_edits_a_journal_note_in_place():
     Read and Delete, the edit form is its own section (the note the user
     edits is named by the id it reads under, and the fields the form
     holds are pre-filled from the read of that note), and the Save asks
-    `edit_note` -- the gesture that changes the note in place -- not a
-    delete-and-re-add that would cost the note a new id the other
-    writers read it under.
+    `manage_note(action="edit")` -- the notebook's one tool and the action
+    that changes the note in place -- not a delete-and-re-add that would
+    cost the note a new id the other writers read it under.
     """
     with open(INDEX, 'r', encoding='utf-8') as f:
         text = f.read()
@@ -254,9 +258,12 @@ def test_the_page_edits_a_journal_note_in_place():
     assert 'notesEdit' in text, 'no edit section for the note being changed'
     assert 'notesEditBody' in text, 'no body to edit on the note being changed'
     assert 'notesEditOpen' in text, 'no open of the edit form from a note'
-    assert 'read_note' in text, 'the form is pre-filled from the read of the note'
-    # The gesture the Save asks, and the save itself.
-    assert 'edit_note' in text, 'the page does not ask the edit gesture'
+    assert 'manage_note(action="read")' in text, \
+        'the form is pre-filled from the read of the note'
+    # The gesture the Save asks, and the save itself. The page spells the
+    # group, because the route it posts to answers every ask by that name.
+    assert 'manage_note(action="edit")' in text, \
+        'the page does not ask the edit gesture'
     assert 'notesSaveEdit' in text, 'no save of the edit'
 
 
