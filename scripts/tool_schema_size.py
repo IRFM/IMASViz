@@ -106,6 +106,31 @@ def _sourceConstants(path, literalNames):
     return [namespace[name] for name in literalNames]
 
 
+def _literalActions(node):
+    """The actions one decorated function is offered with, read off its
+    signature.
+
+    FastMCP turns a ``Literal[...]`` annotation into an enum in the schema
+    its client is offered, so the actions that face can be asked with are
+    spelled there and not in the table -- and they may differ from it on
+    purpose (the endpoint leaves out the asks its own page does the work
+    of). A function with no such annotation answers itself.
+    """
+    for argument in node.args.args:
+        annotation = argument.annotation
+        if not isinstance(annotation, ast.Subscript):
+            continue
+        if getattr(annotation.value, 'id', None) != 'Literal':
+            continue
+        values = annotation.slice
+        if isinstance(values, ast.Tuple):
+            return tuple(value.value for value in values.elts
+                         if isinstance(value, ast.Constant))
+        if isinstance(values, ast.Constant):
+            return (values.value,)
+    return ()
+
+
 def _mcpFace(path):
     """The tools the MCP face declares, and the prose each one carries.
 
@@ -133,6 +158,7 @@ def _mcpFace(path):
                           'docstringChars': len(doc),
                           'docstringWords': _words(doc),
                           'signatureChars': len(ast.unparse(node.args)),
+                          'actions': _literalActions(node),
                           'parameters': arguments})
     return tools
 
@@ -249,6 +275,7 @@ def measure(loopSource=LOOP_SOURCE, mcpSource=MCP_SOURCE):
         'groupBreakdown': groups,
         'mcpTools': len(mcp),
         'mcpDocstringChars': sum(t['docstringChars'] for t in mcp),
+        'mcpDocstringWords': sum(t['docstringWords'] for t in mcp),
         'mcpSignatureChars': sum(t['signatureChars'] for t in mcp),
         'mcpOnly': sorted(mcpNames - loopNames),
         'loopOnly': sorted(loopNames - mcpNames),
@@ -285,10 +312,12 @@ def report(m):
           % m['plumbingCharsPerTool'])
     print('  instructions : %s chars (once per turn, beside the schemas)'
           % format(m['systemInstructionsChars'], ','))
-    print('  the MCP face declares %d tools (%s chars of docstring, %s of '
-          'signature)' % (m['mcpTools'],
-                          format(m['mcpDocstringChars'], ','),
-                          format(m['mcpSignatureChars'], ',')))
+    print('  the MCP face declares %d tools (%s chars / %s words of '
+          'docstring, %s of signature)'
+          % (m['mcpTools'],
+             format(m['mcpDocstringChars'], ','),
+             format(m['mcpDocstringWords'], ','),
+             format(m['mcpSignatureChars'], ',')))
     if m['mcpOnly'] or m['loopOnly']:
         print('  the two faces are NOT the same list: %d named only by the '
               'MCP face, %d only by the loop' % (len(m['mcpOnly']),

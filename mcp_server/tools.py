@@ -151,7 +151,21 @@ def buildServer(core, dispatcher, name='imasviz'):
 
     FastMCP reads each tool's description off its docstring, so the
     docstrings say what the agent needs to know, in the order the words
-    are asked.
+    are asked. They say it in the same words the agent's loop is offered
+    (``imasviz.VizAgent.tools``'s ``TOOLS``), under the same prose budget:
+    a caller over this socket and a caller in the panel read one account
+    of one gesture, and a tool that pays 400 words here while its twin
+    there pays 60 is a face nobody keeps in step (test_176 measures both).
+
+    One asymmetry to know before comparing the two faces. On the loop face
+    a parameter's own sentence lives in its schema block; on this face the
+    signature IS the schema, so what a parameter takes is said by its type
+    and the per-parameter prose is not sent -- it is in the comment above
+    the entry, and the loop's block is the reference for the wording. It
+    can come back on the wire: measured on this node's ``mcp`` 1.30.0 with
+    ``pydantic`` 2.14.2, a parameter annotated
+    ``Annotated[Optional[str], Field(description=...)]`` is declared with
+    that description in the tool's JSON schema.
     """
     server = FastMCP(name, instructions=INSTRUCTIONS)
 
@@ -162,22 +176,26 @@ def buildServer(core, dispatcher, name='imasviz'):
 
     # ------------------------------------------------------------------ cases
 
+    # The words are the loop's, verbatim: a caller over this socket and a
+    # caller in the panel are told the same thing about the same gesture,
+    # and the same holds for the refusals below. What the sentence no
+    # longer has room for is here: a `dd_version` left out asks the case
+    # which dictionary its own IDSs were written with, which is what a
+    # case stored under another major version needs -- read at the wrong
+    # one, every read is refused. "close" is for good: the shot view and
+    # the windows that serve this case alone leave the bookkeeping, a
+    # window another case reads is hidden and keeps its key.
+    # `uri` is Optional because "list" names no case.
     @server.tool(name='manage_case')
     def manage_case(action: Literal['open', 'list', 'close'],
                     uri: Optional[str] = None,
                     dd_version: Optional[str] = None):
-        """The cases this session works on, and `action` picks the ask.
-
-        'open': one IMAS case by URI (imas:hdf5?path=..., or an UDA URI);
-        `dd_version` pins the data dictionary the case is read at, and
-        left out the case is asked which one its own IDSs were written
-        with, because a case stored under another major version is refused
-        at every read otherwise. 'list': the cases open, with their loaded
-        occurrences. 'close': one open case, its view, its windows and its
-        bookkeeping, for good. `uri` is Optional because "list" names no
-        case; a word the asked action does not take is refused by name
-        instead of travelling to the core.
-        """
+        """The cases this session works on, and `action` says which ask.
+        "open": one IMAS case by URI; `dd_version` pins the data
+        dictionary, left out the case is asked which one its own IDSs
+        were written with. "list": the cases open, with their loaded
+        occurrences. "close": one open case, its view, its windows and
+        its bookkeeping, for good."""
         gesture = gestureOf('manage_case', {'action': action})
         args = {field: value for field, value in (
             ('uri', uri), ('dd_version', dd_version)) if value is not None}
@@ -197,28 +215,25 @@ def buildServer(core, dispatcher, name='imasviz'):
 
     # -------------------------------------------------------------------- ids
 
+    # "filled" is read through the entry's own occurrence listing, so its
+    # names and counts come off the case; "load" is synchronous, and
+    # `slices` decides how much of the dynamic array the walk keeps -- on a
+    # big IDS the difference between thousands of signals and hundreds of
+    # thousands. An occurrence the case does not hold is refused by the
+    # load with its reason. `ids_name`, `occurrence` and `slices` are
+    # Optional because the two lists name no IDS.
     @server.tool(name='manage_idss')
     def manage_idss(action: Literal['declared', 'filled', 'load'],
                     uri: str,
                     ids_name: Optional[str] = None,
                     occurrence: Optional[int] = None,
                     slices: Optional[str] = None):
-        """The IDSs of a case, and `action` picks the ask.
-
-        'declared': every IDS the case's data dictionary declares and the
-        occurrences each one holds, including the roots that hold no data
-        (an empty occurrence list). 'filled': only the IDS the case
-        actually holds -- read through DBEntry.list_all_occurrences, so its
-        names and counts can be trusted as the case's own. That one is the
-        source of truth for "what is in this case": do not present an IDS
-        list you did not read from this call. 'load': one occurrence of one
-        IDS into the tree, synchronously; `slices` is "first" for the slice
-        a plain load keeps, "all" for the whole dynamic array, and an
-        occurrence the case does not hold is refused by the load with its
-        reason. `ids_name`, `occurrence` and `slices` are Optional because
-        the two lists name no IDS; a word the asked action does not take is
-        refused by name instead of travelling to the core.
-        """
+        """The IDSs of a case, and `action` says which ask. "declared":
+        every IDS its dictionary declares, the roots that hold no data
+        included. "filled": only the IDS the case holds -- the answer to
+        "what is in this case", never a recalled one. "load": one
+        occurrence of one IDS into the tree, keeping "first" slice or the
+        whole dynamic array per `slices`."""
         gesture = gestureOf('manage_idss', {'action': action})
         args = {field: value for field, value in (
             ('uri', uri), ('ids_name', ids_name),
@@ -245,6 +260,20 @@ def buildServer(core, dispatcher, name='imasviz'):
     # The checks are the loop's, in the loop's order, so a caller over this
     # socket and a caller in the panel hear the same words about the same
     # mistake.
+    #
+    # What the sentence no longer has room for, and what the answer says
+    # anyway: a `query` is matched case-insensitively over the display path,
+    # the data name and the parametrized path, and each match comes back
+    # under `matches` with those three spellings -- any is what
+    # manage_selection(action='select'), `plot` and `get_signal` take --
+    # beside the `kind` a plot would make of it. "node" answers what the
+    # application's own documentation says of the leaf: units, size, shape,
+    # the finite minimum and maximum, the zero/nan/inf counts, a bounded
+    # preview, and a leaf the tree does not hold is refused by name. "ids"
+    # leaves a property the case leaves empty absent rather than invented.
+    # A scalar (0D) leaf is not a tensor and is not listed, and an
+    # occurrence whose tree was never built is refused -- load it with
+    # manage_idss(action='load') first.
     @server.tool(name='inspect_tree')
     def inspect_tree(
             action: Literal['search', 'node', 'ids', 'quantities'],
@@ -254,32 +283,13 @@ def buildServer(core, dispatcher, name='imasviz'):
             occurrence: Optional[int] = None,
             limit: Optional[int] = None,
             path: Optional[str] = None):
-        """What the tree of a case says about itself, and `action` picks.
-
-        "search" matches the leaves whose spelling carries `query`
-        (case-insensitive: the display path, the data name, the parametrized
-        path), `ids_name` narrowing to one IDS and `limit` bounding the
-        answer. The matches come back under `matches`, each with its three
-        spellings -- any is what manage_selection(action='select'), `plot`
-        and `get_signal` take -- and the `kind` a plot would make of it.
-
-        "node" answers what one `path` holds, as the application's own
-        documentation says it: units, size, shape, the finite minimum and
-        maximum, the zero/nan/inf counts, a bounded preview. A leaf the tree
-        does not hold is refused by name.
-
-        "ids" answers what the data dictionary says of an `ids_name`: its
-        comment, homogeneous_time, units, time units, and the version the
-        case was written at. A property the case leaves empty is absent, not
-        invented; an IDS the case does not declare is refused by name.
-
-        "quantities" answers the filled tensors of one `occurrence`, grouped
-        by the array of structures that drives them: path, data name,
-        parametrized path, units, data type, how many elements the case
-        holds. A scalar (0D) leaf is not a tensor and is not listed; an
-        occurrence whose tree was never built is refused -- load it with
-        manage_idss(action='load') first.
-        """
+        """What the tree of a case says, and `action` says which ask.
+        "search": the leaves whose spelling carries `query`; each match
+        answers the spellings a plot takes. "node": what one `path` holds
+        -- units, size, min/max, a bounded preview. "ids": what the data
+        dictionary says of an `ids_name`. "quantities": the filled tensors
+        of one `occurrence`, grouped by the array of structures that drives
+        them -- the "what can be drawn" answer."""
         gesture = gestureOf('inspect_tree', {'action': action})
         args = {field: value for field, value in (
             ('uri', uri), ('query', query), ('ids_name', ids_name),
@@ -303,25 +313,21 @@ def buildServer(core, dispatcher, name='imasviz'):
     # what to put in, and to empty it. `additive` is Optional and not True
     # here because a parameter the action does not take is a refusal, and a
     # default would answer "clear" and "list" with a stray word.
+    #
+    # "select" takes any spelling a search hit answers and answers the
+    # paths it took beside the new size; "list" is the one that spells each
+    # leaf -- path, data name, IDS, occurrence -- in the order they were put
+    # in. The selection is what `plot(mode="selection")` draws.
     @server.tool(name='manage_selection')
     def manage_selection(action: Literal['select', 'clear', 'list'],
                          uri: str, paths: Optional[list] = None,
                          additive: Optional[bool] = None):
-        """What the case selection holds, and `action` picks the ask.
-
-        "select" puts the named `paths` into the selection, as the tree's
-        clicks would -- any of the spellings a search hit answers, and one
-        the tree does not hold is refused by name, nothing put in.
-        `additive=false` empties the selection first (it is true).
-
-        "clear" empties it, answering how many were dropped.
-
-        "list" answers it in the order it was put in: the path, the data
-        name, the IDS and the occurrence of each. Empty is an answer,
-        `count: 0` -- not a refusal.
-
-        The selection is what `plot(mode="selection")` draws.
-        """
+        """What the case selection holds and what to do with it, and
+        `action` says which ask. "select": the named `paths` go in -- one
+        the tree does not hold is refused by name and nothing goes in.
+        "clear": empty it, answering how many were dropped. "list": the
+        selection in the order it was put in; empty answers count 0, not a
+        refusal."""
         gesture = gestureOf('manage_selection', {'action': action})
         args = {field: value for field, value in (
             ('uri', uri), ('paths', paths), ('additive', additive))
@@ -344,6 +350,28 @@ def buildServer(core, dispatcher, name='imasviz'):
     # the panel must hear the same words about the same mistake, and the
     # parameters are checked in the spelling the caller typed (`path`, not
     # the `leaf` the slice gesture has always taken in Python).
+    #
+    # What the sentence no longer has room for, and where it is said: the
+    # address "single" takes is the one `get_signal` takes -- `along` names
+    # the axis the quantity runs along (the clock, or one of its own axes
+    # such as `psi`) and `indices` pins each OTHER axis at its 0-based
+    # index, one entry per nested array of structures (`time_slice`,
+    # `profiles_1d`, `ion`, ...) or the leaf's own coordinate, so the
+    # figure a reader sees and the numbers a read reports are one element
+    # of one array -- `equilibrium.time_slice[0].profiles_1d.pressure` is
+    # held by the dynamic array, so "along the clock at psi index 50" is
+    # `along` left out (the clock) and `indices={"psi": 50}`.
+    # `time` pins a profile to one slice of its dynamic array
+    # (`time_interp=true` for the value between the two that bracket it)
+    # and is refused beside `along`/`indices`, being the opposite reading;
+    # "slice" goes through the Access Layer's own `DBEntry.get_slice` at
+    # `interpolation` `linear` (default), `closest` or `previous`, a time
+    # outside the case answering its nearest slice and saying so, and it is
+    # neither a 2D-pictorial leaf nor a 0D scalar; "table" lays its panels
+    # `columns` wide and "stacked" reads along `plot_axis`;
+    # `into_figure_key` adds to an open curve figure instead of opening
+    # one. The wording of each of those parameters is the loop's schema
+    # block for `plot`.
     @server.tool(name='plot')
     def plot(mode: Literal['single', 'slice', 'selection', 'table',
                            'stacked'],
@@ -359,45 +387,13 @@ def buildServer(core, dispatcher, name='imasviz'):
              interpolation: Optional[str] = None,
              columns: Optional[int] = None,
              plot_axis: Optional[str] = None):
-        """Draw, in the shape the ask calls for: `mode` picks it.
-
-        "single" draws one `path` into the figure its own axes call for -- a
-        curve figure for one axis to draw, a picture window for two. The
-        address is the one `get_signal` takes, so the figure a reader sees
-        and the numbers a read reports are the same element of the same
-        array: `along` names the axis the quantity runs along (the clock, or
-        one of its own axes, e.g. `psi`), and `indices` pins each OTHER axis
-        at its 0-based index, one entry per nested array of structures
-        (`time_slice`, `profiles_1d`, `ion`, ...) or the leaf's own
-        coordinate. `equilibrium.time_slice[0].profiles_1d.pressure` is a
-        profile held by the dynamic array, so "le long du temps, un index
-        `psi` de 50" is `along` left out (the clock) and `indices={"psi":
-        50}`. `time` pins a profile to one slice of its dynamic time array
-        (by default the nearest; `time_interp=true` the value between the
-        two that bracket it) and is refused together with `along`/`indices`,
-        as the opposite readings they are. `into_figure_key` adds it to an
-        open curve figure (a superposition) instead of opening one.
-
-        "slice" draws one `path` at one `time` through the Access Layer's
-        own `DBEntry.get_slice` -- the value it answers at that instant, not
-        a GUI-side lerp -- with `interpolation` `linear` (default),
-        `closest` or `previous`; the coordinate is the leaf's own, a time
-        outside the case's range answers the nearest slice it holds and says
-        so, and it is not a 2D-pictorial leaf nor a 0D scalar.
-
-        "selection" draws what `select_signals` selected for that case: one
-        curve figure, one window per picture. "table" lays one panel per
-        `paths` in a Table Plot View, `columns` wide, every quantity read
-        along `plot_axis`. "stacked" stacks `paths`, one panel per quantity,
-        in one window against the abscissa `plot_axis` names (the clock by
-        default).
-
-        A mode asked without a parameter it needs, or with one that belongs
-        to another mode, is refused by naming the missing or stray name and
-        the call that takes it. The answer carries the figure key and
-        `curves`, the exact list of the curves the figure holds after the
-        call.
-        """
+        """What shape to draw in, and `mode` picks it. "single": one `path`
+        into the figure its own axes call for -- a curve for one axis to
+        draw, a picture window for two. "slice": one `path` read at one
+        `time`. "selection": what the case selection holds. "table": one
+        panel per `paths` in a Table Plot View. "stacked": `paths` stacked,
+        one panel each, in one window. The answer names the figure key and
+        `curves`, the curves on it after the call."""
         gesture = gestureOf('plot', {'mode': mode})
         args = {name: value for name, value in (
             ('uri', uri), ('path', path), ('paths', paths),
@@ -423,33 +419,24 @@ def buildServer(core, dispatcher, name='imasviz'):
     # The two reads of the equilibrium the plugin offers, under one name:
     # `action` says whether the caller wants the surfaces of several instants
     # side by side or one instant with its profiles under it.
+    #
+    # Two things that are this entry's own: a single number in `times` is
+    # read as a list of one, and the window that comes back is an
+    # `EquiSurfaces:` key whose PNG get_screenshot answers. And neither read
+    # is a leaf of the tree -- it is the read the plugin does on the IDS
+    # object, the GGD branch the tree walk does not hold -- so a quantity
+    # of it is never a path to search for. What each frame draws and what
+    # the answer carries is the loop's comment for `equilibrium`.
     @server.tool(name='equilibrium')
     def equilibrium(action: Literal['surfaces', 'at_time'], uri: str,
                     times: Optional[list] = None,
                     time: Optional[float] = None,
                     occurrence: Optional[int] = None):
-        """The equilibrium as the plugin reads it, and `action` picks.
-
-        "surfaces": one frame per named instant, side by side in one window
-        (an `EquiSurfaces:` key; get_screenshot answers its PNG). `times` in
-        seconds -- a single number is read as a list of one. Each instant
-        answers the case's nearest slice and says which: `time_requested`
-        vs `time_slice_time` and the slice index, per frame. Every frame
-        shares its levels, bounds and marks (plasma boundary, magnetic
-        axis, O-point, limiter), so the instants compare at equal measure.
-
-        "at_time": one instant's flux surface with the radial profiles under
-        it (q, elongation, triangularities, j_tor in MA/m^2, pressure in
-        kPa, f_df_dpsi, dpressure_dpsi -- the plugin's quantities and its
-        unit conversions, on rho_tor_norm) and the slice's global
-        quantities in the answer (Ip in kA, q95, q_axis, li_3, W_mhd in kJ,
-        axis position). `time` in seconds answers the nearest slice the
-        case holds, named back as `time_slice_time`; a time outside the
-        case's range says it was clamped.
-
-        Neither read is a leaf of the tree: it is the read the plugin does
-        on the IDS object, the GGD branch the tree does not hold.
-        """
+        """The equilibrium as the Equilibrium plugin draws it, and `action`
+        says which ask. "surfaces": one frame per instant of `times`, side
+        by side in one window. "at_time": one `time` with its radial
+        profiles under it and the slice global quantities in the answer. An
+        instant outside the case answers its nearest slice, named back."""
         gesture = gestureOf('equilibrium', {'action': action})
         args = {field: value for field, value in (
             ('uri', uri), ('times', times), ('time', time),
@@ -463,6 +450,11 @@ def buildServer(core, dispatcher, name='imasviz'):
         spelled = argumentsForMember(gesture, args)
         return _run(partial(getattr(core, gesture), **spelled))
 
+    # The read of one leaf, on the same `along` + `indices` address as
+    # `plot(mode='single')`, so what a figure of it draws and what this
+    # reports are one element of one array. A word no axis answers, or an
+    # index past the extent the tree names, is refused with the reason the
+    # application names, not a silent 0.
     @server.tool(name='get_signal')
     def get_signal(uri: str, path: str,
                    as_function_of_time: Optional[bool] = None,
@@ -470,19 +462,10 @@ def buildServer(core, dispatcher, name='imasviz'):
                    time_index: Optional[int] = None,
                    along: Optional[str] = None,
                    indices: Optional[dict] = None):
-        """The values the tree read gives for one leaf, as JSON.
-
-        The same read the plots use, so what a figure of it draws and
-        what this reports are the same element of the same array: `along`
-        names the axis the quantity runs along (the clock by default, or
-        one of its own axes, e.g. `psi`), and `indices` pins each other
-        axis at its 0-based index (the shared schema of
-        `plot(mode='single')`).
-        `as_function_of_time`, `coordinate_index` and `time_index` are
-        the legacy spellings of the same address. A word no axis answers,
-        or an index past the extent the tree names, is refused with the
-        reason the application names, not a silent 0.
-        """
+        """The values the tree read gives for one leaf, as JSON, on the same
+        `along` + `indices` schema `plot(mode="single")` uses: the same
+        element a figure of that leaf draws. `as_function_of_time` and
+        `coordinate_index` are the legacy spelling of that pair."""
         return _run(partial(core.get_signal, uri, path,
                             as_function_of_time=as_function_of_time,
                             coordinate_index=coordinate_index,
@@ -491,6 +474,15 @@ def buildServer(core, dispatcher, name='imasviz'):
 
     # ------------------------------------ the figures: the data and the axes
 
+    # Scale, shift and normalize are in place and reversible through
+    # "reset"; `reference` is `max` (the largest sample, the default),
+    # `first` (the sample at index 0) or `mean`, and a reference that is
+    # zero or not a number is refused, as the division would otherwise read
+    # as a picture full of no-signal. `curve` is a name substring, a 0-based
+    # index, or left out for every curve the figure holds. The figure is
+    # one a single curve was drawn in -- a table or the flux-surface figure
+    # are refused by name, and so is an operation asked without the number
+    # it needs or with one that belongs to another.
     @server.tool(name='transform_curve')
     def transform_curve(
             operation: Literal['scale', 'shift', 'normalize', 'reset',
@@ -499,26 +491,13 @@ def buildServer(core, dispatcher, name='imasviz'):
             offset: Optional[float] = None,
             reference: Optional[str] = None,
             curve: Optional[Union[str, int]] = None):
-        """Do one thing to the curve(s) a figure already holds: `operation` picks it.
-
-        "scale" multiplies their values by `factor`, "shift" adds `offset`
-        to them, "normalize" divides them by a reference of their own --
-        `reference` being `max` (the largest sample, the default), `first`
-        (the sample at index 0) or `mean`; "reset" puts them back to the
-        data they were drawn with, and "remove" takes the curve off the
-        figure. Scale, shift and normalize are in place and reversible
-        through "reset"; a reference that is zero or not a number is
-        refused, as the division would then read as a picture full of
-        no-signal. `read_figure` answers the transformed value afterwards;
-        the quantity in the tree is unchanged.
-
-        `curve` is a name substring, a 0-based index, or left out for every
-        curve the figure holds. The figure is the one a single curve was
-        drawn in -- a table or the flux-surface figure are refused by name.
-        An operation asked without the number it needs, or with one that
-        belongs to another, is refused by naming the parameter and the
-        operation that takes it.
-        """
+        """Do one thing to the curve(s) a figure already holds, and
+        `operation` picks it. "scale" times `factor`, "shift" plus `offset`,
+        "normalize" divided by a reference of their own (`reference`),
+        "reset" back to the data they were drawn with, "remove" off the
+        figure. scale, shift and normalize work in place, so read_figure
+        answers the transformed value while the leaf in the tree is
+        unchanged."""
         gesture = gestureOf('transform_curve', {'operation': operation})
         args = {name: value for name, value in (
             ('figure_key', figure_key), ('factor', factor),
@@ -537,6 +516,27 @@ def buildServer(core, dispatcher, name='imasviz'):
 
         return _run(change)
 
+    # A range is two bounds: `xmin` with `xmax` (the abscissa) and/or
+    # `ymin` with `ymax` (the ordinate), and a partial ask is refused
+    # because a half-range is not a question -- `auto=True` clears the pins
+    # and re-fits. A curve figure takes one axis set; a picture window
+    # takes the same span on each of its pictures, so the time zoom of a
+    # strip whose abscissa is its time is the `x` range, in the seconds its
+    # time axis holds. For "image_window", `start` is where the band sits
+    # on the axis the pictures are read across and `count` how many pictures
+    # it holds; the pictures are re-read in place and a colour scale a hand
+    # settled stays put, and the answer carries the axis, its start and
+    # count, the extent it holds and the label of each picture shown. For
+    # "slice_index", `axis` is the row in the words the band spells it (an
+    # array of structures by its name -- `time_slice`, `profiles_2d` -- or
+    # the coordinate it holds) and `index` a 0-based whole number within
+    # that row's extent; the other rows stay where they are. A log where
+    # the values cross zero or below is refused, because the picture hides
+    # them -- `transform_curve(operation="shift")` to clear the negatives is
+    # the answer; inversion and range are independent. A parameter of
+    # another operation is refused by naming the operation that takes it,
+    # and a table or a stacked window -- one axis set per panel -- is
+    # refused by name.
     @server.tool(name='configure_axes')
     def configure_axes(
             operation: Literal['range', 'image_window', 'slice_index',
@@ -552,40 +552,13 @@ def buildServer(core, dispatcher, name='imasviz'):
             index: Optional[int] = None,
             x: Optional[bool] = None,
             y: Optional[bool] = None):
-        """Move one thing a window draws to: `operation` picks it.
-
-        "range" pins the span of its axes -- `xmin`/`xmax` together (the
-        abscissa) and/or `ymin`/`ymax` together (the ordinate); a partial
-        ask (one bound of a pair) is refused because a range is two, and
-        `auto=True` clears the pins and re-fits. A curve figure takes one
-        axis set; a picture window takes the same span on each of its
-        pictures, so the time zoom of a strip whose abscissa is its time
-        is the `x` range, in the seconds its time axis holds.
-
-        "image_window" moves (`start`: where it sits on the axis the
-        pictures are read across) or resizes (`count`: how many pictures
-        it holds) the window of a picture window. The pictures are re-read
-        in place and the colour scale a hand settled stays put. The answer
-        carries the axis, its start and count, the extent it holds, and the
-        label of each picture shown -- the value the axis carries there
-        when the axis is the time.
-
-        "slice_index" poses one row of a slider band at `index`: `axis` is
-        the row in the words the band spells it (an array of structures by
-        its name -- `time_slice`, `profiles_2d` -- or the coordinate it
-        holds) and `index` a 0-based whole number within the extent that
-        row holds. The other rows of the band stay where they are.
-
-        "log" makes an axis log (`x`/`y` `True`) or linear (`False`); a log
-        where the values cross zero or below is refused, because the
-        picture hides them -- `transform_curve(operation="shift")` to clear
-        the negatives is the answer. "invert" turns one around (`False`
-        puts it back); inversion and range are independent.
-
-        A parameter of another operation is refused by naming the operation
-        that takes it, and a table or a stacked window -- one axis set per
-        panel -- is refused by name.
-        """
+        """Move one thing a window draws to, and `operation` picks it.
+        "range" pins the span of its axes (`xmin`/`xmax` and/or
+        `ymin`/`ymax`, a pair at a time; `auto=true` clears the pins).
+        "image_window" moves (`start`) or resizes (`count`) the band of
+        pictures a picture window sits on. "slice_index" poses one slider
+        row (`axis`) at `index`. "log" makes an axis log or linear (`x`/`y`),
+        refused where the values cross zero. "invert" turns one around."""
         gesture = gestureOf('configure_axes', {'operation': operation})
         args = {name: value for name, value in (
             ('figure_key', figure_key), ('xmin', xmin), ('xmax', xmax),
@@ -608,25 +581,26 @@ def buildServer(core, dispatcher, name='imasviz'):
     # The two reads of the curves a figure holds answer under one name, and
     # `action` says which: the numbers on the way back, or those same
     # numbers in a file. The checks are the loop's, in the loop's order.
+    #
+    # "stats" is the read of a figure's curves where the reader can act on
+    # it, before or after a scale/shift/normalize; "export" writes those
+    # same values as they stand to `~/.imasviz/exports` under the guard of
+    # the configurations -- `format` `csv` (default) or `json`, and a `name`
+    # that names a place rather than a file is refused by name. `curve` is a
+    # name substring, a 0-based index, or left out for every curve the
+    # figure holds; the figure is a single curve figure, a table or the
+    # flux-surface figure being refused by name.
     @server.tool(name='read_figure')
     def read_figure(
             action: Literal['stats', 'export'], figure_key: str,
             curve: Optional[Union[str, int]] = None,
             format: Optional[str] = None, name: Optional[str] = None):
-        """What the curve(s) a figure holds answer, and `action` picks.
-
-        "stats": the sample count, the finite min/max/mean/std of the
-        values, the nan/inf counts, the peak with its abscissa -- the read
-        of a figure's curves where the reader can act on it, before or
-        after a scale/shift/normalize. "export": those same values, as they
-        stand, written to `~/.imasviz/exports` under the guard of the
-        configurations -- `format` `csv` (default) or `json`, a `name` that
-        names a place being refused by name.
-
-        `curve` is a name substring, a 0-based index, or left out for every
-        curve the figure holds. The figure is a single curve figure -- a
-        table or the flux-surface figure are refused by name.
-        """
+        """What the curve(s) a figure holds answer, and `action` says which
+        ask. "stats": the sample count, the finite min/max/mean/std, the
+        nan/inf counts, the peak with its abscissa. "export": the same
+        values in a file under ~/.imasviz/exports. Both read the values as
+        they stand: a transform a hand put on the figure is in the
+        answer."""
         gesture = gestureOf('read_figure', {'action': action})
         args = {field: value for field, value in (
             ('figure_key', figure_key), ('curve', curve),
@@ -642,6 +616,19 @@ def buildServer(core, dispatcher, name='imasviz'):
 
     # ------------------------------------------------- physics of a signal
 
+    # Six asks about one leaf, and one name for them; what each of the six
+    # is, what gates each kind and what a report holds is the loop's comment
+    # for `analyze_signal`. Two things this entry adds for a caller over the
+    # socket: `uri` and `path` are the case and the leaf of the five reads,
+    # "clear_events" working on a figure and not on a case; and `along`,
+    # `indices` and -- for the second series of "correlate" -- `indices_b`
+    # pick one element out of a family, exactly the way `get_signal` does,
+    # so what is detected and what a figure of the same leaf draws are one
+    # read. The two reports are self-contained HTML: the events or the peaks
+    # in a table, the period of their times, the band when named, and the
+    # figure's picture only when a `figure_key` is named. A band named with
+    # only one bound is refused by name, and so is a `name` that names a
+    # place rather than a report.
     @server.tool(name='analyze_signal')
     def analyze_signal(
             action: Literal['events', 'clear_events', 'events_report',
@@ -664,46 +651,15 @@ def buildServer(core, dispatcher, name='imasviz'):
             figure_key: Optional[str] = None,
             name: Optional[str] = None,
     ):
-        """What one leaf's signal does, and what to do with what it says:
-        `action` picks the ask.
-
-        "events": the events of one `kind` read off the leaf -- `elm` (an
-        excursion up), `sawtooth` (a crash down), `lh` (a threshold
-        crossing). The signal is the one get_signal answers, so what is
-        detected and what a figure of the same leaf draws are the same read.
-        `threshold` / `prominence` / `min_distance` gate an ELM or a
-        sawtooth, `threshold` / `direction` / `hysteresis` an L-H crossing,
-        and a kind refuses a parameter it does not take, by name. `figure_key`
-        marks the events on that curve figure (capped, and refused when it
-        would be a wall).
-
-        "clear_events": those marks off a curve figure, safe when it holds
-        none -- it answers the number it took off.
-
-        "events_report": the same read and detection as a self-contained HTML
-        page -- the events in a table, the period of their times, and the
-        figure when one is named. Lands in `~/.imasviz/reports` like the
-        other reports, and a `name` that names a place is refused by name.
-
-        "spectrum": what the time series oscillates at -- the dominant
-        frequency and its period, the leading `n_peaks` (most power first),
-        and the band's share between `band_low` and `band_high` when a band
-        is named. A band named with only one bound, or a flat or too-short
-        series, is refused by name.
-
-        "correlate": how far `path` lags or leads `path_b`, and at what the
-        two oscillate together. Both reads are the ones a figure draws, so a
-        pair the case does not hold on one clock, or at one length, is
-        refused by name.
-
-        "spectrum_report": the same spectral facts as a self-contained HTML
-        page -- the peaks in a table, the band when named, and the figure
-        when one is named.
-
-        `uri` and `path` are the case and the leaf for the five reads;
-        "clear_events" works on a figure, not on a case. `along` and
-        `indices` pick one element out of a family, the way get_signal does.
-        """
+        """What one leaf's signal says, and `action` says which ask.
+        "events": the events of one `kind`, gated by the parameters that
+        kind takes. "clear_events": those marks off a curve figure.
+        "spectrum": the dominant frequency, the leading `n_peaks` by power,
+        the power between `band_low` and `band_high`. "correlate": how far
+        `path_b` lags or leads `path`, and at what the two oscillate
+        together. "events_report" and "spectrum_report": the same two
+        answers as an HTML page in ~/.imasviz/reports. `figure_key` is the
+        figure the marks or the picture go on."""
         gesture = gestureOf('analyze_signal', {'action': action})
         args = {name_: value for name_, value in (
             ('uri', uri), ('path', path), ('path_b', path_b),
@@ -726,6 +682,15 @@ def buildServer(core, dispatcher, name='imasviz'):
 
     # -------------------------------------------------- what a case says
 
+    # One name for the three numbers a case is judged on, and the physics of
+    # each -- the Greenwald ratio's n_G = (I_pl / A) x 1e20 with `I_pl` in
+    # mega-Ampere and `A` in square metre, and the two case numbers read off
+    # `global_quantities.beta_normal` and `profiles_1d.pressure` unless
+    # `path` names another leaf -- is the loop's comment for
+    # `derived_quantity`, which also says why neither of the two is computed
+    # here. Nothing is manufactured: a leaf the case lacks is refused by
+    # name, and so are three leaves of three different lengths, f_G being a
+    # ratio of three read at the same time.
     @server.tool(name='derived_quantity')
     def derived_quantity(
             quantity: Literal['greenwald', 'beta_normal', 'total_pressure'],
@@ -738,20 +703,12 @@ def buildServer(core, dispatcher, name='imasviz'):
             indices: Optional[dict] = None,
             indices_ip: Optional[dict] = None,
             indices_area: Optional[dict] = None):
-        """A number a case is judged on, and `quantity` picks which one.
-
-        "greenwald" divides the case's own density by the Greenwald limit,
-        f_G = n_e / n_G with n_G = (I_pl/A) x 1e20 (I_pl in A, A in m^2). It
-        manufactures nothing: the three leaves are named by the caller, and a
-        case that does not hold one is refused by name.
-
-        "beta_normal" and "total_pressure" are the case's own numbers, read
-        off the leaf it keeps them in -- `global_quantities.beta_normal` and
-        `profiles_1d.pressure` unless `path` names another -- never computed
-        here. The answer carries the path that read it, the values, the
-        points and the mean, max and min; a case that does not hold the leaf
-        is refused by name.
-        """
+        """A number a case is judged on; `quantity` says which.
+        "greenwald": f_G = n_e / n_G, over three leaves the caller names
+        (`n_e_path`, `ip_path`, `area_path`) -- formula and numbers from the
+        case. "beta_normal" and "total_pressure": the case's own numbers,
+        off the leaf it keeps them in, never computed here. A leaf the case
+        lacks, or three at different lengths, is refused by name."""
         gesture = gestureOf('derived_quantity', {'quantity': quantity})
         args = {field: value for field, value in (
             ('uri', uri), ('n_e_path', n_e_path), ('ip_path', ip_path),
@@ -771,26 +728,26 @@ def buildServer(core, dispatcher, name='imasviz'):
     # The trend of one leaf over a series of shots, and that same answer as
     # a page. The page runs the trend and dresses its answer, so the two
     # asks are one read and one word apart.
+    #
+    # "values" reads the same leaf from each shot the way a figure of it is
+    # read, one value per shot -- `at` a named index into that curve, or
+    # `which` over it (mean, max, min) -- and answers the per-shot values,
+    # the least-squares slope over the shot index, the first-to-last change,
+    # min and max with the shots they came from, and the direction. A
+    # one-shot campaign, a shot without the leaf, or an all-equal campaign
+    # refuses in words. "report" lays that answer out as a page: the per-shot
+    # table, the trend, the line the values make.
     @server.tool(name='trend_campaign')
     def trend_campaign(
             action: Literal['values', 'report'], cases: list, path: str,
             at: Optional[Union[int, str]] = None,
             which: Optional[str] = None, along: Optional[str] = None,
             indices: Optional[dict] = None, name: Optional[str] = None):
-        """What one leaf does across a series of shots, and `action` picks.
-
-        "values": the trend in campaign order -- the same leaf read from
-        each shot (a figure's read of that leaf), one value per shot (a
-        named index into the curve, or mean/max/min over it), then the
-        per-shot values, the least-squares slope over the shot index, first
-        to last, min/max and their shots, and the direction. A one-shot
-        campaign, a shot without the leaf, or an all-equal campaign refuses
-        in words.
-
-        "report": that answer as a self-contained HTML page -- the per-shot
-        table, the trend, the line the values make -- under
-        `~/.imasviz/reports`.
-        """
+        """What one leaf does across a series of shots, and `action` picks
+        the ask. "values": one value per shot -- `at` an index of its curve
+        or `which` over it -- then the slope over the shot index, the
+        first-to-last change, min and max. "report": that answer as an HTML
+        page under ~/.imasviz/reports."""
         gesture = gestureOf('trend_campaign', {'action': action})
         args = {field: value for field, value in (
             ('cases', cases), ('path', path), ('at', at), ('which', which),
@@ -807,38 +764,37 @@ def buildServer(core, dispatcher, name='imasviz'):
 
     # -------------------------------------------------------------- windows
 
+    # "list" answers every window in the order the menus draw them -- the
+    # case views, the figures, the plugin windows, each with its kind, its
+    # label, its key and whether it is on screen -- and asks for no window.
+    # A hide keeps the key, so the *Windows* menu still names the window
+    # (unchecked) and a session writes it hidden; "close" is the menu's
+    # Delete line: hide, delete, forget the key.
+    #
+    # "focus" is shown when off screen and raised when not, at the size it
+    # holds; a `width`/`height` side left out keeps the size the window
+    # holds on that side, and a side named but not a positive whole number
+    # is refused. Left without a `window`, "focus" means the application.
+    # The answer is the size the window then holds, which is what a picture
+    # ask reads before taking the shot.
+    #
+    # `window` is "app" for the application, a figure key for one figure, a
+    # case URI for its shot view. Showing is the user's command: neither a
+    # draw nor a gesture that moved a figure's content (transform_curve,
+    # configure_axes) is a reason to call it.
     @server.tool(name='manage_window')
     def manage_window(
             action: Literal['list', 'show', 'hide', 'close', 'focus'],
             window: Optional[str] = None,
             width: Optional[int] = None,
             height: Optional[int] = None):
-        """What one window of the session is asked to do: `action` picks it.
-
-        "list" answers every window in the order the menus draw them -- the
-        case views, the figures, the plugin windows, each with its kind, its
-        label, its key and whether it is on screen. It asks for no window.
-
-        "show" puts a window back on the screen after a hide, at the size it
-        holds; it keeps its key either way. "hide" takes it off the screen
-        without deleting it, and "show" brings it back. "close" deletes it
-        and forgets its key.
-
-        "focus" is the "show me this" gesture: the window comes forward
-        (shown when off screen, raised when not) at the size it holds, and
-        `width`/`height` are the pixels to put it at only when they are
-        named -- a side left out keeps the size the window holds on that
-        side, and a side that is named but is not a positive whole number
-        is refused. Left without a `window`, it means the application. The
-        answer is the size the window then holds.
-
-        `window` is "app" for the application, a figure key for one figure,
-        a case URI for its shot view. Showing is the user's command, not
-        something the agent does after a draw: the figure is in the
-        *Windows* menu, and that is where the raise lives. Neither a draw
-        nor a gesture that moved a figure's content (transform_curve,
-        configure_axes) is a reason to call it.
-        """
+        """What one window of the session is asked to do, and `action` says
+        which. "list": every window -- kind, label, key, on screen or not.
+        "show": put a hidden window back on the screen; "hide": take it off
+        without deleting it. "close": delete it and forget its key.
+        "focus": the user's "show me this" command -- raised to the front,
+        resized only when `width` and `height` name the pixels. A draw is
+        not an ask to show it."""
         gesture = gestureOf('manage_window', {'action': action})
         args = {name: value for name, value in (
             ('window', window), ('width', width), ('height', height))
@@ -858,6 +814,17 @@ def buildServer(core, dispatcher, name='imasviz'):
 
     # -------------------------------------------------------------- plugins
 
+    # "list" answers the entries in registration order -- the feature
+    # number, its label, its description for each. "run" answers with the
+    # answers the entry would have asked the user, which is what keeps a
+    # modal question off the path of an agent: an entry that asks an instant
+    # (`equilibriumsurfaces` entry 1) and is handed none is refused by name,
+    # not left to open a dialog.
+    #
+    # `ids_name`, `plugin` and `entry` are Optional because "list" names no
+    # plugin and no entry; a word the asked action does not take is refused
+    # by name instead of travelling to the core. The defaults of the run --
+    # occurrence 0, the branch resolved from the case -- stay the core's.
     @server.tool(name='plugin')
     def plugin(action: Literal['list', 'run'],
                uri: str,
@@ -866,21 +833,11 @@ def buildServer(core, dispatcher, name='imasviz'):
                entry: Optional[int] = None,
                occurrence: Optional[int] = None,
                time: Optional[float] = None):
-        """The plugins a case offers, and `action` picks the ask.
-
-        "list": the entries an IDS root earns, in registration order -- the
-        feature number, its label, its description for each -- and beside
-        them the refusals of the plugins the case cannot offer. "run": one
-        entry of one plugin, with the answers the entry would have asked the
-        user -- which is what keeps a modal question off the path of an
-        agent: an entry that asks an instant (`equilibriumsurfaces` entry 1)
-        and is handed none is refused by name, not left to open a dialog.
-
-        `ids_name`, `plugin` and `entry` are Optional because "list" names no
-        plugin and no entry; a word the asked action does not take is refused
-        by name instead of travelling to the core. The defaults of the run --
-        occurrence 0, the branch resolved from the case -- stay the core's.
-        """
+        """The plugins a case offers, and `action` says which ask. "list":
+        the entries an IDS root earns, beside the refusals of the plugins
+        that case cannot offer. "run": one entry, with `occurrence` and
+        `time` handed instead of asked; the same entry asked again draws
+        into the window that stands, and `drawn` names what came back."""
         gesture = gestureOf('plugin', {'action': action})
         args = {field: value for field, value in (
             ('uri', uri), ('ids_name', ids_name), ('plugin', plugin),
@@ -897,6 +854,24 @@ def buildServer(core, dispatcher, name='imasviz'):
 
     # --------------------------------------------------------------- session
 
+    # "save" writes the cases, the loads, the selection, the windows and
+    # what a hand styled on them; `name` is a file under the configuration
+    # folder, `path` a full file name, and left out both the file is written
+    # under a name of its own. "restore" opens the cases again, replays the
+    # loads and draws the figures and plugin windows the way the file named
+    # them.
+    #
+    # "new" answers how many windows it closed. It is the *New session* of
+    # the application's *File* menu: a client does not decide to clear a run
+    # it was not asked to clear, and the sessions the user saved on disk and
+    # the reports stay where they are.
+    #
+    # A `kind` the application does not answer is refused by name. "apply"
+    # takes a .lsp as a .pcfg, loading first the IDSs the case would need
+    # and does not hold, the way the menu does it. "save_selection" refuses
+    # a case with nothing selected; "save_plot_configuration" writes one
+    # Table Plot View, its panels and the places they held, and refuses any
+    # other window by name.
     @server.tool(name='manage_session')
     def manage_session(
             action: Literal['save', 'restore', 'new', 'list_sessions',
@@ -908,38 +883,16 @@ def buildServer(core, dispatcher, name='imasviz'):
             uri: Optional[str] = None,
             figure_key: Optional[str] = None,
     ):
-        """The run kept and read back: `action` picks the ask.
-
-        "save" writes the whole screen as the application writes it -- the
-        cases, the loads, the selection, the windows and what a hand styled
-        on them. `name` is a file under the configuration folder, `path` a
-        full file name; left out both, it is written under a name of its
-        own.
-
-        "restore" puts one of those sessions back: the cases open, the
-        loads replayed, the figures and plugin windows drawn the way the
-        file named them.
-
-        "new" is one clean session WITHOUT saving: every case view and
-        every figure of this session is closed and nothing is written, so
-        the sessions the user saved on disk and the reports stay where they
-        are. It answers how many windows it closed, and it is the *New
-        session* of the application's *File* menu: a client does not decide
-        to clear a run it was not asked to clear.
-
-        "list_sessions" answers the .vsess files the folder holds, and
-        "list_configurations" the plot (.pcfg) and selection (.lsp) files;
-        `kind` narrows the second to one kind, and a kind the application
-        does not answer is refused by name.
-
-        "apply" selects on a case the quantities one saved configuration
-        names -- a .lsp as a .pcfg -- loading first the IDSs the case would
-        need and does not hold, the way the menu does it. "save_selection"
-        writes the case's current selection out as a .lsp (nothing selected
-        is refused by name), and "save_plot_configuration" one Table Plot
-        View out as a .pcfg, its panels and the places they held -- any
-        other window is refused by name.
-        """
+        """The run kept and read back, and `action` says which ask. "save":
+        the whole screen as the application writes it. "restore": one of
+        those sessions put back, naming the cases that came back. "new": a
+        clean session WITHOUT saving -- every case view and figure closed,
+        nothing written; the user asks for it out loud. "list_sessions":
+        the .vsess files. "list_configurations": the .pcfg and .lsp files,
+        `kind` narrowing to one. "apply": one saved configuration put on a
+        case, its quantities selected and the IDSs it needs loaded first.
+        "save_selection": the case selection as a .lsp.
+        "save_plot_configuration": one Table Plot View as a .pcfg."""
         gesture = gestureOf('manage_session', {'action': action})
         args = {field: value for field, value in (
             ('name', name), ('path', path), ('kind', kind),
@@ -956,37 +909,34 @@ def buildServer(core, dispatcher, name='imasviz'):
 
     # --------------------------------------------------------------- reports
 
+    # The parameter that names the subject depends on the scope: `figure_key`
+    # is the window for "plot", `uri` the case for the other two.
+    #
+    # A "plot" page stats its traces: the finite minimum and maximum and the
+    # nan/inf counts beside the samples; a window that draws no curve it
+    # could stat is refused by name. A "case_loaded" page takes the curves
+    # in tree order; an IDS not yet loaded is not a curve, so the answer
+    # says how many curves it gave and manage_idss(action='declared') names
+    # what the case still holds. A "case_ids" page reads the occurrences
+    # through DBEntry.list_all_occurrences rather than listing them from
+    # memory, and gives each loaded occurrence a header of its `ids_properties`
+    # values plus its available signals -- kept to the ones the tree carries
+    # as available, the same test its own colouring applies, a 0-D scalar
+    # held by the dynamic array among them. A property the case leaves empty
+    # is named empty, an occurrence without an available signal is named as
+    # such, and a case that holds no data at all is refused by name; `name`
+    # naming a place rather than a report is refused at the disk.
     @server.tool(name='generate_report')
     def generate_report(scope: Literal['plot', 'case_loaded', 'case_ids'],
                         figure_key: Optional[str] = None,
                         uri: Optional[str] = None,
                         name: Optional[str] = None):
-        """A self-contained HTML report on disk; `scope` says which report.
-
-        "plot" -- a window of curves: the image of the window, and one row
-        per trace it drew (the quantity, the number of samples, the finite
-        minimum and maximum, the nan/inf counts). The window is named by
-        `figure_key`; a window that draws no curve it could stat is refused
-        by name. "case_loaded" -- the loaded tree of a case, named by `uri`:
-        one row per curve the tree holds, the numeric arrays its leaves
-        read, in tree order, with the statistics of each. An IDS not yet
-        loaded is not a curve, so the answer says how many curves it gave
-        and manage_idss(action='declared') names what the case still
-        holds; a case whose loaded tree has no curve is refused by name.
-        "case_ids" -- the case itself
-        under one page: every IDS its data dictionary holds and the
-        occurrences each one holds (read through
-        DBEntry.list_all_occurrences, not listed from memory), which of
-        those the session loaded, and for each loaded occurrence a header
-        of its `ids_properties` values plus its available signals -- kept
-        to the ones the tree carries as available, the same test its own
-        colouring applies, a 0-D scalar held by the dynamic array among
-        them. A property the case leaves empty is named empty, an
-        occurrence without an available signal is named as such, and a case
-        that holds no data at all is refused by name. The file lands in
-        `~/.imasviz/reports`; `name` is the report name (a place, not a
-        report, is refused).
-        """
+        """A self-contained HTML page in ~/.imasviz/reports; `scope` says
+        which. "plot": one window of curves -- its image and one row per
+        trace it drew, saying the quantity, the samples and the counts.
+        "case_loaded": one row per curve the loaded tree of a case holds.
+        "case_ids": every IDS the case's dictionary holds, the occurrences
+        each holds, and which the session loaded."""
         # The parameters an action needs are the table's, not this
         # signature's: the signature has to hold every action's names, so
         # `scope="plot"` without a `figure_key` is legal to FastMCP and
@@ -1018,17 +968,14 @@ def buildServer(core, dispatcher, name='imasviz'):
 
     # ------------------------------------------------------------ screenshot
 
+    # `window` is "app" for the application, a figure key for one figure, a
+    # case URI for its shot view. The picture goes back as image content
+    # beside the text line saying how many bytes it is.
     @server.tool(name='get_screenshot')
     def get_screenshot(window: str = 'app'):
-        """A window as it stands, in PNG.
-
-        "app" for the application, a figure key for one figure, a case
-        URI for its shot view -- the image content of the answer is the
-        picture itself. The picture is the size the window is: when a
-        requested picture should be readable and the window answers
-        small, size it with manage_window(action='focus', width, height)
-        first, then take the picture.
-        """
+        """The explicit picture ask: a window as it stands, in PNG. The
+        picture is the size the window holds, so size it first with
+        manage_window(action="focus") when the picture has to be readable."""
         png = _run(partial(core.screenshot, window))
         return [
             mcp_types.TextContent(
@@ -1042,16 +989,49 @@ def buildServer(core, dispatcher, name='imasviz'):
 
     # ------------------------------------------------------------------- log
 
+    # The place an agent reads what a dialog would have told it: a refusal a
+    # gesture raised is a line of this log, named, on the case that raised it.
     @server.tool(name='get_logs')
     def get_logs(uri: Optional[str] = None, tail: int = 200):
         """The log panel of one case, or of every case when `uri` is left
         out: the last `tail` lines the gestures wrote there, the named
-        refusals among them -- where an agent reads what a dialog would
-        have told it."""
+        refusals among them."""
         return _run(partial(core.get_logs, uri, tail=tail))
 
     # ------------------------------------------------------------- journals
 
+    # The two journals are the author's own notebook and the cahier the
+    # writers share; `scope` says WHICH one, not which ask, and left out the
+    # ask goes to both -- a journal not on this node is left out of the
+    # answer, named in it.
+    #
+    # "search" ranks by words first and by meaning when an embeddings
+    # endpoint is set; "list" is the same filters without a query, in date
+    # order, each note in its short view (the fields that name it and a line
+    # of its body). "read" answers the whole note -- author, machine,
+    # campaign, shot, date, title and its body -- the id coming from a
+    # "search" or "list" answer; "delete" names in its answer the scope and
+    # the id it removed. "stats" answers the two directories, the count of
+    # notes each answers, and whether an embeddings endpoint is set (and on
+    # which model): a search on this node ranks by words until it is.
+    # "reindex" is the ask of a search that came back `guarded` (an index
+    # written under an endpoint this run is no longer under) or of a journal
+    # never indexed; it keeps the rows it has, re-embeds the ones that
+    # moved, drops the ones the journal no longer holds, and answers per
+    # journal how many of each.
+    #
+    # "add" takes `text` as the body and the naming fields as optional --
+    # `author` (left out for a note by the agent), `machine`, `campaign`,
+    # `shot`, `date`, `title`: a note may be a general observation naming no
+    # shot and no machine. The `id` and `path` the file lands under come back
+    # in the answer. `date_from` / `date_to` bound the shot date
+    # (`YYYY-MM-DD`) on "search" and "list"; `date` is one note's date on
+    # "add". A note may carry no filter: a filter it does not carry leaves it
+    # out of the answer, not out of the query run on its body.
+    #
+    # "edit" is deliberately not on this face -- it is the page's Edit button
+    # that asks that gesture, so a note keeps the id the other writers read
+    # it under. The table knows the action; this Literal offers seven.
     @server.tool(name='manage_note')
     def manage_note(
             action: Literal['search', 'list', 'read', 'add', 'delete',
@@ -1070,46 +1050,14 @@ def buildServer(core, dispatcher, name='imasviz'):
             author: Optional[str] = None,
             title: Optional[str] = None,
     ):
-        """The lab notebook of the two journals: `action` picks the ask.
-
-        "search" answers the notes that fit the filters you name, ranked for
-        the `query` you ask in -- by words first and by meaning when an
-        embeddings endpoint is set, and the method it used is in the answer.
-        "list" is the same filters without a query, in date order, each note
-        in its short view (the fields that name it and a line of its body).
-
-        "read" answers the whole note under `note_id` (the fields that name
-        it -- author, machine, campaign, shot, date, title -- and its body),
-        the id coming from a "search" or "list" answer. "delete" takes that
-        note out, naming in the answer the scope and the id it removed.
-        "stats" answers what the two journals hold on this node: the two
-        directories, the count of notes each answers, and whether an
-        embeddings endpoint is set (and on which model) -- a search on this
-        node ranks by words until it is. "reindex" puts the journal(s) in
-        step with their index, the ask of a search that came back `guarded`
-        (an index written under an embeddings endpoint this run is no longer
-        under) or of a journal never indexed; it keeps the rows it has,
-        re-embeds the ones that moved, drops the ones the journal no longer
-        holds, and answers per journal how many of each.
-
-        "add" writes a line: `text` is the body, and the fields that name
-        the note are `author` (left out for a note by the agent), `machine`,
-        `campaign`, `shot`, `date` and `title` -- all optional, a note may be
-        a general observation that names no shot and no machine. The `id` and
-        `path` the file lands under come back in the answer.
-
-        `scope` is WHICH journal, not which action: `personal` (the author's
-        own notes) or `shared` (the cahier a writer sees), and left out it
-        asks the two -- a journal not on this node is left out of the answer,
-        named in it. `date_from` / `date_to` bound the shot date
-        (`YYYY-MM-DD`) on "search" and "list"; `date` is one note's date on
-        "add". A note may carry no filter: a filter it does not carry leaves
-        it out of the answer, not out of the query you ran on its body.
-
-        Changing a note in place is not on this face -- it is the page's
-        Edit button that asks that gesture, so a note keeps the id the other
-        writers read it under.
-        """
+        """The lab notebook of the two journals, and `action` says which
+        ask. "search": the filters narrow to the notes that name them,
+        `query` ranks them, and the answer names the `method` it ranked by.
+        "list": the same filters without a query, newest first. "read": one
+        `note_id` whole. "add": one new note, `text` required. "delete": one
+        note, gone. "stats": what the two journals are on this node, and the
+        endpoint a search ranks with. "reindex": the journals in step with
+        their index. A `note_id` a journal lacks is refused by name."""
         gesture = gestureOf('manage_note', {'action': action})
         args = {name: value for name, value in (
             ('scope', scope), ('note_id', note_id), ('query', query),
@@ -1129,6 +1077,25 @@ def buildServer(core, dispatcher, name='imasviz'):
 
     # ------------------------------------------------------------- prompts
 
+    # The personal catalogue is under ~/.imasviz/prompts and the shared one
+    # under the folder SharedPromptsDir names; an unnamed shared folder costs
+    # its own half of the list, named in `catalogues_unavailable`. `scope` is
+    # WHICH catalogue -- `personal`, or `shared`, which the user has to ask
+    # for in their own words -- and left out the ask goes to both.
+    #
+    # "list" answers id, name, category, a one-line description and the holes
+    # each opens; `categories` answers how many prompts each category holds.
+    # It is the ask when the user says "relance le prompt ..." and the
+    # wording they filed is not known. "detail" answers the body with its
+    # holes open and what each hole would be answered from right now, and
+    # remembers nothing. "fill" fills a hole from the first source that
+    # answers it -- what is named in `values`, what was typed last time, what
+    # this session knows, what the file declares -- and takes the `text` it
+    # answers back: filling is not running, so the caller asks that text as
+    # the user asked it. "save" reads `variables` off the text when left out;
+    # "edit" keeps the id the remembered values were written under and a
+    # field left out keeps the value it held -- a NEW prompt is "save".
+    # "delete" takes a prompt and its remembered values off the disk.
     @server.tool(name='manage_prompt')
     def manage_prompt(
             action: Literal['list', 'detail', 'fill', 'save', 'edit',
@@ -1144,39 +1111,14 @@ def buildServer(core, dispatcher, name='imasviz'):
             query: Optional[str] = None,
             limit: Optional[int] = None,
     ):
-        """The catalogue of prompts the user wrote once and asks again:
-        `action` picks the ask.
-
-        "list" answers the prompts -- id, name, category, one-line
-        description, and the holes each opens. `category` and `query` narrow
-        it and `categories` answers how many prompts each category holds. The
-        personal catalogue is under ~/.imasviz/prompts and the shared one
-        under the folder SharedPromptsDir names; an unnamed shared folder
-        costs its own half of the list, named in `catalogues_unavailable`.
-        Ask of it when the user says "relance le prompt ..." and you do not
-        know the wording they filed.
-
-        "detail" answers one prompt whole (its body with its holes open, and
-        what each hole would be answered from right now) and remembers
-        nothing. "fill" answers the prompt with its holes filled and runs
-        nothing: a hole is filled from the first source that answers it --
-        what you name in `values`, what was typed last time, what this
-        session knows, what the file declares -- and a hole none of them
-        answers is a refusal naming the holes. Take the `text` it answers and
-        ask it as the user asked it: filling is not running.
-
-        "save" files a new prompt (`text` with its holes spelled `{name}`,
-        `variables` read off the text when left out). "edit" changes one in
-        place, keeping the id its remembered values were written under -- a
-        field left out keeps the value it held; a NEW prompt is "save".
-        "delete" takes a prompt and its remembered values off the disk.
-
-        `scope` is WHICH catalogue -- `personal`, or `shared` (a line the
-        team reads, which the user has to ask for in their own words) -- and
-        left out it asks both. Filing, changing and deleting are asked for in
-        the user's own words: a turn that merely drew a figure is not an ask
-        to file its wording.
-        """
+        """The prompts the user filed to ask again; `action` picks which.
+        "list": the prompts with their ids and the holes each opens;
+        `category` and `query` narrow it. "detail": one prompt whole, with
+        `values`: what each hole would take now. "fill": the filled prompt,
+        and nothing run; a hole no source answers is refused naming it.
+        "save": a new prompt, `text` with its holes spelled {name}. "edit":
+        one prompt changed in place, keeping its id. "delete": one prompt
+        out of the catalogue. `scope` is WHICH catalogue, not which ask."""
         gesture = gestureOf('manage_prompt', {'action': action})
         args = {field: value for field, value in (
             ('name', name), ('scope', scope), ('text', text),
@@ -1195,44 +1137,38 @@ def buildServer(core, dispatcher, name='imasviz'):
 
     # ----------------------------------------------------------- documents
 
+    # The corpus is the markdown, text and PDF files of the AgentDocsDir
+    # folder. An empty corpus -- a folder with no document -- is an answer;
+    # a corpus with no folder named is a refusal that names it.
+    #
+    # "list" gives the name, the size, the date and the `rel` a search
+    # answers by. "search" is one hit per chunk -- the document `rel`, the
+    # chunk, a snippet -- and is the ask when the question is about the
+    # user's own writing; the answer names the method it ranked with (hybrid
+    # / embeddings / keyword / empty), a `guarded` store having its vectors
+    # in a different space than the query, so the keyword alone ranks. "read"
+    # is the ask when a hit is worth reading entire: not in the corpus is a
+    # refusal by name, naming the ones it does read. "reindex" is the ask
+    # after a document was added to the folder or when a search comes back
+    # `guarded`; it keeps what it has, re-embeds what moved, drops what left
+    # the folder, and answers how many documents and chunks it kept, wrote
+    # and dropped. "stats" names the endpoint and model the store was written
+    # under and when it was built -- the answer when "can the agent read my
+    # documents" is "it is not indexed yet".
     @server.tool(name='manage_documents')
     def manage_documents(
             action: Literal['list', 'search', 'read', 'reindex', 'stats'],
             query: Optional[str] = None,
             limit: Optional[int] = None,
             rel: Optional[str] = None):
-        """The corpus of documents the agent reads for itself, and `action`
-        picks the ask.
-
-        "list" answers the markdown, text and PDF files the folder
-        AgentDocsDir names (the name, the size, the date, and the `rel` a
-        search answers by). An empty corpus -- a folder with no document --
-        is an answer; a corpus with no folder named is a refusal that
-        names it.
-
-        "search" ranks the chunks of those files, one hit per chunk: the
-        document `rel`, the chunk, a snippet. It is the ask when the
-        question is about the user's own writing. The answer names the
-        method it ranked with (hybrid / embeddings / keyword / empty); a
-        store written under another embeddings endpoint is `guarded`, its
-        vectors standing in a different space than the query, and the
-        keyword alone ranks.
-
-        "read" gives one document whole, by the `rel` a hit names -- the
-        ask when a hit is worth reading entire. Not in the corpus is a
-        refusal by name, naming the ones it does read.
-
-        "reindex" puts the corpus in step with its store: after a document
-        was added to the folder, or when a search comes back `guarded`. It
-        keeps what it has, re-embeds what moved, drops what left the
-        folder, and answers how many documents and chunks it kept, wrote
-        and dropped.
-
-        "stats" names how many documents and chunks the corpus holds, the
-        embeddings endpoint and model it was written under, and when it was
-        built -- the answer when "can the agent read my documents" is "it
-        is not indexed yet".
-        """
+        """The corpus the agent reads for its own RAG, in the AgentDocsDir
+        folder; `action` says which ask. "list": the corpus as named, with
+        the `rel` a search answers by. "search": the ranked chunks, naming
+        the `method` it ranked with. "read": one document whole, by its
+        `rel`. "reindex": the corpus in step with its store. "stats": how
+        many documents and chunks, under which endpoint. A store under
+        another embedding endpoint answers `guarded` and ranks by keyword
+        alone."""
         gesture = gestureOf('manage_documents', {'action': action})
         args = {field: value for field, value in (
             ('query', query), ('limit', limit), ('rel', rel))
