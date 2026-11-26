@@ -52,7 +52,11 @@ from imasviz.VizAgent.llm_client import LLMResponse
 from imasviz.VizAgent.tools import (
     FAMILIES,
     TOOLS,
+    actionsOf,
+    discriminatorOf,
     familyOf,
+    gestureOf,
+    resolveCall,
     siblingTaking,
     unknownParameterRefusal,
 )
@@ -367,6 +371,49 @@ def test_a_call_the_core_answers_is_not_touched_by_the_grouping(qapp):
                            'path': 'equilibrium.f'}]
     assert 'REFUSAL' not in transcript
     assert errors == [None]
+
+
+def test_the_group_refusal_reads_for_every_group():
+    """A call that misses its group is refused in a sentence the model has
+    to re-read before it can answer again, so the sentence is part of the
+    interface. The first cut of that answer put an article in front of the
+    discriminant -- `manage_session answers no gesture without a action` --
+    which is a grammar mistake repeated for every group whose discriminant
+    happens to start with a vowel sound. The discriminant is a word of the
+    schema, so the sentence names it without dressing it.
+
+    Three calls per group: no discriminant at all, a member's name where
+    the action belongs, and a word that is neither. Each still names the
+    values to answer with, which is the whole use of the refusal. The
+    second call is asked only where a member name is not itself an action:
+    ``derived_quantity`` spells its actions as its gestures, so there the
+    member name is the right answer and asking for a refusal would ask for
+    a bug."""
+    for name in TOOL_NAMES:
+        discriminant = discriminatorOf(name)
+        if discriminant is None:
+            continue
+        choices = actionsOf(name)
+        members = [gestureOf(name, {discriminant: action})
+                   for action in choices]
+        stray = next((one for one in members if one not in choices), None)
+        asked = [{}, {discriminant: 'no_such_action'}]
+        if stray is not None:
+            asked.insert(1, {discriminant: stray})
+        refusals = []
+        for arguments in asked:
+            with pytest.raises(ValueError) as refused:
+                resolveCall(name, arguments)
+            refusals.append(str(refused.value))
+        for text in refusals:
+            for article in (' a %s' % discriminant,
+                            ' an %s' % discriminant):
+                assert article not in text, \
+                    ('%s: "%s" is not English. The discriminant is a word of '
+                     'the schema, not a noun to put an article in front of: '
+                     '%s' % (name, article, text))
+        assert choices[0] in refusals[0], \
+            '%s lost the values to answer with: %s' % (name, refusals[0])
 
 
 # --- the measurement script stays true to the surface ------------------

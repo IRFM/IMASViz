@@ -2350,18 +2350,26 @@ def callSpelling(member):
 
 
 def _actionRefusal(name, discriminator, order, value):
+    """Why a call did not say which gesture it means, in words that read.
+
+    The discriminant is a word of the schema, not an English one, so no
+    sentence here puts an article in front of it: `a action` is what the
+    first cut of this answer said for every `action` group, and a refusal
+    the model has to re-read is a refusal it answers wrong.
+    """
     choices = ', '.join('"%s"' % action for action in order)
     if value is None:
-        return ('the %s tool answers no gesture without a %s: answer with %s '
-                'among %s.' % (name, discriminator, discriminator, choices))
+        return ('the %s tool answers no gesture before it says its %s: '
+                'answer with %s among %s.'
+                % (name, discriminator, discriminator, choices))
     spelled = {member: action
                for action, member in _OFFERS[name][2].items()}
     if value in spelled:
-        return ('"%s" is the gesture the %s tool answers, not a %s it takes: '
-                'answer with %s="%s".'
+        return ('"%s" is a gesture the %s tool answers, not a value of its '
+                '%s: answer with %s="%s".'
                 % (value, name, discriminator, discriminator, spelled[value]))
-    return ('"%s" is not a %s the %s tool answers: it answers %s. Answer with '
-            'one of those.' % (value, discriminator, name, choices))
+    return ('the %s tool answers no %s "%s": it answers %s. Answer with one '
+            'of those.' % (name, discriminator, value, choices))
 
 
 def resolveCall(name, args):
