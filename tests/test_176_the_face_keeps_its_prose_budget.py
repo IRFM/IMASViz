@@ -14,9 +14,10 @@
 
 The loop sends its whole ``TOOLS`` list on **every** turn of an ask, so a
 description is paid once per turn, not once per session. Measured on this
-tree with ``python3 scripts/tool_schema_size.py``: 23 tools, a 32 120
+tree with ``python3 scripts/tool_schema_size.py``: 23 tools, a 30 064
 character payload, of which 8 571 are descriptions (1 457 words) and
-17 748 parameter notes. The plumbing (149 characters per tool before a
+15 692 parameter blocks -- 7 997 characters / 1 399 words of that is the
+notes themselves. The plumbing (149 characters per tool before a
 word of its own) and the parameter blocks did not move during the merge;
 the descriptions went from 12 259 to 8 571, and that is the half this
 file keeps from coming back.
@@ -45,6 +46,31 @@ trade the T7 pass made on twenty tools, and the facts are still there:
 the slice cost of ``manage_idss(action="load")``, the profile names
 ``equilibrium`` brings back, what a session file holds.
 
+The notes on the **parameters** pay a budget of their own, and it is
+degressive because the wire format has no reference: a word several tools
+take is sent once per tool that takes it, so ``SHARED_WORD_CAP`` is 15
+(``uri`` alone is paid fourteen times), and a word one tool takes may
+afford its concrete example, so ``OWN_WORD_CAP`` is 25. A word several
+tools take has **one** wording, spelled once in ``SHARED_NOTES`` and
+referenced by the schemas that take it: the saving is in the source only
+-- the payload still carries a copy per tool -- so what that table buys
+is the consistency the guards below pin, and a second wording of ``uri``
+is a word the model learns twice. The table is exactly the vocabulary of
+the block's ADDRESSING section, so a shared word is answered up there as
+well; a word whose meaning moves with the tool that takes it (``path``,
+``name``, ``dd_version``, or a discriminant such as ``mode``) is not in
+it and stays spelled where it is used.
+
+And what a note no longer says is what the call already **enforces**:
+which action takes which word, and what a call requires, is answered by
+the ``ACTION_PARAMETERS`` rows through ``missingParameters`` and
+``unknownParameters``, both refusals naming the action, the word and the
+call to answer with. Three notes were dropped outright on that ground
+(``plot``'s ``mode``, ``transform_curve``'s and ``configure_axes``'
+``operation`` -- the enum and the description spell them already) and 37
+blocks now carry none. Prose that recites an enforced rule is paid every
+turn and answers nothing the refusal did not already answer.
+
 And the second half of the trade: three rules that used to be repeated
 inside tool descriptions are said **once**, in the block both faces carry
 (``SYSTEM_INSTRUCTIONS`` here, ``INSTRUCTIONS`` in ``mcp_server``). A
@@ -61,6 +87,7 @@ import importlib.util
 import os
 
 from imasviz.VizAgent.tools import (
+    SHARED_NOTES,
     SYSTEM_INSTRUCTIONS,
     TOOLS,
     actionsOf,
@@ -81,6 +108,14 @@ WORDS_PER_ACTION = 8
 _ONE_WINDOW = 'ask one, not both'
 _PICTURES = 'a screenshot is a picture you cannot read'
 _NEVER_PNG = 'never from the png'
+
+# The budget for the note on a parameter, as T7-bis settled it. The
+# format has no reference, so a word several tools take is sent once per
+# tool that takes it -- ``uri`` is paid fourteen times a turn -- and a
+# long shared note is fourteen long notes. A word one tool takes costs
+# one copy, so it may afford the example that settles its spelling.
+SHARED_WORD_CAP = 15
+OWN_WORD_CAP = 25
 
 
 def _cap(name):
@@ -277,3 +312,121 @@ def test_no_description_carries_a_shared_rule_back_out():
             assert rule not in text, \
                 ('%s carries the shared rule "%s" again: it is in the '
                  'block both faces send' % (name, rule))
+
+
+# --- what a parameter note may say ------------------------------------
+
+def _notesByParameter():
+    """Every parameter note the loop sends, under its parameter name, as
+    ``{name: [(tool, noteOrNone), ...]}`` -- one entry per schema that
+    takes the word, which is one payment per turn.
+
+    A block with no note is listed and is not a gap: a word the
+    ADDRESSING block of the instruction already answers needs nothing
+    beside it (``mode`` of ``plot``, the ``operation`` of the two curve
+    tools went that way). Silence is legal; a second wording is not."""
+    notes = {}
+    for tool in TOOLS:
+        name = tool['function']['name']
+        for parameter, block in \
+                tool['function']['parameters'].get('properties', {}).items():
+            notes.setdefault(parameter, []).append(
+                (name, block.get('description')))
+    return notes
+
+
+def _addressing():
+    """The ADDRESSING section of the in-app block -- the vocabulary the
+    loop teaches once instead of by twenty-three schemas. The shared
+    notes are supposed to be that vocabulary's spelling, so this is the
+    half of the table they are checked against."""
+    text = SYSTEM_INSTRUCTIONS
+    start = text.index('### ADDRESSING')
+    return text[start:text.index('### STRICT RULES')]
+
+
+def test_a_parameter_note_pays_its_word_cap():
+    """A note is fixed cost, and how much of it depends on how many
+    schemas carry the word: the wire has no reference, so ``uri`` --
+    taken by fourteen tools -- is fourteen notes, while ``ip_path`` is
+    one. Hence the degressive cap: ``SHARED_WORD_CAP`` for a word
+    several tools take, ``OWN_WORD_CAP`` for a word one tool takes, which
+    is what lets the physics parameters keep their concrete spelling.
+
+    What goes over is shortened, not moved to the comment: unlike a
+    description, a parameter has no place beside it the model reads. The
+    facts that do not fit belong in the comment **above the tool**, which
+    is where several of them already are."""
+    over = []
+    for parameter, taken in _notesByParameter().items():
+        cap = SHARED_WORD_CAP if len(taken) > 1 else OWN_WORD_CAP
+        for note in {note for _name, note in taken if note}:
+            words = len(note.split())
+            if words > cap:
+                over.append('%s: %d words for a cap of %d, taken by %d'
+                            % (parameter, words, cap, len(taken)))
+    assert not over, \
+        ('these notes are over the parameter budget of %d words shared / '
+         '%d of one tool: %s' % (SHARED_WORD_CAP, OWN_WORD_CAP,
+                                 '; '.join(sorted(over))))
+
+
+def test_a_shared_word_is_spelled_once_or_not_at_all():
+    """A word several tools take has ONE wording, in ``SHARED_NOTES``,
+    and a schema that takes it either references that table or carries no
+    note. A second wording is what the table exists to refuse: a model
+    that meets ``occurrence`` phrased three ways has three things to
+    learn, and a call refused on a spelling the schema did not use is a
+    refusal it cannot answer.
+
+    A drifted note is not cosmetic either: the drifted copy is the one
+    the cap above counts, and the table's wording is the one every other
+    tool pays."""
+    notes = _notesByParameter()
+    for parameter, wording in SHARED_NOTES.items():
+        taken = notes.get(parameter)
+        assert taken is not None, \
+            ('SHARED_NOTES spells %s while no schema takes that word any '
+             'more: the table is the list of shared words, not a museum'
+             % parameter)
+        odd = [name for name, note in taken if note not in (None, wording)]
+        assert not odd, \
+            ('%s is phrased elsewhere than SHARED_NOTES by %s: one word, '
+             'one wording' % (parameter, ', '.join(odd)))
+
+
+def test_a_shared_word_is_a_word_several_tools_take():
+    """The table buys one thing -- a wording written once in the source
+    for several schemas -- so a word only one tool takes does not belong
+    in it: it adds a level of indirection between the tool and its own
+    note, and the next reader of that tool has to look elsewhere for a
+    wording used once.
+
+    This is also what keeps the table small enough to read as the
+    vocabulary it claims to be."""
+    notes = _notesByParameter()
+    lonely = sorted(word for word in SHARED_NOTES
+                    if len(notes.get(word, [])) < 2)
+    assert not lonely, \
+        ('these words are taken by one tool, so they are not shared and '
+         'their note belongs in that schema: %s' % ', '.join(lonely))
+
+
+def test_the_instruction_answers_every_shared_word():
+    """The table is exactly the vocabulary of the ADDRESSING block: a
+    word is shared because the block already teaches what it addresses,
+    and the note is its spelling at the parameter level. A word that
+    enters the table without being answered up there is a private
+    definition smuggled into a shared name -- the model reads the block,
+    not a note it meets fourteen times.
+
+    Pinned the other way by test_147, which asks that the block teaches
+    the addressing vocabulary; this one asks that the notes do not
+    contradict it."""
+    block = _addressing()
+    untaught = sorted(word for word in SHARED_NOTES
+                      if '`%s`' % word not in block)
+    assert not untaught, \
+        ('these shared words are not answered by the ADDRESSING block, so '
+         'they are not shared vocabulary: %s' % ', '.join(untaught))
+

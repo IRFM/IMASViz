@@ -165,8 +165,9 @@ def _mcpFace(path):
 
 def measure(loopSource=LOOP_SOURCE, mcpSource=MCP_SOURCE):
     """Every number the report prints, in one dictionary."""
-    tools, families, instructions = _sourceConstants(
-        loopSource, ['TOOLS', 'FAMILIES', 'SYSTEM_INSTRUCTIONS'])
+    tools, families, instructions, shared = _sourceConstants(
+        loopSource, ['TOOLS', 'FAMILIES', 'SYSTEM_INSTRUCTIONS',
+                     'SHARED_NOTES'])
 
     payload = _json(tools)
     descriptions = {t['function']['name']: t['function']['description']
@@ -185,6 +186,18 @@ def measure(loopSource=LOOP_SOURCE, mcpSource=MCP_SOURCE):
                    for lengths in blocks.values() if len(lengths) > 1)
     parameterChars = sum(max(lengths) for lengths in blocks.values()) \
         + repeated
+
+    # The prose of the notes alone, told apart from the plumbing of the
+    # block that carries it (a name, a type, the `description` key): the
+    # half a shorter wording reduces, and the half of the parameter cost
+    # that no wording can touch.
+    notes = [block.get('description')
+             for tool in tools
+             for block in tool['function']['parameters'].get(
+                 'properties', {}).values()]
+    noteChars = sum(len(note) for note in notes if note)
+    noteWords = sum(_words(note) for note in notes if note)
+    silentParameters = sum(1 for note in notes if not note)
 
     # The projection: the vocabulary spelled as the table's OFFERS, which
     # is what a merged group is actually offered as -- "the drawing" is
@@ -262,6 +275,10 @@ def measure(loopSource=LOOP_SOURCE, mcpSource=MCP_SOURCE):
         'parameterChars': parameterChars,
         'distinctParameters': len(blocks),
         'repeatedParameterChars': repeated,
+        'parameterNoteChars': noteChars,
+        'parameterNoteWords': noteWords,
+        'silentParameters': silentParameters,
+        'sharedParameterWords': len(shared),
         'plumbingCharsPerTool': plumbing,
         'systemInstructionsChars': len(instructions),
         'groups': len(families),
@@ -285,7 +302,8 @@ def measure(loopSource=LOOP_SOURCE, mcpSource=MCP_SOURCE):
 def _delta(current, baseline):
     lines = []
     for key in ('tools', 'payloadChars', 'payloadTokens', 'descriptionChars',
-                'repeatedParameterChars', 'projectedTools', 'mcpTools'):
+                'parameterNoteChars', 'repeatedParameterChars',
+                'projectedTools', 'mcpTools'):
         before, after = baseline.get(key), current.get(key)
         if isinstance(before, int) and isinstance(after, int):
             sign = after - before
@@ -308,6 +326,11 @@ def report(m):
           % (format(m['parameterChars'], ','),
              format(m['repeatedParameterChars'], ','),
              m['distinctParameters']))
+    print('  notes        : %s chars / %s words of that, %d blocks carrying '
+          'no note, %d shared words spelled once'
+          % (format(m['parameterNoteChars'], ','),
+             format(m['parameterNoteWords'], ','),
+             m['silentParameters'], m['sharedParameterWords']))
     print('  plumbing     : %d chars per tool before a word of its own'
           % m['plumbingCharsPerTool'])
     print('  instructions : %s chars (once per turn, beside the schemas)'

@@ -111,6 +111,59 @@ tools back on.
 The user asks a question, you answer it in the shape you can answer in."""
 
 
+# What a parameter note is for, and what it is not for.
+#
+# A note says what a value IS and how it is spelled -- the half of the
+# question a call cannot settle for itself. What a call REQUIRES, and which
+# of its actions takes a word at all, is answered by the call's own
+# validation: the rows of ``ACTION_PARAMETERS`` below drive
+# ``missingParameters`` and ``unknownParameters``, and both refusals name
+# the action, the word, and the call to answer with. Prose that recites an
+# enforced rule is paid at every turn and answers nothing the model did not
+# already get back in the refusal.
+#
+# So a note has a length, as a description has one (test_176 refuses the
+# drift in both): 15 words for a parameter word several tools take, 25 for
+# one a single tool takes. The ratio is the wire, not style: the format has
+# no reference, so a word fourteen tools take is paid fourteen times, and
+# a word one tool takes may afford its example.
+#
+# A shared word has one wording, spelled once here and referenced by every
+# schema that takes it: a model that meets ``uri`` phrased three ways has
+# three things to learn, and a call refused on a wording the schema did not
+# use is a refusal it cannot answer. Silence stays legal -- a word the
+# ADDRESSING block above already answers needs no note beside it -- and
+# this table is exactly that block's vocabulary: test_176 asks that every
+# word of it is answered up there, so the block and the notes cannot drift
+# apart. What is not legal is a second wording.
+#
+# A word the block does not answer is not shared, and a word whose meaning
+# changes with the tool that takes it is not shared either; both stay
+# spelled where they are used, under the same cap: ``path`` is a leaf in
+# six tools and a file in manage_session; ``name`` is a written page in
+# five and a prompt's identity in manage_prompt; ``paths`` and ``curve``
+# are too local for the block to carry; ``dd_version`` pins a case at open
+# in one tool and states the dictionary a copy is written in in another;
+# ``scope``, ``kind``, ``mode`` and ``operation`` are each tool's own
+# discriminant.
+SHARED_NOTES = {
+    'uri': 'the case, as manage_case(action="list") named it: '
+           'imas:hdf5?path=... or an UDA one',
+    'ids_name': 'the IDS the ask is about, by its root name '
+                '(equilibrium, magnetics)',
+    'occurrence': 'which occurrence of that IDS, counting from 0; 0 left '
+                  'out',
+    'figure_key': 'the window of curves the ask is made on, by its key',
+    'window': '"app" for the application, a figure key, or a case URI for '
+              'its shot view',
+    'along': 'the axis to run along: "time", or one of the leaf\'s own axis '
+             'names ("psi")',
+    'indices': 'axis name -> 0-based index, for each axis not run along: '
+               '{"psi": 50}',
+    'time': 'one instant, in seconds, on the clock of the case',
+}
+
+
 def _tool(name, description, parameters):
     """One OpenAI-format tool schema."""
     return {
@@ -150,11 +203,10 @@ TOOLS = [
             'action': {'type': 'string', 'enum': ['open', 'list',
                                                   'close']},
             'uri': {'type': ['string', 'null'],
-                    'description': '"open" and "close": the case URI, '
-                                   'e.g. imas:hdf5?path=... or a UDA one'},
+                    'description': SHARED_NOTES['uri']},
             'dd_version': {'type': ['string', 'null'],
-                           'description': '"open": data dictionary version '
-                                          'pin'},
+                           'description': '"open": the data dictionary to '
+                                          'pin the case at'},
         }, 'required': ['action'], 'additionalProperties': False},
     ),
     # The three asks about the IDSs of a case: what its data dictionary
@@ -184,13 +236,11 @@ TOOLS = [
             'action': {'type': 'string', 'enum': ['declared', 'filled',
                                                   'load']},
             'uri': {'type': 'string',
-                    'description': 'the case the IDSs are asked of'},
+                    'description': SHARED_NOTES['uri']},
             'ids_name': {'type': ['string', 'null'],
-                         'description': '"load": the IDS to load, and it is '
-                                        'asked of that action'},
+                         'description': SHARED_NOTES['ids_name']},
             'occurrence': {'type': ['integer', 'null'],
-                           'description': '"load": which occurrence; 0 when '
-                                          'left out'},
+                           'description': SHARED_NOTES['occurrence']},
             'slices': {'type': ['string', 'null'],
                        'enum': ['first', 'all'],
                        'description': '"load": how much of the dynamic '
@@ -233,19 +283,16 @@ TOOLS = [
             'action': {'type': 'string',
                        'enum': ['search', 'node', 'ids', 'quantities']},
             'uri': {'type': 'string',
-                    'description': 'the case whose tree is asked'},
+                    'description': SHARED_NOTES['uri']},
             'query': {'type': ['string', 'null'],
                       'description': '"search": the substring a leaf '
                                      'spelling must carry, matched '
                                      'case-insensitively; empty answers '
-                                     'every leaf up to the limit'},
+                                     'every leaf'},
             'ids_name': {'type': ['string', 'null'],
-                         'description': '"search": narrow to one IDS; '
-                                        '"ids" and "quantities": the IDS to '
-                                        'read, and it is asked of them'},
+                         'description': SHARED_NOTES['ids_name']},
             'occurrence': {'type': ['integer', 'null'],
-                           'description': '"ids" and "quantities": which '
-                                          'occurrence; 0 when left out'},
+                           'description': SHARED_NOTES['occurrence']},
             'limit': {'type': ['integer', 'null'],
                       'description': '"search": how many matches come back; '
                                      '200 when left out'},
@@ -302,6 +349,19 @@ TOOLS = [
     # asked without what it takes is refused by naming the parameter, and
     # `time` beside `along` is refused as the two opposite readings they
     # are. "slice" outside the case's range answers the nearest slice.
+    #
+    # What the parameter notes no longer say, and what the code answers
+    # anyway: `mode` carries no note, because the sentence above and the
+    # ADDRESSING block of the instruction spell the five shapes. The clock
+    # is answered by "time", "temps" and "t" alike, and an `along` left out
+    # is the clock when the leaf holds one. `indices` takes one entry per
+    # array of structures (`time_slice`, `profiles_1d`, `ion`) as well as
+    # the leaf's own coordinate, several nested arrays each on its own. A
+    # `time` beside "single" pins the profile on one slice of its dynamic
+    # array, and the answer names `time_requested` and `time_slice_time`
+    # apart -- the value asked at and the slice that answered it. An
+    # `into_figure_key` left out opens a window of its own, which is what
+    # an ask naming two families wants: two windows, not one of four.
     _tool(
         'plot',
         'What shape to draw in, and `mode` picks it. "single": one '
@@ -314,14 +374,7 @@ TOOLS = [
         {'type': 'object', 'properties': {
             'mode': {'type': 'string',
                      'enum': ['single', 'slice', 'selection', 'table',
-                              'stacked'],
-                     'description': 'the shape to draw: "single" one '
-                                    'quantity, "slice" one profile at one '
-                                    'instant, "selection" what '
-                                    'manage_selection(action="select") put '
-                                    'in, "table" one panel per path, '
-                                    '"stacked" the paths stacked in '
-                                    'one window'},
+                              'stacked']},
             'uri': {'type': 'string'},
             'path': {'type': 'string',
                      'description': '"single" and "slice": the leaf to '
@@ -336,63 +389,26 @@ TOOLS = [
                                           'draw. Prefer `along` + '
                                           '`indices`.'},
             'along': {'type': ['string', 'null'],
-                      'description': '"single": the axis the quantity runs '
-                                     'along: "time"/"temps"/"t" for the '
-                                     'clock, or the name of one of its own '
-                                     'axes (e.g. "psi"). None for the '
-                                     'default (the clock when it holds '
-                                     'one).'},
+                      'description': SHARED_NOTES['along']},
             'indices': {'type': ['object', 'null'],
-                        'description': '"single": one entry per axis the '
-                                       'figure does not draw, by that '
-                                       'axis\'s name, at its 0-based index. '
-                                       'An array of structures (time_slice, '
-                                       'profiles_1d, ion, ...), or the '
-                                       'leaf\'s own coordinate (psi, ...); '
-                                       'each of several nested arrays on '
-                                       'its own. e.g. {"psi": 50} for a '
-                                       'profile held by the dynamic array, '
-                                       '"ion": 4 for one structure in it.',
+                        'description': SHARED_NOTES['indices'],
                         'additionalProperties': {'type': 'integer'}},
             'into_figure_key': {
                 'type': ['string', 'null'],
-                'description': 'The key of an existing figure to add this '
-                               'quantity to (superposition). Use when the '
-                               'user says "sur la même figure", "superposées", '
-                               'or "on the same figure". Leave null to open a '
-                               'NEW figure -- which is the default when the '
-                               'user names different families in sequence '
-                               '(e.g. "2 sondes, puis 2 boucles" is two '
-                               'figures, not four in one).'},
+                'description': 'The key of an open window to add this to; '
+                               'left out, a new window. "sur la même '
+                               'figure", "superposées" ask for it.'},
             'time': {'type': ['number', 'null'],
-                     'description': 'seconds. "single": pins the profile to '
-                                    'one slice of its dynamic time array, '
-                                    'the nearest by default (the answer '
-                                    'names the index and that slice\'s own '
-                                    'time, not the value asked at), or the '
-                                    'linear interpolation between the two '
-                                    'slices that bracket it with '
-                                    'time_interp=true. Refused together '
-                                    'with `along_time` / `along` / '
-                                    '`indices` -- two opposite readings. '
-                                    '"slice": required, the instant the '
-                                    'profile is read at; a time outside '
-                                    'the case\'s range answers the nearest '
-                                    'slice the case holds, and the answer '
-                                    'names time_requested and '
-                                    'time_slice_time apart.'},
+                     'description': SHARED_NOTES['time']},
             'time_interp': {'type': ['boolean', 'null'],
-                            'description': '"single": when true, '
-                                           'interpolates linearly between '
-                                           'the two slices that bracket the '
-                                           'requested time, leaving the '
-                                           'answer\'s time_slice_time equal '
-                                           'to the exact value asked at, '
-                                           'not the nearest slice. Defaults '
-                                           'to false (nearest slice).'},
+                            'description': '"single": true interpolates '
+                                           'between the two slices that '
+                                           'bracket `time`, and the answer '
+                                           'names the value asked at; '
+                                           'false takes the nearest '
+                                           'slice.'},
             'occurrence': {'type': 'integer', 'default': 0,
-                           'description': '"slice": which occurrence of '
-                                          'that IDS holds the leaf'},
+                           'description': SHARED_NOTES['occurrence']},
             'interpolation': {'type': 'string',
                               'enum': ['linear', 'closest', 'previous'],
                               'default': 'linear',
@@ -445,7 +461,7 @@ TOOLS = [
                       'description': '"surfaces": the instants in the case '
                                      'clock, seconds, e.g. [40, 44, 48]'},
             'time': {'type': ['number', 'null'],
-                     'description': '"at_time": the instant in seconds'},
+                     'description': SHARED_NOTES['time']},
             'occurrence': {'type': 'integer', 'default': 0},
         }, 'required': ['action', 'uri'], 'additionalProperties': False},
     ),
@@ -470,12 +486,9 @@ TOOLS = [
                                                    'Prefer `along` + '
                                                    '`indices`.'},
             'along': {'type': ['string', 'null'],
-                      'description': '"time" for the clock; otherwise one '
-                                     'of the leaf\'s own axis names, e.g. '
-                                     '"psi"'},
+                      'description': SHARED_NOTES['along']},
             'indices': {'type': ['object', 'null'],
-                        'description': 'an axis of the leaf itself (psi, '
-                                       'ion) is pinned here too',
+                        'description': SHARED_NOTES['indices'],
                         'additionalProperties': {'type': 'integer'}},
             'coordinate_index': {'type': 'integer', 'default': 0,
                                  'description': 'legacy: pin one axis of the '
@@ -513,12 +526,8 @@ TOOLS = [
             'figure_key': {'type': 'string'},
             'operation': {
                 'type': 'string',
-                'enum': ['scale', 'shift', 'normalize', 'reset', 'remove'],
-                'description': 'what to do to the curve: "scale" times a '
-                               'constant, "shift" plus a constant, '
-                               '"normalize" divided by its own reference, '
-                               '"reset" back as drawn, "remove" off the '
-                               'figure'},
+                'enum': ['scale', 'shift', 'normalize', 'reset',
+                         'remove']},
             'factor': {'type': ['number', 'null'],
                        'description': '"scale": the constant, a finite '
                                       'number'},
@@ -567,10 +576,7 @@ TOOLS = [
             'operation': {
                 'type': 'string',
                 'enum': ['range', 'image_window', 'slice_index', 'log',
-                         'invert'],
-                'description': 'what is moved: the span of the axes, the '
-                               'band of pictures, one slider row, a log '
-                               'axis, an axis turned around'},
+                         'invert']},
             'xmin': {'type': ['number', 'null'],
                      'description': '"range": the low bound of the '
                                     'abscissa, with `xmax`'},
@@ -653,8 +659,9 @@ TOOLS = [
     # member of this group takes an `action` of its own (test_175 refuses a
     # discriminant a member already answers for itself), and what sets the
     # six apart is the read, not a window or a case. `figure_key` is the one
-    # parameter four actions share for three different reasons, so its
-    # description says which is which.
+    # parameter four actions share for three different reasons, so the
+    # sentence says which is which; the note on the word is the group's,
+    # shared with every other tool that takes it.
     #
     # What the sentence no longer has room for, and what the answers say
     # anyway: an `elm` is an excursion up, a `sawtooth` a crash down, an
@@ -688,8 +695,7 @@ TOOLS = [
                        'enum': ['events', 'clear_events', 'events_report',
                                 'spectrum', 'correlate', 'spectrum_report']},
             'uri': {'type': 'string',
-                    'description': 'every action but "clear_events", which '
-                                   'works on a figure, not a case'},
+                    'description': SHARED_NOTES['uri']},
             'path': {'type': 'string',
                      'description': 'the leaf; for "correlate", the first of '
                                     'the two series.'},
@@ -699,8 +705,8 @@ TOOLS = [
             'kind': {'type': 'string',
                      'enum': ['elm', 'sawtooth', 'lh'],
                      'description': '"events" and "events_report": which '
-                                    'event. A kind refuses a gate it does '
-                                    'not take, by name.'},
+                                    'event; a kind refuses a gate it does '
+                                    'not take'},
             'threshold': {'type': ['number', 'null'],
                           'description': 'ELM/sawtooth: value floor. '
                                          'lh: the level crossed.'},
@@ -730,18 +736,14 @@ TOOLS = [
                           'description': '"spectrum" and "spectrum_report": '
                                          'upper band bound, in Hz'},
             'along': {'type': ['string', 'null'],
-                      'description': 'the five reads that take a leaf'},
+                      'description': SHARED_NOTES['along']},
             'indices': {'type': ['object', 'null'],
-                        'description': 'those same reads, for their other '
-                                       'axes'},
+                        'description': SHARED_NOTES['indices']},
             'indices_b': {'type': ['object', 'null'],
                           'description': '"correlate": the element of the '
                                          'second series fixed by name.'},
             'figure_key': {'type': ['string', 'null'],
-                           'description': '"clear_events": the figure whose '
-                                          'marks come off. "events": the '
-                                          'marks go on it. The two reports: '
-                                          'its picture goes on the page.'},
+                           'description': SHARED_NOTES['figure_key']},
             'name': {'type': ['string', 'null'],
                      'description': '"events_report" and "spectrum_report": '
                                     'the page name; a place, not a name, is '
@@ -760,10 +762,14 @@ TOOLS = [
     # member's own words.
     #
     # What the sentence no longer holds, and what the answers say: n_G is
-    # (I_pl / A) x 1e20, I_pl in mega-Ampere and A in square metre, so the
-    # units the three leaves come in are the caller's business (m^-3, A,
-    # m^2, said on the parameters that take them). The two case numbers are
-    # read off `global_quantities.beta_normal` and `profiles_1d.pressure`
+    # (I_pl / A) x 1e20, I_pl in mega-Ampere and A in square metre, and the
+    # three reads go into that formula as they came out of the case --
+    # nothing is converted. So the units are the caller's business, said on
+    # the three parameters that take them (m^-3, mega-Ampere, m^2); the
+    # IMAS standard triple, `n_e` / `ip` / `area` under
+    # `equilibrium.time_slice[i].global_quantities`, is already in those
+    # three. The two case numbers are read off
+    # `global_quantities.beta_normal` and `profiles_1d.pressure`
     # unless `path` names another leaf, and their formula is deliberately
     # not computed here (p = n_e k_B T_e + n_i k_B T_i): a case that keeps
     # the number is asked for it, and one that does not is refused by name
@@ -784,27 +790,25 @@ TOOLS = [
                          'enum': ['greenwald', 'beta_normal',
                                   'total_pressure']},
             'uri': {'type': 'string',
-                    'description': 'the case the number is read from'},
+                    'description': SHARED_NOTES['uri']},
             'n_e_path': {'type': 'string',
                          'description': '"greenwald": the electron density, '
                                         'in m^-3, over time'},
             'ip_path': {'type': 'string',
                         'description': '"greenwald": the plasma current, in '
-                                       'A, over time'},
+                                       'mega-Ampere -- the formula converts '
+                                       'nothing'},
             'area_path': {'type': 'string',
                           'description': '"greenwald": the cross-section, in '
                                          'm^2, over time'},
             'path': {'type': ['string', 'null'],
                      'description': '"beta_normal" and "total_pressure": the '
-                                    'leaf to read; the one the case keeps '
-                                    'for it when left out'},
+                                    'leaf to read, or the one this case '
+                                    'keeps it in'},
             'along': {'type': ['string', 'null'],
-                      'description': 'the axis of the leaf, for an array that '
-                                     'has one; the clock where the case holds '
-                                     'one'},
+                      'description': SHARED_NOTES['along']},
             'indices': {'type': ['object', 'null'],
-                        'description': 'the element of the leaf, for an array '
-                                       'of several'},
+                        'description': SHARED_NOTES['indices']},
             'indices_ip': {'type': ['object', 'null'],
                            'description': '"greenwald": the element of the '
                                           'current series'},
@@ -892,13 +896,7 @@ TOOLS = [
             'action': {'type': 'string',
                        'enum': ['list', 'show', 'hide', 'close', 'focus']},
             'window': {'type': 'string',
-                       'description': 'The window the action is made on: '
-                                      '"app" for the application, a figure '
-                                      'key for one figure, a case URI for '
-                                      'its shot view. Required of "show", '
-                                      '"hide" and "close"; the application '
-                                      'when "focus" leaves it out; not a '
-                                      'parameter of "list".'},
+                       'description': SHARED_NOTES['window']},
             'width': {'type': ['integer', 'null'],
                       'description': '"focus": pixels, 1 and up; left out, '
                                      'the size the window holds'},
@@ -937,24 +935,18 @@ TOOLS = [
         {'type': 'object', 'properties': {
             'action': {'type': 'string', 'enum': ['list', 'run']},
             'uri': {'type': 'string',
-                    'description': 'the case whose plugins are asked'},
+                    'description': SHARED_NOTES['uri']},
             'ids_name': {'type': ['string', 'null'],
-                         'description': '"list": the IDS root whose entries '
-                                        'are asked, and it is asked of that '
-                                        'action. "run": which IDS branch the '
-                                        'line stands on; left out, it is '
-                                        'resolved from the case'},
+                         'description': SHARED_NOTES['ids_name']},
             'plugin': {'type': ['string', 'null'],
                        'description': '"run": the plugin, as "list" named it'},
             'entry': {'type': ['integer', 'null'],
                       'description': '"run": the entry number, as "list" '
                                      'numbered it'},
             'occurrence': {'type': ['integer', 'null'],
-                           'description': '"run": which occurrence to draw; 0 '
-                                          'when left out'},
+                           'description': SHARED_NOTES['occurrence']},
             'time': {'type': ['number', 'null'],
-                     'description': '"run": the instant the entry would have '
-                                    'asked the user for'},
+                     'description': SHARED_NOTES['time']},
         }, 'required': ['action', 'uri'], 'additionalProperties': False},
     ),
     # One name for the run as a thing kept: written, put back, cleared, and
@@ -988,6 +980,12 @@ TOOLS = [
     # "save_plot_configuration" writes the quantities of a Table Plot View's
     # panels and the place each held; any other window is refused by name
     # and manage_window(action="list") names the ones that hold panels.
+    #
+    # What the two file words no longer spell, and who answers it: `name` is
+    # asked of "apply", "save_selection" and "save_plot_configuration" -- the
+    # rows above refuse a call that leaves it out --, a "save" without one
+    # settles on a name of its own under the configuration folder, and both
+    # a session and a configuration are named without their extension.
     _tool(
         'manage_session',
         'The run kept and read back, and `action` says which ask. "save": '
@@ -1007,15 +1005,8 @@ TOOLS = [
                                 'save_selection',
                                 'save_plot_configuration']},
             'name': {'type': ['string', 'null'],
-                     'description': 'The file the ask is about. "save" and '
-                                    '"restore": a session under the '
-                                    'configuration folder ("save" settles '
-                                    'on a name of its own when left out). '
-                                    '"apply", "save_selection" and '
-                                    '"save_plot_configuration": the '
-                                    'configuration, .lsp as .pcfg, with no '
-                                    'extension spelled. Required of those '
-                                    'three.'},
+                     'description': 'the session or configuration the ask '
+                                    'is about, with no extension spelled'},
             'path': {'type': ['string', 'null'],
                      'description': '"save" and "restore": a full file '
                                     'name, instead of a name in the '
@@ -1025,13 +1016,9 @@ TOOLS = [
                      'description': '"list_configurations": one kind only; '
                                     'left out, both are answered'},
             'uri': {'type': ['string', 'null'],
-                    'description': 'The case the ask is made on, for '
-                                   '"apply", "save_selection" and '
-                                   '"save_plot_configuration"; required of '
-                                   'those three'},
+                    'description': SHARED_NOTES['uri']},
             'figure_key': {'type': ['string', 'null'],
-                           'description': '"save_plot_configuration": the '
-                                          'Table Plot View to write out'},
+                           'description': SHARED_NOTES['figure_key']},
         }, 'required': ['action'], 'additionalProperties': False},
     ),
     # One name for the three pages a request can ask for, because the three
@@ -1068,10 +1055,9 @@ TOOLS = [
             'scope': {'type': 'string',
                       'enum': ['plot', 'case_loaded', 'case_ids']},
             'figure_key': {'type': 'string',
-                           'description': '"plot": the window of curves'},
+                           'description': SHARED_NOTES['figure_key']},
             'uri': {'type': 'string',
-                    'description': '"case_loaded" and "case_ids": the '
-                                   'case'},
+                    'description': SHARED_NOTES['uri']},
             'name': {'type': ['string', 'null']},
         }, 'required': ['scope'], 'additionalProperties': False},
     ),
@@ -1100,9 +1086,7 @@ TOOLS = [
         'readable.',
         {'type': 'object', 'properties': {
             'window': {'type': 'string', 'default': 'app',
-                       'description': '"app" for the application, a figure '
-                                      'key, or a case URI for its shot '
-                                      'view'},
+                       'description': SHARED_NOTES['window']},
         }, 'additionalProperties': False},
     ),
     _tool(
@@ -1126,7 +1110,11 @@ TOOLS = [
     # budget says what a tool may hold, and what every one of these eight
     # asks shares -- where the two journals live, that a write to the
     # shared one is a line others read and stands only on the user's own
-    # ask -- is said once in the instruction, not eight times here.
+    # ask -- is said once in the instruction, not eight times here. What the
+    # `scope` note no longer spells is answered the same way: required of
+    # "read", "add", "edit" and "delete", left out of the three that ask
+    # both journals; "personal" under ~/.imasviz/journals, "shared" under
+    # the folder SharedJournalDir names.
     _tool(
         'manage_note',
         'The lab notebook of the two journals, and `action` says which '
@@ -1145,12 +1133,10 @@ TOOLS = [
                                 'delete', 'stats', 'reindex']},
             'scope': {'type': ['string', 'null'],
                       'enum': ['personal', 'shared', None],
-                      'description': 'Which journal: "personal" under '
-                                     '~/.imasviz/journals, "shared" under '
-                                     'the folder SharedJournalDir names. '
-                                     'Required of "read", "add", "edit" '
-                                     'and "delete"; left out of "search", '
-                                     '"list" and "reindex" to ask both.'},
+                      'description': 'which journal: "personal", or '
+                                     '"shared" under the folder '
+                                     'SharedJournalDir names; left out, '
+                                     'both'},
             'note_id': {'type': 'string',
                         'description': '"read", "edit" and "delete": the '
                                        'id "search" and "list" answer by '
