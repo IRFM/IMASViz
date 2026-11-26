@@ -965,37 +965,41 @@ TOOLS = [
     # and a CONFIGURATION file for the three asks that read or write one. So
     # the parameters are told apart in their own blocks, the same way the
     # rows of `ACTION_PARAMETERS` tell them apart when a call is checked.
+    #
+    # What the sentence no longer has room for, and what the answers say:
+    # "save" writes the cases, the loads, the selection, the windows and
+    # what a hand styled on them. "restore" replays the gestures rather
+    # than rebuilding widgets, so a put-back window owns its sliders, and
+    # a case that cannot be opened costs its own windows and names the file
+    # and the URI. "new" answers how many windows it closed, leaves the
+    # sessions the user saved on disk -- `last_session` among them -- and
+    # the reports where they are, and is the *New session* of the *File*
+    # menu asked the way the page asks it: like that menu's close it is a
+    # gesture the user asks for out loud, and a request that names no clean
+    # slate is a refusal, not a reset. "list_sessions" answers the .vsess
+    # files as the application lists them and "list_configurations" the
+    # .pcfg and .lsp ones; a kind the application does not answer is
+    # refused by name, "session" among them, the sessions being
+    # "list_sessions". "apply" loads first the IDSs the case would need and
+    # does not hold, the way the menu does it, reads a .lsp as a .pcfg,
+    # answers how many were selected, and refuses a name the folder does not
+    # hold naming the ones it does. "save_selection" writes one quantity per
+    # selected node and refuses nothing selected by name.
+    # "save_plot_configuration" writes the quantities of a Table Plot View's
+    # panels and the place each held; any other window is refused by name
+    # and manage_window(action="list") names the ones that hold panels.
     _tool(
         'manage_session',
         'The run kept and read back, and `action` says which ask. "save": '
-        'the whole screen as the application writes it -- the cases, the '
-        'loads, the selection, the windows and what a hand styled on them. '
-        '"restore": one of those sessions put back: the cases open, the '
-        'loads replayed, the figures and plugin windows drawn the way the '
-        'file named them, and the answer names the cases that came back. '
-        '"new": one clean session WITHOUT saving -- every case view and '
-        'every figure of this session is closed and nothing is written, so '
-        'the sessions the user saved on disk (`last_session` among them) '
-        'and the reports stay where they are; it answers how many windows '
-        'it closed. This is the *New session* of the *File* menu, asked the '
-        'way the page asks it, and like that menu\'s close it is a gesture '
-        'the user asks for out loud: a request that names no clean slate is '
-        'a refusal, not a reset. "list_sessions": the .vsess files the '
-        'configuration folder holds, as the application lists them. '
-        '"list_configurations": the plot (.pcfg) and selection (.lsp) files '
-        'in that folder, `kind` narrowing to one of the two -- a kind the '
-        'application does not answer is refused by name, "session" among '
-        'them, the sessions being "list_sessions". "apply": one saved '
-        'configuration put on a case: its quantities selected, the IDSs the '
-        'case would need and does not hold loaded first the way the menu '
-        'does it, a .lsp read as a .pcfg; it answers how many were '
-        'selected, and a name the folder does not hold is refused naming '
-        'the ones it does. "save_selection": the case\'s current selection '
-        'written out as a .lsp, one quantity per selected node -- nothing '
-        'selected is refused by name. "save_plot_configuration": one Table '
-        'Plot View written out as a .pcfg, the quantities of its panels and '
-        'the place each held -- any other window is refused by name, and '
-        'list_windows names the ones that hold panels.',
+        'the whole screen as the application writes it. "restore": one of '
+        'those sessions put back, naming the cases that came back. "new": '
+        'a clean session WITHOUT saving -- every case view and figure '
+        'closed, nothing written; the user asks for it out loud. '
+        '"list_sessions": the .vsess files. "list_configurations": the '
+        '.pcfg and .lsp files, `kind` narrowing to one. "apply": one saved '
+        'configuration put on a case, its quantities selected and the IDSs '
+        'it needs loaded first. "save_selection": the case selection as a '
+        '.lsp. "save_plot_configuration": one Table Plot View as a .pcfg.',
         {'type': 'object', 'properties': {
             'action': {'type': 'string',
                        'enum': ['save', 'restore', 'new', 'list_sessions',
