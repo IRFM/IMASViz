@@ -20,11 +20,17 @@ payload, and they are prose, not plumbing. This script says which part
 of the payload is which, tool by tool and group by group, so a proposed
 merge can be quoted as a number instead of a feeling.
 
-It reads the two faces off their **source**, not by importing them:
+It reads the vocabulary off its **source**, not by importing it:
 ``imasviz.VizAgent.tools`` sits behind a package ``__init__`` that pulls
-Qt and the IMAS HLI, and ``mcp_server.tools`` imports the MCP SDK. A
-measurement that needs the module stack loaded is a measurement nobody
-re-runs.
+Qt and the IMAS HLI. A measurement that needs the module stack loaded is a
+measurement nobody re-runs.
+
+There is **one** vocabulary to read. Since T6 ``mcp_server/tools.py``
+builds its tools by walking ``TOOLS``, so its names, its descriptions and
+its parameter notes are these entries and cannot be measured beside them;
+what is read there is the residue -- a tool declared by hand, which is the
+shape the drift took before that pass, and which ``test_177`` refuses.
+``test_174`` asks that the residue stays empty.
 
     python3 scripts/tool_schema_size.py
     python3 scripts/tool_schema_size.py --json /tmp/tools.json
@@ -106,61 +112,35 @@ def _sourceConstants(path, literalNames):
     return [namespace[name] for name in literalNames]
 
 
-def _literalActions(node):
-    """The actions one decorated function is offered with, read off its
-    signature.
+def _handWrittenTools(path):
+    """The tools ``mcp_server/tools.py`` declares for itself.
 
-    FastMCP turns a ``Literal[...]`` annotation into an enum in the schema
-    its client is offered, so the actions that face can be asked with are
-    spelled there and not in the table -- and they may differ from it on
-    purpose (the endpoint leaves out the asks its own page does the work
-    of). A function with no such annotation answers itself.
-    """
-    for argument in node.args.args:
-        annotation = argument.annotation
-        if not isinstance(annotation, ast.Subscript):
-            continue
-        if getattr(annotation.value, 'id', None) != 'Literal':
-            continue
-        values = annotation.slice
-        if isinstance(values, ast.Tuple):
-            return tuple(value.value for value in values.elts
-                         if isinstance(value, ast.Constant))
-        if isinstance(values, ast.Constant):
-            return (values.value,)
-    return ()
-
-
-def _mcpFace(path):
-    """The tools the MCP face declares, and the prose each one carries.
-
-    FastMCP builds that face's schema from the decorated function: its
-    description is the docstring and its parameters come from the
-    signature. So the docstring lengths and the signature lengths are what
-    that face sends, and the count is what its client is offered.
+    Since T6 the honest answer is an empty list: that file walks ``TOOLS``
+    and assembles one tool per entry, so its name list, its descriptions
+    and its parameter notes ARE these entries -- there is nothing beside
+    the table to weigh. What is read here is the residue: a ``server.tool``
+    call naming a tool with a literal, in either shape (a decorator or the
+    registration line the generator uses). One of those coming back is a
+    second spelling of one gesture, which is how the two faces drifted
+    apart before the pass that merged them, and it is refused by
+    ``test_177`` -- this script only prints the count, so that a number
+    quoted from it says what it is measuring.
     """
     tree = ast.parse(open(path, encoding='utf-8').read())
-    tools = []
+    spelled = []
     for node in ast.walk(tree):
-        if not isinstance(node, ast.FunctionDef):
+        if not isinstance(node, ast.Call):
             continue
-        for decorator in node.decorator_list:
-            if not isinstance(decorator, ast.Call):
-                continue
-            names = [kw.value.value for kw in decorator.keywords
-                     if kw.arg == 'name']
-            if not names:
-                continue
-            doc = ast.get_docstring(node) or ''
-            arguments = [a.arg for a in node.args.args
-                         if a.arg not in ('self', 'ctx')]
-            tools.append({'name': names[0],
-                          'docstringChars': len(doc),
-                          'docstringWords': _words(doc),
-                          'signatureChars': len(ast.unparse(node.args)),
-                          'actions': _literalActions(node),
-                          'parameters': arguments})
-    return tools
+        function = node.func
+        if not (isinstance(function, ast.Attribute)
+                and function.attr == 'tool'):
+            continue
+        for keyword in node.keywords:
+            if keyword.arg == 'name' and isinstance(keyword.value,
+                                                    ast.Constant) \
+                    and isinstance(keyword.value.value, str):
+                spelled.append(keyword.value.value)
+    return spelled
 
 
 def measure(loopSource=LOOP_SOURCE, mcpSource=MCP_SOURCE):
@@ -262,9 +242,10 @@ def measure(loopSource=LOOP_SOURCE, mcpSource=MCP_SOURCE):
                                    for name in offeredToday(members, offers))}
               for label, members, offers in families]
 
-    mcp = _mcpFace(mcpSource)
-    loopNames = {t['function']['name'] for t in tools}
-    mcpNames = {t['name'] for t in mcp}
+    # One vocabulary, two faces. The endpoint's tool list IS this list --
+    # it walks the table -- so the only thing to read in that file is
+    # whether a tool escaped the generation and answers its own name again.
+    hand = _handWrittenTools(mcpSource)
 
     return {
         'tools': len(tools),
@@ -290,12 +271,13 @@ def measure(loopSource=LOOP_SOURCE, mcpSource=MCP_SOURCE):
         'largest': sorted(((sizes[n], n) for n in sizes), reverse=True)[:10],
         'perTool': sizes,
         'groupBreakdown': groups,
-        'mcpTools': len(mcp),
-        'mcpDocstringChars': sum(t['docstringChars'] for t in mcp),
-        'mcpDocstringWords': sum(t['docstringWords'] for t in mcp),
-        'mcpSignatureChars': sum(t['signatureChars'] for t in mcp),
-        'mcpOnly': sorted(mcpNames - loopNames),
-        'loopOnly': sorted(loopNames - mcpNames),
+        # The face the socket answers with: the same 23 entries, the same
+        # descriptions, the same notes -- the payload of a ``tools/list``
+        # round-trip, which is a one-off for a client and not a cost per
+        # turn. What is counted here is what escaped the generation.
+        'mcpTools': len(tools),
+        'mcpProseChars': sum(len(d) for d in descriptions.values()),
+        'mcpHandWritten': sorted(hand),
     }
 
 
@@ -335,20 +317,14 @@ def report(m):
           % m['plumbingCharsPerTool'])
     print('  instructions : %s chars (once per turn, beside the schemas)'
           % format(m['systemInstructionsChars'], ','))
-    print('  the MCP face declares %d tools (%s chars / %s words of '
-          'docstring, %s of signature)'
-          % (m['mcpTools'],
-             format(m['mcpDocstringChars'], ','),
-             format(m['mcpDocstringWords'], ','),
-             format(m['mcpSignatureChars'], ',')))
-    if m['mcpOnly'] or m['loopOnly']:
-        print('  the two faces are NOT the same list: %d named only by the '
-              'MCP face, %d only by the loop' % (len(m['mcpOnly']),
-                                                 len(m['loopOnly'])))
-        for label, names in (('mcp only', m['mcpOnly']),
-                             ('loop only', m['loopOnly'])):
-            if names:
-                print('    %s: %s' % (label, ', '.join(names)))
+    print('  the MCP face is generated from these %d entries: same names, '
+          'same %s chars of description, same notes (test_177 pins that on '
+          'list_tools); %d declared by hand in mcp_server/tools.py'
+          % (m['mcpTools'], format(m['mcpProseChars'], ','),
+             len(m['mcpHandWritten'])))
+    if m['mcpHandWritten']:
+        print('    declared by hand, and therefore spelled twice: %s'
+              % ', '.join(m['mcpHandWritten']))
     print('  projected on the %d offers of those %d groups (a merged group '
           'answers one name with a discriminant, the rest answer themselves;'
           ' descriptions kept, one block per parameter): %d tools, %s chars '

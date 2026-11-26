@@ -430,7 +430,12 @@ def test_the_measure_script_counts_what_the_loop_actually_offers():
     assert measured['tools'] == len(TOOLS)
     assert measured['groups'] == len(FAMILIES)
     assert measured['payloadChars'] > 0
-    # The two faces are one surface the manual describes; the loop offers
-    # what the MCP service does not, and that gap is a fact the script
-    # prints rather than hides.
-    assert set(measured['loopOnly']) <= set(TOOL_NAMES)
+    # One vocabulary, and the endpoint builds its own list from it, so the
+    # script has no second list to compare any more. What it can still
+    # weigh is the residue: a tool declared by hand beside the generated
+    # ones, which is the shape the drift took before the generation.
+    # test_177 refuses one and compares the two faces on the wire; the
+    # script prints the same count so a quoted number says what it weighs.
+    assert measured['mcpHandWritten'] == [], \
+        'mcp_server/tools.py declares these tools by hand: %s' \
+        % measured['mcpHandWritten']

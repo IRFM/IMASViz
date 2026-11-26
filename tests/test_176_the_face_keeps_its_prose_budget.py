@@ -31,14 +31,16 @@ genuinely adds. So ``get_logs``, which answers itself, has 40 words, and
 
     words <= BASE_WORDS + WORDS_PER_ACTION * len(actionsOf(name))
 
-Both faces pay it. The endpoint's prose is the decorated function's
-**docstring** (FastMCP builds the schema from the docstring and the
-signature), so a docstring is paid on every list_tools round-trip of the
-MCP client; those 23 docstrings went from 25 078 to 8 619 characters
-under the same rule. The cap there counts the actions that face's own
-``Literal`` offers -- which may be fewer than the table's, on purpose --
-and a name whose actions are not a subset of the table's is a name the
-two faces resolve differently.
+The budget is asked of the table, and since T6 the table is what **both**
+faces send: the endpoint builds its tool list by walking ``TOOLS``, so the
+sentence a client over the socket reads is the same bytes the panel's model
+reads -- ``test_177`` pins that note by note, on ``list_tools()`` rather
+than on a file. The endpoint used to carry a prose of its own: 23
+docstrings, 25 078 characters before T7 and 8 619 after, paid on every
+``tools/list`` round-trip and kept in step with the table by a guard that
+could only compare two wordings it could both read. One cap measured on
+the table is therefore a cap measured on two faces, and there is no second
+wording left to measure.
 
 What does not fit goes in the comment above the entry, which is read by
 the person changing the tool and costs the model nothing. That is the
@@ -83,9 +85,6 @@ of the in-app copy only: the MCP endpoint's caller is the user's own
 program, and the ask is that program's (test_135).
 """
 
-import importlib.util
-import os
-
 from imasviz.VizAgent.tools import (
     SHARED_NOTES,
     SYSTEM_INSTRUCTIONS,
@@ -94,8 +93,6 @@ from imasviz.VizAgent.tools import (
     discriminatorOf,
 )
 from mcp_server.tools import INSTRUCTIONS as MCP_INSTRUCTIONS
-
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # The budget, as T7 settled it: one block for the ask, one sentence per
 # action the name answers.
@@ -191,61 +188,11 @@ def test_the_cap_counts_the_actions_the_model_is_actually_offered():
              'groups' % (name, list(enum), list(actions)))
 
 
-# --- the same budget on the endpoint's face ---------------------------
-
-def _mcpFace():
-    """The tools the endpoint declares, read off its source by the script
-    that measures both faces. FastMCP builds that schema from the
-    docstring and the signature, so those two are what a client is sent --
-    and reading them with ``ast`` keeps this guard independent of the MCP
-    SDK being importable."""
-    spec = importlib.util.spec_from_file_location(
-        'tool_schema_size',
-        os.path.join(REPO_ROOT, 'scripts', 'tool_schema_size.py'))
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module._mcpFace(os.path.join(REPO_ROOT, 'mcp_server', 'tools.py'))
-
-
-def test_the_endpoint_docstrings_pay_the_same_cap():
-    """A docstring is the description of the tool as its client sees it, so
-    the endpoint pays for its prose on every tools/list too, and the same
-    budget applies. The cap counts the actions that face's own ``Literal``
-    offers, because that is how many asks its caller has to tell apart.
-
-    A docstring over its cap is fixed cost with no answer in it; the fix is
-    the comment above the decorator, where the person changing the seam
-    reads what the socket answers and the client never pays for it."""
-    over = []
-    for tool in _mcpFace():
-        words = tool['docstringWords']
-        cap = BASE_WORDS + WORDS_PER_ACTION * len(tool['actions'])
-        if words > cap:
-            over.append('%s: %d words for a cap of %d'
-                        % (tool['name'], words, cap))
-    assert not over, \
-        ('these docstrings are over the budget the loop face pays; move '
-         'what does not fit into the comment above the decorator: %s'
-         % '; '.join(over))
-
-
-def test_the_endpoint_offers_no_action_the_table_does_not_answer():
-    """The endpoint may offer **fewer** asks than the table on purpose --
-    the notebook page edits a note in place, so that gesture is not put on
-    the wire twice -- but it may not offer one the table does not resolve.
-    Such a call reaches ``gestureOf`` and comes back as a refusal the
-    client was never told to expect, and the cap above would be counted
-    against a group the core does not know."""
-    for tool in _mcpFace():
-        actions = tool['actions']
-        if not actions:
-            continue
-        spelled = actionsOf(tool['name'])
-        extra = [action for action in actions if action not in spelled]
-        assert not extra, \
-            ('%s offers %s on the MCP face; the table answers %s'
-             % (tool['name'], extra, list(spelled)))
-
+# The endpoint's prose IS the table's: test_177 pins, on list_tools(), that
+# the schema it sends carries these very descriptions and these very notes.
+# A cap measured here is therefore measured for both faces at once, and a
+# second wording is no longer something this file could read even if it
+# wanted to compare one.
 
 # --- the rules the descriptions no longer carry ------------------------
 

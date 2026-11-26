@@ -49,7 +49,7 @@ Both halves are pinned here, and so is what makes the seam safe to keep:
   schema guard can see, and it is the sentence the model obeys first.
 """
 
-import importlib.util
+import ast
 import os
 import re
 
@@ -552,20 +552,30 @@ def test_a_merged_member_is_still_vocabulary_but_never_a_spelling():
             'the spelling of a merged member names itself, not its group'
 
 
-def test_the_mcp_face_answers_the_same_name(qapp):
-    """The MCP endpoint is a second face of the same vocabulary, and it is
-    written by hand: a group merged on one face and not the other is a
-    client that works from the page and refuses from the endpoint. The two
-    faces are not identical lists -- the loop offers the prompt catalogue
-    and the endpoint does not -- but a merged name has to be on both."""
-    path = os.path.join(REPO_ROOT, 'scripts', 'tool_schema_size.py')
-    spec = importlib.util.spec_from_file_location('tool_schema_size', path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    declared = {tool['name'] for tool in module._mcpFace(
-        os.path.join(REPO_ROOT, 'mcp_server', 'tools.py'))}
-    for name, _discriminant, _actions, members in _mergedOffers():
-        assert name in declared, '%s is merged but not declared by mcp_server' % name
-        for member in members:
-            assert member not in declared, \
-                '%s still answers its own name on the MCP face' % member
+def test_the_mcp_face_has_no_vocabulary_of_its_own():
+    """The endpoint used to be a second, hand-written copy of this
+    vocabulary, and the two lists differed by exactly one ask -- the
+    notebook page edits a note in place, so it withheld that ask on
+    purpose. That entaille is gone by decision, and with it the need to
+    remember: since T6 the endpoint builds its tools by walking ``TOOLS``,
+    so a group merged here is merged there in the same pass, and a merged
+    member cannot be left offered on one face only.
+
+    Asked structurally, because the equality itself is pinned behaviourally
+    by ``test_177``, which reads the endpoint's ``list_tools()``: what this
+    file needs is that the endpoint has no second list to keep in step --
+    it takes the table and walks it."""
+    tree = ast.parse(open(os.path.join(REPO_ROOT, 'mcp_server', 'tools.py'),
+                          encoding='utf-8').read())
+    imported = set(alias.name
+                   for node in ast.walk(tree)
+                   if isinstance(node, ast.ImportFrom)
+                   and node.module == 'imasviz.VizAgent.tools'
+                   for alias in node.names)
+    assert 'TOOLS' in imported, \
+        'the endpoint no longer takes its names from the table'
+    walks = [node for node in ast.walk(tree)
+             if isinstance(node, ast.For)
+             and isinstance(node.iter, ast.Name) and node.iter.id == 'TOOLS']
+    assert walks, \
+        'the endpoint declares its tools from something other than the table'

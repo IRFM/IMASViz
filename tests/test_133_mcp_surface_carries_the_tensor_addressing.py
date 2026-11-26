@@ -1,118 +1,98 @@
-# Copyright holders : Commissariat à l'Energie Atomique
-# et aux Energies Alternatives (CEA), France; and Laboratory for
-# Engineering Design - LECAD, University of Ljubljana, Slovenia
+# Copyright holders : Commissariat à l’Energie Atomique et aux Energies
+# Alternatives (CEA), France; and Laboratory for Engineering Design - LECAD,
+# University of Ljubljana, Slovenia
 # CEA and LECAD authorize the use of the METIS software under the CeCILL-C
 # open source license https://cecill.info/licences/Licence_CeCILL-C_V1-en.html
 # The terms and conditions of the CeCILL-C license are deemed to be accepted
-# upon downloading the software and/or exercising any of the rights
-# granted under this.
+# upon downloading the software and/or exercising any of the rights granted
+# under this.
 #
 # ****************************************************
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
-"""The standalone MCP surface carries the same tensor addressing the agent
-already has.
+"""The tensor addressing is on both faces of the one core, not on one only.
 
-One shared core, two surfaces. The in-app agent and the web page take the
-addressing of a multi-axis quantity from the rich `TOOLS` of
-`imasviz/VizAgent/tools.py` (the `along` / `indices` pair `test_125` pins),
-and the core they dispatch onto (`imasviz/VizAgent/core.py`) already
-answers them: `plot_one` takes `along` / `indices` / `time` / `time_interp`
-and `get_signal` takes `along` / `indices`. `test_124` and `test_132` prove
-that the *read* and the *draw* of a pressure profile held by a dynamic time
-array address the same element -- along the clock at one `psi`, along the
-clock at two `psi` on one figure, and the peaks that fall off it.
+One shared core, two faces. The in-app agent, the page and the socket all
+take the addressing of a multi-axis quantity -- `along` to say which axis a
+profile runs along, `indices` to pin the others at an element rank -- from
+the same `TOOLS` table of `imasviz/VizAgent/tools.py`, and the core they
+dispatch onto (`imasviz/VizAgent/core.py`) already answers them: the
+drawing's single mode reaches `plot_one(along=, indices=, time=,
+time_interp=)` and `get_signal` takes `along` / `indices`. `test_124` and
+`test_132` prove that the *read* and the *draw* of a pressure profile held
+by a dynamic time array address the same element -- along the clock at one
+`psi`, along the clock at two `psi` on one figure, and the peaks that fall
+off it.
 
-The one surface that lagged was the standalone MCP
-server (`python -m mcp_server`, the entry external MCP clients use):
-`mcp_server/tools.py` exposed `plot_one` with only `along_time` /
-`into_figure_key` and `get_signal` with only the legacy
-`as_function_of_time` / `coordinate_index` / `time_index`, and it had no
-`plot_slice` at all. A client of that server could therefore not name the
-axis a profile runs along, nor pin the others at an index -- the "soucis
-avec les traces de signaux multi-axes" the field met, on the surface that
-serves them. The core behind it already does it, so the fix is a matter of
-letting that surface name and forward the same parameters.
+The face that lagged was the standalone MCP server (`python -m mcp_server`,
+the entry external MCP clients use). When this file was written it exposed
+`plot_one` with only `along_time` / `into_figure_key` and `get_signal` with
+only the legacy `as_function_of_time` / `coordinate_index` / `time_index`,
+and it had no slice read at all. A client of that server could therefore
+not name the axis a profile runs along, nor pin the others at an index --
+the "soucis avec les traces de signaux multi-axes" the field met, on the
+face that serves them.
 
-Pinned at the source, not by import: `mcp_server/tools.py` is decorated
-from the MCP SDK (`from mcp.server.fastmcp import FastMCP`), and importing
-it for a text assertion would drag the SDK into the guard for no reason.
-This reads the declarations the way `test_121` reads the page -- a name a
-surface does not carry is one its clients cannot reach, so the two
-surfaces the one core serves have to stop agreeing in one half only.
+The guard moved when the copy did. This file used to read
+`mcp_server/tools.py` as text, hunting the `def plot(...)` of a
+hand-written declaration; since T6 that file declares no signature of its
+own -- it walks the table and assembles one per entry -- so those three
+tests would have hunted a shape that is no longer there, and found
+nothing. What they ask now is the table, which is the one place the
+addressing is spelled once for every face. That the socket really sends
+that table -- every parameter, every note, every action -- is
+`test_177`, which reads `list_tools()` rather than a file.
 """
 
-import os
-import re
+from imasviz.VizAgent.tools import TOOLS, actionsOf
 
-TOOLS = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    'mcp_server', 'tools.py')
+SCHEMAS = {tool['function']['name']: tool['function']['parameters']
+           for tool in TOOLS}
 
 
-def _sourceOf(name):
-    """The `def name( ... )` of one declared tool, and its body.
-
-    From the `def` up to the next `@server.tool`, the section divider or a
-    two-blank-line break -- the shape the file lays that tool's body out.
-    A declaration that is not there is an assertion of its own, naming the
-    tool, rather than an empty slice the checks pass over.
-    """
-    with open(TOOLS, 'r', encoding='utf-8') as f:
-        text = f.read()
-    found = re.search(
-        r'def %s\(.*?(?=\n\s*@server\.tool|\n\s*# ----|\n\n\n|\Z)'
-        % re.escape(name), text, re.S)
-    assert found is not None, 'no @server.tool function def %s in mcp_server/tools.py' % name
-    return found.group(0)
-
-
-def _signatureHas(name, param):
-    """The `def name(` carries the parameter, before its first close-paren."""
-    signature = re.match(r'def %s\([^)]*\)' % re.escape(name), _sourceOf(name))
-    assert signature is not None, 'no readable def signature for %s' % name
-    return param in signature.group(0)
-
-
-def test_plot_names_and_forwards_the_addressing():
-    body = _sourceOf('plot')
+def test_the_drawing_names_the_addressing_every_face_sends():
+    """`along` and `indices` in the schema the drawing is offered with: the
+    axis a curve runs along and the rank of every element it does not run
+    along. A surface that carries only `along_time` answers one axis and
+    no element, which is the half that was missing."""
+    properties = SCHEMAS['plot']['properties']
     for param in ('along', 'indices'):
-        assert _signatureHas('plot', param), \
-            'plot does not name %s: the MCP surface cannot address a ' \
-            'profile by axis' % param
-    assert 'along' in body and 'indices' in body, \
-        'plot names the addressing but does not forward it to the core'
+        assert param in properties, \
+            'the drawing offers no %s: a profile cannot be addressed by ' \
+            'axis on any face' % param
 
 
-def test_get_signal_names_and_forwards_the_addressing():
-    body = _sourceOf('get_signal')
+def test_the_read_names_the_same_addressing_as_the_draw():
+    """The word, in the read as in the draw. Two spellings of the same
+    question is how the read and the draw came to address *different*
+    elements of one array while both looking correct on screen."""
+    properties = SCHEMAS['get_signal']['properties']
     for param in ('along', 'indices'):
-        assert _signatureHas('get_signal', param), \
-            'get_signal does not name %s: the read and the draw would ' \
-            'address different elements again' % param
-    assert 'along' in body and 'indices' in body, \
-        'get_signal names the addressing but does not forward it to the core'
+        assert param in properties, \
+            'get_signal offers no %s: the read and the draw would address ' \
+            'different elements again' % param
 
 
-def test_the_mcp_surface_offers_the_slice_read():
+def test_the_slice_read_is_one_mode_of_the_one_drawing():
     """The slice read is the one value answered through `DBEntry.get_slice`.
-    The agent surface has it, so the MCP surface does not leave that reading
-    out of the two surfaces of the one core -- and it is a mode of the one
-    `plot` entry there, as it is here: a surface that kept the five names
-    while the other merged them would be a third vocabulary, not the same
-    one served twice."""
-    signature = re.match(r'def plot\([^)]*\)', _sourceOf('plot')).group(0)
-    for action in ('single', 'slice', 'selection', 'table', 'stacked'):
-        assert action in signature, \
-            'plot does not answer "%s": that drawing is missing from the ' \
-            'MCP surface' % action
-    # The slice read's own address: the instant, the occurrence, and how the
-    # instant is settled between two slices.
+    It is a mode of the one `plot` entry, as it is on every face: a surface
+    that kept five drawing names while the others merged them would be a
+    third vocabulary, not the same one served twice.
+
+    And the slice read's own address -- the instant, the occurrence, and
+    how the instant is settled between two slices -- is declared beside
+    them, because a mode the schema cannot answer is a mode that runs on a
+    default nobody chose."""
+    assert list(actionsOf('plot')) == ['single', 'slice', 'selection',
+                                       'table', 'stacked'], \
+        'the drawing no longer answers the five asks: %s' \
+        % list(actionsOf('plot'))
+    properties = SCHEMAS['plot']['properties']
     for param in ('time', 'occurrence', 'interpolation'):
-        assert param in signature, \
-            'the slice read is offered without %s on the MCP surface' % param
-    assert not re.search(r"@server\.tool\(name='plot_(one|slice|selection|"
-                         r"table|stacked)'\)",
-                         open(TOOLS, encoding='utf-8').read()), \
-        'the MCP surface still offers a drawing under a name the loop ' \
-        'refuses: the two faces are one vocabulary'
+        assert param in properties, \
+            'the slice read is offered without %s' % param
+    for merged in ('plot_one', 'plot_slice', 'plot_selection', 'plot_table',
+                   'plot_stacked'):
+        assert merged not in SCHEMAS, \
+            '%s is offered under its own name again: the drawing is one ' \
+            'ask with five modes, on every face' % merged

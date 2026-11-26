@@ -23,10 +23,15 @@ name it used is right and the target is not.
 The ``get_screenshot`` / ``screenshot`` drift behind the user's 2026-11-07
 viz_cli test is exactly this: the loop's tool list says ``get_screenshot``,
 the core answered ``screenshot`` only, and the loop refused the call by name.
-The MCP surface (``mcp_server/tools.py``) never hit it, because it maps each
-tool to an *explicit* core call (tool ``get_screenshot`` -> ``core.screenshot``
-); that is a naming layer, not a dispatch-by-name, so it is deliberately not
-pinned here.
+The MCP surface (``mcp_server/tools.py``) used to escape it by mapping each
+tool to an *explicit* core call -- a naming layer
+(``get_screenshot`` -> ``core.screenshot``), not a dispatch-by-name. Since
+T6 it no longer escapes: it resolves the gesture through the table's own
+``resolveCall`` seam and then asks ``getattr(core, gesture)``, so both faces
+ask one name of one core, and a name the core does not answer is a refusal
+on either of them. What the generated face owes for that -- refusing by name
+rather than raising ``AttributeError`` inside a Qt slot -- is pinned in
+``test_177``.
 
 This test pins the one invariant that matters: every name in the loop's
 ``TOOLS`` is answered by the core the loop dispatches against -- a method

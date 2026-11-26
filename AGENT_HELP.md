@@ -368,11 +368,17 @@ Ce qui est vrai **maintenant**, et épinglé par `test_133` :
   `indices`, `time`, `time_interp` ; `plot_slice` (l.1026) répond par
   `DBEntry.get_slice` ; `focus_window` (l.1368) bring-forward, à la taille
   que la fenêtre porte déjà (les pixels nommés quand on les nomme).
-- La surface MCP standalone (`mcp_server/tools.py`) **porte** la paire, après
-  l'alignement : `plot_one` prend `along_time / into_figure_key / along / indices /
-  time / time_interp`, `get_signal` prend `as_function_of_time / coordinate_index /
-  time_index / along / indices`, et `plot_slice` est là. `test_133` est le garde-fou
-  source (le `@server.tool(name='plot_slice')` y est) : rouge avant, vert après.
+- La surface MCP standalone (`mcp_server/tools.py`) **porte** la paire parce
+  qu'elle ne l'écrit plus elle-même : depuis T6 elle **génère** ses outils en
+  parcourant `TOOLS` — une déclaration assemblée par entrée de la table,
+  signature, type, énumération et note du paramètre compris. Un mot ajouté sur
+  la face de la boucle est donc sur le socket à la construction suivante du
+  serveur, sans qu'on ait rien à retenir (les 1 037 lignes de déclarations à la
+  main d'un fichier de 1 185 lignes sont devenues 360 lignes). Le garde-fou est
+  `test_177` : il lit `list_tools()` et refuse un nom, une note, un type ou une
+  description que ce fichier inventerait ; `test_133` demande à la table les
+  mots de l'adressage (`along`, `indices`), qui sont maintenant leur seule
+  écriture.
 - L'agent embarqué et le web **partagent** le même schéma — `agent.py:169` passe
   `tools=TOOLS` de `imasviz/VizAgent/tools.py`, qui a déjà `along`/`indices`, et
   `test_125` l'épingle ; `agent.py:441` valide les arguments de la surface web
