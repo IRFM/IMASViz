@@ -414,16 +414,19 @@ TOOLS = [
             'occurrence': {'type': 'integer', 'default': 0},
         }, 'required': ['action', 'uri'], 'additionalProperties': False},
     ),
+    # The read of one leaf, offered as a name the model may type. What the
+    # two halves of this tool are for is said here and not in the sentence:
+    # the answer is the SAME element a figure of that leaf draws, because
+    # both go through the one resolver and take the one `along` + `indices`
+    # schema (test_125 pins that both DECLARE the pair). The legacy spelling
+    # of that pair is kept because the surfaces were written against it; it
+    # answers one axis and pins one position, which is all the pair is.
     _tool(
         'get_signal',
-        'The values the tree read gives for one leaf, as JSON. '
-        '`along` names the axis it runs along (the clock, or one of its own '
-        'axes); `indices` pins each OTHER axis at its index -- the same '
-        'schema `plot(mode="single")` uses, so what the figures show and '
-        'what this answers are the same element. Legacy '
-        '`as_function_of_time` true reads along the clock, false along its '
-        'own axis; `coordinate_index` '
-        'pins one of the leaf\'s axes by position.',
+        'The values the tree read gives for one leaf, as JSON, on the same '
+        '`along` + `indices` schema `plot(mode="single")` uses: the same '
+        'element a figure of that leaf draws. `as_function_of_time` and '
+        '`coordinate_index` are the legacy spelling of that pair.',
         {'type': 'object', 'properties': {
             'uri': {'type': 'string'},
             'path': {'type': 'string'},
@@ -432,21 +435,12 @@ TOOLS = [
                                                    'Prefer `along` + '
                                                    '`indices`.'},
             'along': {'type': ['string', 'null'],
-                      'description': 'the axis the quantity runs along: '
-                                     '"time"/"temps"/"t" for the clock, or '
-                                     'the name of one of its own axes '
-                                     '(e.g. "psi"). None for the default '
-                                     '(the clock when it holds one).'},
+                      'description': '"time" for the clock; otherwise one '
+                                     'of the leaf\'s own axis names, e.g. '
+                                     '"psi"'},
             'indices': {'type': ['object', 'null'],
-                        'description': 'one entry per axis the read does not '
-                                       'draw, by that axis\'s name, at its '
-                                       '0-based index. An array of '
-                                       'structures (time_slice, profiles_1d, '
-                                       'ion, ...), or the leaf\'s own '
-                                       'coordinate (psi, ...); each of '
-                                       'several nested arrays on its own. '
-                                       'e.g. {"psi": 50}; "ion": 4 for one '
-                                       'structure in it.',
+                        'description': 'an axis of the leaf itself (psi, '
+                                       'ion) is pinned here too',
                         'additionalProperties': {'type': 'integer'}},
             'coordinate_index': {'type': 'integer', 'default': 0,
                                  'description': 'legacy: pin one axis of the '
@@ -615,47 +609,41 @@ TOOLS = [
     # six apart is the read, not a window or a case. `figure_key` is the one
     # parameter four actions share for three different reasons, so its
     # description says which is which.
+    #
+    # What the sentence no longer has room for, and what the answers say
+    # anyway: an `elm` is an excursion up, a `sawtooth` a crash down, an
+    # `lh` a threshold crossing, and each kind gates itself -- `threshold` /
+    # `prominence` / `min_distance` for the first two, `threshold` /
+    # `direction` / `hysteresis` for the crossing -- a kind refusing a gate
+    # it does not take, by name. The signal detected is the one
+    # ``get_signal`` answers for that leaf, so a detection and a figure of
+    # the same leaf are one read; the marks it puts on a `figure_key` are
+    # capped at 40 and refused when they would be a wall, and "clear_events"
+    # answers how many it took off, being safe when the figure holds none.
+    # A flat or too-short series is refused, and so is a pair of leaves the
+    # case does not hold on one clock or at one length; the lag "correlate"
+    # answers comes in samples and in time, with the correlation at the peak
+    # and the frequency the two share. A report is self-contained HTML in
+    # ``~/.imasviz/reports``, taking the figure's picture only when one is
+    # named.
     _tool(
         'analyze_signal',
-        'What one leaf\'s signal does, and what to do with what it says: '
-        '`action` picks the ask. "events": the events of one `kind` read off '
-        'the signal -- \'elm\' (an excursion up), \'sawtooth\' (a crash '
-        'down), \'lh\' (a threshold crossing). The signal is the one '
-        'get_signal answers for the leaf, so what is detected and what a '
-        'figure of the same leaf draws are the same read; `threshold` / '
-        '`prominence` / `min_distance` gate an ELM or a sawtooth, '
-        '`threshold` / `direction` / `hysteresis` an L-H crossing, and a '
-        'kind refuses a parameter it does not take, by name. `figure_key` '
-        'marks the events on that curve figure (capped at 40, refused when '
-        'it would be a wall). "clear_events": those marks off a curve '
-        'figure, safe when it holds none -- it answers the number it took '
-        'off. "events_report": the same read and detection as a '
-        'self-contained HTML page -- the events in a table, the period of '
-        'their times, and the picture of the figure when one is named; it '
-        'lands in ~/.imasviz/reports like the other reports, and a `name` '
-        'that names a place is refused by name. "spectrum": what the time '
-        'series oscillates at -- the dominant frequency and its period, the '
-        'leading `n_peaks` (most power first) with their power and share, '
-        'and the share of the power between `band_low` and `band_high` when '
-        'a band is named; a flat or too-short series is refused by name. '
-        '"correlate": how far `path` lags or leads `path_b`, and at what the '
-        'two oscillate together -- the lag in samples and in time, the '
-        'correlation at the peak, and the shared dominant frequency; both '
-        'reads are the ones a figure draws for the two leaves, so a pair the '
-        'case does not hold on one clock, or at one length, is refused by '
-        'name. "spectrum_report": the same spectral facts as a '
-        'self-contained HTML page -- the leading peaks in a table, the band '
-        'when one is named, and the picture of the figure when one is.',
+        'What one leaf\'s signal says, and `action` says which ask. '
+        '"events": the events of one `kind`, gated by the parameters that '
+        'kind takes. "clear_events": those marks off a curve figure. '
+        '"spectrum": the dominant frequency, the leading `n_peaks` by '
+        'power, the power between `band_low` and `band_high`. '
+        '"correlate": how far `path_b` lags or leads `path`, and at what '
+        'the two oscillate together. "events_report" and "spectrum_report": '
+        'the same two answers as an HTML page in ~/.imasviz/reports. '
+        '`figure_key` is the figure the marks or the picture go on.',
         {'type': 'object', 'properties': {
             'action': {'type': 'string',
                        'enum': ['events', 'clear_events', 'events_report',
                                 'spectrum', 'correlate', 'spectrum_report']},
             'uri': {'type': 'string',
-                    'description': 'the case the leaf stands in; asked of '
-                                   '"events", "events_report", "spectrum", '
-                                   '"correlate" and "spectrum_report". '
-                                   '"clear_events" works on a figure, not on '
-                                   'a case.'},
+                    'description': 'every action but "clear_events", which '
+                                   'works on a figure, not a case'},
             'path': {'type': 'string',
                      'description': 'the leaf; for "correlate", the first of '
                                     'the two series.'},
@@ -665,7 +653,8 @@ TOOLS = [
             'kind': {'type': 'string',
                      'enum': ['elm', 'sawtooth', 'lh'],
                      'description': '"events" and "events_report": which '
-                                    'event is looked for.'},
+                                    'event. A kind refuses a gate it does '
+                                    'not take, by name.'},
             'threshold': {'type': ['number', 'null'],
                           'description': 'ELM/sawtooth: value floor. '
                                          'lh: the level crossed.'},
@@ -687,34 +676,30 @@ TOOLS = [
                                           're-triggers.'},
             'n_peaks': {'type': ['integer', 'null'],
                         'description': '"spectrum" and "spectrum_report": '
-                                       'how many leading peaks come back; '
-                                       'five when left out.'},
+                                       'how many peaks; five left out'},
             'band_low': {'type': ['number', 'null'],
                          'description': '"spectrum" and "spectrum_report": '
-                                        'lower bound of the band, in Hz.'},
+                                        'lower band bound, in Hz'},
             'band_high': {'type': ['number', 'null'],
                           'description': '"spectrum" and "spectrum_report": '
-                                         'upper bound of the band, in Hz.'},
+                                         'upper band bound, in Hz'},
             'along': {'type': ['string', 'null'],
-                      'description': 'the axis the read runs along, for the '
-                                     'five reads of this tool.'},
+                      'description': 'the five reads that take a leaf'},
             'indices': {'type': ['object', 'null'],
-                        'description': 'each other axis fixed by name, '
-                                       'the way plot and get_signal do.'},
+                        'description': 'those same reads, for their other '
+                                       'axes'},
             'indices_b': {'type': ['object', 'null'],
                           'description': '"correlate": the element of the '
                                          'second series fixed by name.'},
             'figure_key': {'type': ['string', 'null'],
-                           'description': '"clear_events": the curve figure '
-                                          'whose marks come off. "events": '
-                                          'mark the events on it. '
-                                          '"events_report" and '
-                                          '"spectrum_report": put the picture '
-                                          'of it on the page.'},
+                           'description': '"clear_events": the figure whose '
+                                          'marks come off. "events": the '
+                                          'marks go on it. The two reports: '
+                                          'its picture goes on the page.'},
             'name': {'type': ['string', 'null'],
                      'description': '"events_report" and "spectrum_report": '
-                                    'the name of the page; one that names a '
-                                    'place, not a report, is refused.'},
+                                    'the page name; a place, not a name, is '
+                                    'refused.'},
         }, 'required': ['action'], 'additionalProperties': False},
     ),
     # One name for the three numbers a case is judged on: the three are
@@ -727,23 +712,27 @@ TOOLS = [
     # curve transforms; the leaves one member asks for belong to that
     # member's row, and a call that leaves one out is refused in that
     # member's own words.
+    #
+    # What the sentence no longer holds, and what the answers say: n_G is
+    # (I_pl / A) x 1e20, I_pl in mega-Ampere and A in square metre, so the
+    # units the three leaves come in are the caller's business (m^-3, A,
+    # m^2, said on the parameters that take them). The two case numbers are
+    # read off `global_quantities.beta_normal` and `profiles_1d.pressure`
+    # unless `path` names another leaf, and their formula is deliberately
+    # not computed here (p = n_e k_B T_e + n_i k_B T_i): a case that keeps
+    # the number is asked for it, and one that does not is refused by name
+    # rather than answered with a plausible-looking value. The two that read
+    # a leaf answer the path that read it, the values, the points, and the
+    # mean, max and min.
     _tool(
         'derived_quantity',
-        'A number a case is judged on, and `quantity` says which one. '
-        '"greenwald": the Greenwald fraction over the time the three read, '
-        'f_G = n_e / n_G with n_G = (I_pl / A) x 1e20 (I_pl in mega-Ampere, '
-        'A in square metre) -- the three leaves are named by the caller '
-        '(`n_e_path` in m^-3, `ip_path` in A, `area_path` in m^2), so the '
-        'formula and the numbers both come from the case. "beta_normal" and '
-        '"total_pressure" are the case\'s own numbers, read off the leaf the '
-        'case keeps them in -- `global_quantities.beta_normal` and '
-        '`profiles_1d.pressure` unless `path` names another -- never '
-        'computed here (p = n_e k_B T_e + n_i k_B T_i). The two that read a '
-        'leaf answer the path that read it, the values, the points and the '
-        'mean, max and min; `along` and `indices` are the seams the case '
-        'keeps. A case that does not hold a leaf, or holds the three at '
-        'different lengths, is refused by name, never with a '
-        'plausible-looking value.',
+        'A number a case is judged on; `quantity` says which. '
+        '"greenwald": f_G = n_e / n_G, over three leaves the caller names '
+        '(`n_e_path`, `ip_path`, `area_path`) -- formula and numbers from '
+        'the case. "beta_normal" and "total_pressure": the case\'s own '
+        'numbers, off the leaf it keeps them in, never computed here. A '
+        'leaf the case lacks, or three at different lengths, is refused '
+        'by name.',
         {'type': 'object', 'properties': {
             'quantity': {'type': 'string',
                          'enum': ['greenwald', 'beta_normal',
@@ -785,19 +774,24 @@ TOOLS = [
     # apart. The group is NOT named `campaign`: it holds a tool of that
     # name, and one name answering two things is the confusion this table
     # exists to end.
+    #
+    # What the sentence no longer has room for: the read of each shot is
+    # the one a figure of that leaf would draw, "values" answers the
+    # per-shot values, the least-squares slope over the shot index, the
+    # first-to-last change, the direction, and the min and max with the
+    # shots they came from, and "report" dresses exactly that -- the
+    # per-shot table, the trend, the line the values make -- as a
+    # self-contained page, nothing taken from memory. Three answers come in
+    # words rather than numbers: a campaign of one shot (the schema already
+    # asks for two), a shot the case does not hold the leaf in, and a
+    # series whose values are all equal.
     _tool(
         'trend_campaign',
-        'What one leaf does across a series of shots, and `action` says '
-        'which ask. "values": the trend in campaign order -- the same leaf '
-        'read from each shot (the read a figure of that leaf would draw), '
-        'one value per shot (at a named index of the curve, or mean/max/min '
-        'over it), then the per-shot values, the least-squares slope over '
-        'the shot index, first-to-last change, min and max with the shots '
-        'they came from, and the direction. "report": that answer as a '
-        'self-contained HTML page under ~/.imasviz/reports -- the per-shot '
-        'table, the trend, the line the values make -- nothing taken from '
-        'memory. A campaign of one shot, a shot the case does not hold the '
-        'leaf in, or all-equal values refuses in words.',
+        'What one leaf does across a series of shots, and `action` picks '
+        'the ask. "values": one value per shot -- `at` an index of its '
+        'curve or `which` over it -- then the slope over the shot index, '
+        'the first-to-last change, min and max. "report": that answer as '
+        'an HTML page under ~/.imasviz/reports.',
         {'type': 'object', 'properties': {
             'action': {'type': 'string', 'enum': ['values', 'report']},
             'cases': {'type': 'array',
