@@ -449,6 +449,21 @@ def test_the_measure_script_counts_what_the_loop_actually_offers():
     assert measured['tools'] == len(TOOLS)
     assert measured['groups'] == len(FAMILIES)
     assert measured['payloadChars'] > 0
+    # The projection spells the vocabulary as the table's OFFERS, measured
+    # through the same envelope the endpoint sends. `test_175` refuses an
+    # offer the faces do not answer, so the table has no merge left to
+    # imagine and the projection answers the present -- and answering it to
+    # the character is what says the arithmetic lost nothing on the way. It
+    # used to be off by 1,873: a sum over `properties.values()` drops every
+    # parameter NAME (1,825 over the payload), a `- 2` shaved each
+    # description, and a `required: []` was written for the two schemas
+    # that carry no such key. A merge written into the table without being
+    # built makes this red as well, which is the same state seen from the
+    # other side.
+    assert measured['projectedPayloadChars'] == measured['payloadChars'], \
+        ('the table spells %d offers worth %d chars, the faces send %d'
+         % (measured['projectedTools'], measured['projectedPayloadChars'],
+            measured['payloadChars']))
     # One vocabulary, and the endpoint builds its own list from it, so the
     # script has no second list to compare any more. What it can still
     # weigh is the residue: a tool declared by hand beside the generated

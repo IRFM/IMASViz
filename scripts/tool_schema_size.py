@@ -32,6 +32,15 @@ what is read there is the residue -- a tool declared by hand, which is the
 shape the drift took before that pass, and which ``test_177`` refuses.
 ``test_174`` asks that the residue stays empty.
 
+The last line of the loop face is the same vocabulary spelled as the
+table's **offers** rather than as its tools. That used to be a projection
+-- what a merge still to come would cost. ``test_175`` refuses an offer the
+faces answer nowhere, so there is no merge left to imagine and the line
+answers the present: it must equal the payload to the character, and
+``test_174`` pins that equality. A line that used to read "-6.2 %" was not
+a saving; it was this script forgetting to count the names of its own
+parameters.
+
     python3 scripts/tool_schema_size.py
     python3 scripts/tool_schema_size.py --json /tmp/tools.json
     python3 scripts/tool_schema_size.py --baseline /tmp/tools.json
@@ -57,18 +66,36 @@ MCP_SOURCE = os.path.join(REPO, 'mcp_server', 'tools.py')
 # docstring: the exact numbers this script reports are characters.
 CHARS_PER_TOKEN = 4.0
 
-# What one tool costs before a word of its own: the OpenAI-shape envelope
-# the schema is wrapped in. Measured, not guessed -- see `_plumbing`.
-def _plumbing():
-    return len(_json({
+# The OpenAI-shape envelope one tool travels in, filled or empty. `_json`
+# of the empty one is what a tool costs before a word of its own.
+def _envelope(name, description, properties, required):
+    """One tool as the endpoint sends it, filled or empty.
+
+    The projection is measured through this and never by adding its parts,
+    because a sum over ``properties.values()`` drops every parameter NAME:
+    that is 16 of the 39 characters the old arithmetic was off by on
+    ``manage_case``, and 1 825 over the whole payload. The envelope is what
+    travels, so measuring it cannot be off by a piece of the shape it
+    describes.
+
+    ``required`` is the list, or ``None`` for a schema that carries no such
+    key at all -- which two of this vocabulary's tools do (``get_screenshot``,
+    ``get_logs``: nothing is mandatory about a screen or a log). Inventing an
+    empty one there writes 14 characters the wire never sends.
+    """
+    parameters = {'type': 'object', 'properties': properties,
+                  'additionalProperties': False}
+    if required is not None:
+        parameters['required'] = required
+    return {
         'type': 'function',
-        'function': {
-            'name': '',
-            'description': '',
-            'parameters': {'type': 'object', 'properties': {},
-                           'required': [], 'additionalProperties': False},
-        },
-    }))
+        'function': {'name': name, 'description': description,
+                     'parameters': parameters},
+    }
+
+
+def _plumbing():
+    return len(_json(_envelope('', '', {}, [])))
 
 
 def _json(value):
@@ -179,16 +206,24 @@ def measure(loopSource=LOOP_SOURCE, mcpSource=MCP_SOURCE):
     noteWords = sum(_words(note) for note in notes if note)
     silentParameters = sum(1 for note in notes if not note)
 
-    # The projection: the vocabulary spelled as the table's OFFERS, which
+    # The spelling to compare: the vocabulary as the table's OFFERS, which
     # is what a merged group is actually offered as -- "the drawing" is
     # `plot(mode=...)` AND `get_signal`, not one name. The members'
     # descriptions are kept verbatim (a merge that drops what a tool
-    # answers is not a merge, it is a loss), and one block per parameter
-    # name -- the longest, which is the one worth keeping -- plus the
-    # discriminant's own block, which a merge ADDS: `mode` is a parameter
-    # no member had. So the saving is the plumbing and the duplicated
-    # blocks and nothing else: the prose is untouched, which is the point
-    # of printing it separately.
+    # answers is not a merge, it is a loss), one block per parameter name --
+    # the longest, which is the one worth keeping -- plus the discriminant's
+    # own block, which a merge ADDS: `mode` is a parameter no member had.
+    # The prose is therefore untouched by a merge, which is the point of
+    # printing it separately above.
+    #
+    # It is measured as one envelope per offer, never as a sum of parts,
+    # and `test_175` is why that matters here: every offer the table spells
+    # is an offer the faces answer, so there is no pending merge left to
+    # imagine -- this answers the present, and `projectedPayloadChars ==
+    # payloadChars` is the reading that says so. An offer still to come
+    # would be the union of its members' schemas and would keep their prose
+    # verbatim; that branch is arithmetic too, it just has no ground truth
+    # to be checked against until it is built.
     plumbing = _plumbing()
     schemaOf = {t['function']['name']: t['function']['parameters']
                 for t in tools}
@@ -202,7 +237,7 @@ def measure(loopSource=LOOP_SOURCE, mcpSource=MCP_SOURCE):
             names = [member for _action, member in actions] or [offerName]
             # An offer already on the wire carries its own schema and its
             # own prose; an offer still to come is the union of its
-            # members' schemas and keeps their prose verbatim.
+            # members'.
             if offerName in schemaOf:
                 sources = [schemaOf[offerName]]
                 prose = [descriptions[offerName]]
@@ -211,20 +246,26 @@ def measure(loopSource=LOOP_SOURCE, mcpSource=MCP_SOURCE):
                 prose = [descriptions[m] for m in names if m in descriptions]
             props = {}
             required = set()
+            hasRequired = any('required' in schema for schema in sources)
             for schema in sources:
                 for name, block in schema.get('properties', {}).items():
                     if len(_json(block)) > len(_json(props.get(name, {}))):
                         props[name] = block
                 required.update(schema.get('required', []))
-            if discriminator:
+            if discriminator and discriminator not in props:
                 props[discriminator] = {
                     'type': 'string',
                     'enum': [action for action, _member in actions]}
                 required.add(discriminator)
-            merged += plumbing
-            merged += sum(len(_json(text)) - 2 for text in prose)
-            merged += sum(len(_json(b)) for b in props.values())
-            merged += len(_json(sorted(required)))
+                hasRequired = True
+            merged += len(_json(_envelope(offerName, '\n'.join(prose),
+                                          props,
+                                          sorted(required) if hasRequired
+                                          else None)))
+    # The projection is spelled as a list too, because that is what a turn
+    # carries: the brackets around the envelopes and the comma between them,
+    # or the two halves of the comparison are not the same shape.
+    merged += offered + 1
 
     # What a group costs TODAY is the sum of the schemas it has on the wire
     # today: its members while they are still offered one by one, or its
@@ -261,6 +302,11 @@ def measure(loopSource=LOOP_SOURCE, mcpSource=MCP_SOURCE):
         'silentParameters': silentParameters,
         'sharedParameterWords': len(shared),
         'plumbingCharsPerTool': plumbing,
+        'plumbingCharsWithoutRequired': len(
+            _json(_envelope('', '', {}, None))),
+        'toolsWithoutRequiredList': sum(
+            1 for t in tools if 'required' not in t['function']
+            ['parameters']),
         'systemInstructionsChars': len(instructions),
         'groups': len(families),
         'projectedTools': offered,
@@ -314,7 +360,9 @@ def report(m):
              format(m['parameterNoteWords'], ','),
              m['silentParameters'], m['sharedParameterWords']))
     print('  plumbing     : %d chars per tool before a word of its own'
-          % m['plumbingCharsPerTool'])
+          ' (%d for the %d that carry no required list)'
+          % (m['plumbingCharsPerTool'], m['plumbingCharsWithoutRequired'],
+             m['toolsWithoutRequiredList']))
     print('  instructions : %s chars (once per turn, beside the schemas)'
           % format(m['systemInstructionsChars'], ','))
     print('  the MCP face is generated from these %d entries: same names, '
@@ -325,15 +373,16 @@ def report(m):
     if m['mcpHandWritten']:
         print('    declared by hand, and therefore spelled twice: %s'
               % ', '.join(m['mcpHandWritten']))
-    print('  projected on the %d offers of those %d groups (a merged group '
+    print('  spelled as the %d offers of those %d groups (a merged group '
           'answers one name with a discriminant, the rest answer themselves;'
           ' descriptions kept, one block per parameter): %d tools, %s chars '
-          '(~%d tokens, %+.1f%%)'
+          '(~%d tokens, %+.1f%% -- test_175 leaves no merge to project, so '
+          'these are the same %s characters read two ways)'
           % (m['projectedTools'], m['groups'], m['projectedTools'],
              format(m['projectedPayloadChars'], ','),
              m['projectedPayloadTokens'],
              100.0 * (m['projectedPayloadChars'] - m['payloadChars'])
-             / m['payloadChars']))
+             / m['payloadChars'], format(m['payloadChars'], ',')))
     print('\nthe %d biggest tools' % len(m['largest']))
     for size, name in m['largest']:
         print('  %-26s %5d chars' % (name, size))
