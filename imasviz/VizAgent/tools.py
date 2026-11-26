@@ -294,29 +294,33 @@ TOOLS = [
     # refused by naming the missing parameter, never as a Python error.
     # The prose of the old five schemas is not recopied here five times --
     # what is per mode is written on the parameter that carries it.
+    #
+    # What the sentence no longer has room for: the answer's `curves` is
+    # read off the window itself after the draw, so a claim that a curve
+    # stands on a figure stands on that list and not on a memory of the
+    # call (test_137 reads the joined figure back the same way); a mode
+    # asked without what it takes is refused by naming the parameter, and
+    # `time` beside `along` is refused as the two opposite readings they
+    # are. "slice" outside the case's range answers the nearest slice.
     _tool(
         'plot',
-        'Draw, in the shape the ask calls for: `mode` picks it. '
-        '"single" draws one `path` into the figure its own axes call for '
-        '-- a curve figure for one axis to draw, a picture window for two. '
-        '"slice" draws one `path` at one `time`, the value the Access Layer '
-        'answers at that instant. "selection" draws what the case '
-        'selection holds (`manage_selection(action="select")` first). '
-        '"table" lays one panel per `paths` in a Table Plot View. '
-        '"stacked" stacks `paths`, one panel per quantity, in one window. '
-        'The answer carries the figure '
-        'key and `curves`, the exact list of the curves the figure holds '
-        'after the call: a claim that a curve is on that figure stands on '
-        'that list, not on memory of the call.',
+        'What shape to draw in, and `mode` picks it. "single": one '
+        '`path` into the figure its own axes call for -- a curve for one '
+        'axis to draw, a picture window for two. "slice": one `path` read '
+        'at one `time`. "selection": what the case selection holds. '
+        '"table": one panel per `paths` in a Table Plot View. "stacked": '
+        '`paths` stacked, one panel each, in one window. The answer names '
+        'the figure key and `curves`, the curves on it after the call.',
         {'type': 'object', 'properties': {
             'mode': {'type': 'string',
                      'enum': ['single', 'slice', 'selection', 'table',
                               'stacked'],
                      'description': 'the shape to draw: "single" one '
                                     'quantity, "slice" one profile at one '
-                                    'instant, "selection" the case '
-                                    'selection, "table" one panel per '
-                                    'path, "stacked" the paths stacked in '
+                                    'instant, "selection" what '
+                                    'manage_selection(action="select") put '
+                                    'in, "table" one panel per path, '
+                                    '"stacked" the paths stacked in '
                                     'one window'},
             'uri': {'type': 'string'},
             'path': {'type': 'string',
@@ -410,28 +414,36 @@ TOOLS = [
     # radial profiles under it. Both take the same `uri` and `occurrence`;
     # one takes a list of instants, the other a single one, and the group
     # schema cannot tell them apart -- the rows of the two actions can.
+    #
+    # What the sentence no longer has room for, and what the window and the
+    # answer carry anyway: each of the two asks opens a window of its own,
+    # so neither one joins a figure that stands. A surface frame draws the
+    # psi levels, the plasma boundary, the magnetic axis, the O-point and
+    # the limiter, and the frames of one window stand at equal bounds so
+    # they can be compared.
+    # The profiles under `at_time` are q, elongation, the triangularities,
+    # j_tor [MA/m^2], pressure [kPa], f_df_dpsi and dpressure_dpsi, against
+    # rho_tor_norm; its answer adds the slice's global quantities -- Ip
+    # [kA], q95, q_axis, li_3, W_mhd [kJ] and the axis position. An instant
+    # is settled on the nearest slice the case holds and named back
+    # (`time_requested` beside `time_slice_time`). The `equilibriumsurfaces`
+    # plugin entries answer these same two asks, which is what the shared
+    # ONE WINDOW PER ASK rule is for: ask one, not both.
     _tool(
         'equilibrium',
-        'The equilibrium as the Equilibrium plugin reads it, and `action` '
-        'says which ask. "surfaces": one frame per named instant, side by '
-        'side in one window -- the psi levels, the plasma boundary, the '
-        'magnetic axis, the O-point, the limiter, at equal bounds; `times` '
-        'is the list of instants in seconds, e.g. [40, 44, 48], each '
-        'answering the nearest slice the case holds, named back '
-        '(time_requested vs time_slice_time). "at_time": one instant with '
-        'the radial profiles under it (q, elongation, triangularities, '
-        'j_tor [MA/m^2], pressure [kPa], f_df_dpsi, dpressure_dpsi, on '
-        'rho_tor_norm) and the slice\'s global quantities in the answer '
-        '(Ip [kA], q95, q_axis, li_3, W_mhd [kJ], axis position). Both '
-        'open a window of their own, and the `equilibriumsurfaces` plugin '
-        'entries answer these same two asks -- ask one, not both.',
+        'The equilibrium as the Equilibrium plugin draws it, and `action` '
+        'says which ask. "surfaces": one frame per instant of `times`, '
+        'side by side in one window. "at_time": one `time` with its radial '
+        'profiles under it and the slice global quantities in the answer. '
+        'An instant outside the case answers its nearest slice, named '
+        'back.',
         {'type': 'object', 'properties': {
             'action': {'type': 'string', 'enum': ['surfaces', 'at_time']},
             'uri': {'type': 'string'},
             'times': {'type': ['array', 'null'],
                       'items': {'type': 'number'},
                       'description': '"surfaces": the instants in the case '
-                                     'clock, seconds'},
+                                     'clock, seconds, e.g. [40, 44, 48]'},
             'time': {'type': ['number', 'null'],
                      'description': '"at_time": the instant in seconds'},
             'occurrence': {'type': 'integer', 'default': 0},
@@ -480,20 +492,23 @@ TOOLS = [
     # and what each one takes is checked per action: a `factor` put on a
     # "reset" is refused by naming the parameter and the operation that
     # takes it, never as a Python error.
+    #
+    # What the sentence no longer has room for: scale, shift and normalize
+    # are put on the drawn values in place, so asking the figure again
+    # answers what the hand made of them, and `reset` -- which answers what
+    # was put on -- takes the lot off and leaves the data the curve was
+    # drawn with. "remove" leaves the figure with one curve less. A table
+    # or a stacked window is not one figure and is refused by name, since
+    # its panels are drawn from quantities, not from curves a hand holds.
     _tool(
         'transform_curve',
-        'Do one thing to the curve(s) a figure already holds: `operation` '
-        'picks it. "scale" multiplies their values by `factor`, "shift" '
-        'adds `offset`, "normalize" divides them by a reference of their '
-        'own (`reference`: the largest sample, the first one, or the '
-        'mean), "reset" puts them back to the data they were drawn with, '
-        '"remove" takes the curve off the figure. scale, shift and '
-        'normalize work in place, and "reset" answers what a hand put on '
-        'was and takes it off; "remove" leaves the figure with one curve '
-        'less. `curve` is a name substring, a 0-based index, or left '
-        'out for every curve. read_figure then answers the transformed '
-        'value; the quantity in the tree is unchanged. A table '
-        'or a stacked window is not one figure and is refused by name.',
+        'Do one thing to the curve(s) a figure already holds, and '
+        '`operation` picks it. "scale" times `factor`, "shift" plus '
+        '`offset`, "normalize" divided by a reference of their own '
+        '(`reference`), "reset" back to the data they were drawn with, '
+        '"remove" off the figure. scale, shift and normalize work in '
+        'place, so read_figure answers the transformed value while the '
+        'leaf in the tree is unchanged.',
         {'type': 'object', 'properties': {
             'figure_key': {'type': 'string'},
             'operation': {
@@ -529,20 +544,24 @@ TOOLS = [
     # of them turned around. `operation` answers which, and what each one
     # takes is still checked per action -- an `index` put on "log" is
     # refused by naming the operation that takes it.
+    #
+    # What the sentence no longer has room for, and what the answers say:
+    # a range is two bounds, so one of a pair alone is refused rather than
+    # guessed at the other end; moving or resizing a picture band re-reads
+    # its pictures in place and leaves where it is the colour scale a hand
+    # settled; a slider row is named as the band spells it; and a table or
+    # a stacked window is refused by name, its panels having no span, band
+    # or axis of their own to move.
     _tool(
         'configure_axes',
-        'Move one thing a window draws to: `operation` picks it. "range" '
-        'pins the span of its axes (`xmin`/`xmax` and/or `ymin`/`ymax`, a '
-        'pair at a time -- a range is two bounds; `auto=true` clears the '
-        'pins and re-fits). "image_window" moves (`start`) or resizes '
-        '(`count`) the window a picture window sits on, its pictures '
-        're-read in place and the colour scale a hand settled left where '
-        'it is. "slice_index" poses one row of a slider band at `index`, '
-        'the row named as the band spells it (`axis`). "log" makes an axis '
-        'log (`x`/`y` true) or linear (false), refused where the values '
-        'cross zero. "invert" turns one around. A parameter of another '
-        'operation is refused by naming the one that takes it, and a table '
-        'or a stacked window is refused by name.',
+        'Move one thing a window draws to, and `operation` picks it. '
+        '"range" pins the span of its axes (`xmin`/`xmax` and/or '
+        '`ymin`/`ymax`, a pair at a time; `auto=true` clears the pins). '
+        '"image_window" moves (`start`) or resizes (`count`) the band of '
+        'pictures a picture window sits on. "slice_index" poses one slider '
+        'row (`axis`) at `index`. "log" makes an axis log or linear '
+        '(`x`/`y`), refused where the values cross zero. "invert" turns '
+        'one around.',
         {'type': 'object', 'properties': {
             'figure_key': {'type': 'string'},
             'operation': {
