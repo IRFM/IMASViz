@@ -130,21 +130,28 @@ TOOLS = [
     # say that "open" and "close" are nothing without the URI they mean.
     # The guard is asked about the gesture `close_case`, never about this
     # name: `manage_case(action="close")` is a call, not a permission.
+    #
+    # A URI is spelled as `manage_case(action="list")` answered it, in either
+    # shape the Access Layer takes (an `imas:hdf5?path=...` file or an UDA
+    # one). "close" takes the shot view and the windows that serve this case
+    # alone out of the bookkeeping for good; a window that serves another
+    # case too is hidden and keeps its key, because that other case still
+    # reads a live curve out of it. One window that refuses in the middle of
+    # the list is named and the rest of the case is still taken care of.
     _tool(
         'manage_case',
         'The cases this session works on, and `action` says which ask. '
-        '"open": open one IMAS case by URI (imas:hdf5?path=..., or an UDA '
-        'URI) -- `dd_version` pins the data dictionary the case is read at, '
-        'and left out the case is asked which one its own IDSs were '
-        'written with. "list": the cases open, with their loaded '
+        '"open": one IMAS case by URI; `dd_version` pins the data '
+        'dictionary, left out the case is asked which one its own IDSs '
+        'were written with. "list": the cases open, with their loaded '
         'occurrences. "close": one open case, its view, its windows and '
         'its bookkeeping, for good.',
         {'type': 'object', 'properties': {
             'action': {'type': 'string', 'enum': ['open', 'list',
                                                   'close']},
             'uri': {'type': ['string', 'null'],
-                    'description': '"open" and "close": the case URI, e.g. '
-                                   'imas:hdf5?path=...'},
+                    'description': '"open" and "close": the case URI, '
+                                   'e.g. imas:hdf5?path=... or a UDA one'},
             'dd_version': {'type': ['string', 'null'],
                            'description': '"open": data dictionary version '
                                           'pin'},
@@ -157,17 +164,22 @@ TOOLS = [
     # `ACTION_PARAMETERS` are what say that "load" is nothing without the
     # IDS it loads, and that an `ids_name` beside "filled" is a word that
     # went to the wrong ask.
+    #
+    # "filled" is read through the entry's own occurrence listing, so the
+    # names and counts come off the case and not out of a recall. "load" is
+    # synchronous -- an occurrence whose tree is still being built is an
+    # empty window -- and `slices` decides how much of the dynamic array the
+    # walk keeps: "first" is the slice a plain load keeps, "all" walks the
+    # whole array, which on a big IDS is the difference between thousands of
+    # signals and hundreds of thousands.
     _tool(
         'manage_idss',
-        'The IDSs of a case, and `action` says which ask. "declared": every '
-        'IDS its data dictionary declares and the occurrences each holds, '
-        'the roots that hold no data included. "filled": only the IDS the '
-        'case actually holds, read through DBEntry.list_all_occurrences, so '
-        'the names and counts are the case\'s own -- the list to answer '
-        '"what is in this case" with, never a recalled, summarised or '
-        'renamed one. "load": one occurrence of one IDS into the tree, '
-        'synchronously; `slices` is "first" for the slice a plain load '
-        'keeps, "all" for the whole dynamic array.',
+        'The IDSs of a case, and `action` says which ask. "declared": '
+        'every IDS its dictionary declares, the roots that hold no data '
+        'included. "filled": only the IDS the case holds -- the answer to '
+        '"what is in this case", never a recalled one. "load": one '
+        'occurrence of one IDS into the tree, keeping "first" slice or the '
+        'whole dynamic array per `slices`.',
         {'type': 'object', 'properties': {
             'action': {'type': 'string', 'enum': ['declared', 'filled',
                                                   'load']},
@@ -194,26 +206,29 @@ TOOLS = [
     # itself). `uri` is required of the offer because the four ask a case;
     # `path` and `ids_name` are not common, so each member names the one it
     # cannot do without, and the refusal of that member asks for it.
+    #
+    # What the sentence no longer has room for, and what the answer says
+    # anyway: a search query is matched case-insensitively and each hit
+    # carries its three spellings -- any is what a plot takes -- beside the
+    # `kind` a plot would make of it, `curve`, `image` or `scalar`. The node
+    # answer is what the application documentation says, so it counts the
+    # zero/nan/inf values beside the finite minimum and maximum, and a leaf
+    # the tree does not hold is refused by name. The ids answer carries the
+    # IDS comment, homogeneous time, units and the version the case was
+    # written at, a property the case leaves empty is absent rather than
+    # invented, and an IDS the case does not declare is refused naming the
+    # ones it does. A scalar (0D) leaf is not a tensor and is not listed; an
+    # occurrence whose tree was never built is refused by name, load it with
+    # manage_idss(action="load") first.
     _tool(
         'inspect_tree',
-        'What the tree of a case says about itself, and `action` says which '
-        'ask. "search": the leaves whose spelling carries `query` '
-        '(case-insensitive), `ids_name` narrowing to one IDS; each match '
-        'carries its three spellings -- any is what a plot takes -- and the '
-        '`kind` a plot would make of it, `curve`, `image` or `scalar`. '
-        '"node": what one `path` holds, as the application documentation '
-        'says it -- units, size, finite minimum and maximum, the zero/nan/'
-        'inf counts, a bounded preview; a leaf the tree does not hold is '
-        'refused by name. "ids": what the data dictionary says of an '
-        '`ids_name` -- its comment, homogeneous time, units, the version '
-        'the case was written at; a property the case leaves empty is '
-        'absent, not invented, and an IDS the case does not declare is '
-        'refused naming the ones it does. "quantities": the filled tensors '
+        'What the tree of a case says, and `action` says which ask. '
+        '"search": the leaves whose spelling carries `query`; each match '
+        'answers the spellings a plot takes. "node": what one `path` holds '
+        '-- units, size, min/max, a bounded preview. "ids": what the data '
+        'dictionary says of an `ids_name`. "quantities": the filled tensors '
         'of one `occurrence`, grouped by the array of structures that '
-        'drives them -- the "what can be drawn" answer. A scalar (0D) leaf '
-        'is not a tensor and is not listed; an occurrence whose tree was '
-        'never built is refused by name, load it with '
-        'manage_idss(action="load") first.',
+        'drives them -- the "what can be drawn" answer.',
         {'type': 'object', 'properties': {
             'action': {'type': 'string',
                        'enum': ['search', 'node', 'ids', 'quantities']},
@@ -221,7 +236,8 @@ TOOLS = [
                     'description': 'the case whose tree is asked'},
             'query': {'type': ['string', 'null'],
                       'description': '"search": the substring a leaf '
-                                     'spelling must carry; empty answers '
+                                     'spelling must carry, matched '
+                                     'case-insensitively; empty answers '
                                      'every leaf up to the limit'},
             'ids_name': {'type': ['string', 'null'],
                          'description': '"search": narrow to one IDS; '
@@ -244,15 +260,20 @@ TOOLS = [
     # « which of these three functions ». What each action takes is written
     # per action (`ACTION_PARAMETERS`): the group schema cannot require
     # `paths` of "select" alone and refuse it of the other two.
+    #
+    # "select" puts the paths in as the tree clicks would and answers the
+    # paths it took beside the new size; "list" is the one that spells each
+    # leaf -- data name, IDS, occurrence -- in the order the leaves were
+    # put in. One path the tree does not hold stops the whole call: nothing
+    # goes in, so a selection is never half-applied.
     _tool(
         'manage_selection',
         'What the case selection holds and what to do with it, and '
-        '`action` says which ask. "select": put the named `paths` in, as '
-        'the tree clicks would -- one the tree does not hold is refused by '
-        'name and nothing is put in. "clear": empty it, answering how many '
-        'were dropped. "list": the selection in the order it was put in -- '
-        'path, data name, IDS and occurrence of each; empty is an answer, '
-        'count 0, not a refusal.',
+        '`action` says which ask. "select": the named `paths` go in -- one '
+        'the tree does not hold is refused by name and nothing goes in. '
+        '"clear": empty it, answering how many were dropped. "list": the '
+        'selection in the order it was put in; empty answers count 0, not '
+        'a refusal.',
         {'type': 'object', 'properties': {
             'action': {'type': 'string', 'enum': ['select', 'clear',
                                                   'list']},
@@ -579,15 +600,19 @@ TOOLS = [
     # (test_175 refuses a discriminant a member already answers for
     # itself), and what the two share is wider than what sets them apart --
     # one figure, one curve of it, and the values as they stand.
+    #
+    # What the sentence no longer has room for: both reads take the curve
+    # as it stands on the figure, so a transform a hand put on it (a log
+    # axis, an inversion, a scale) is in the answer and in the file, while
+    # the leaf in the tree is left as it is -- nothing here writes back.
     _tool(
         'read_figure',
         'What the curve(s) a figure holds answer, and `action` says which '
-        'ask. "stats": the sample count, the finite min/max/mean/std of the '
-        'values, the nan/inf counts, the peak with its abscissa. "export": '
-        'the same values in a file under ~/.imasviz/exports. Both read the '
-        'values as they stand, so a transform a hand put on the figure is '
-        'in the answer and in the file, while the leaf in the tree is '
-        'unchanged.',
+        'ask. "stats": the sample count, the finite min/max/mean/std, the '
+        'nan/inf counts, the peak with its abscissa. "export": the same '
+        'values in a file under ~/.imasviz/exports. Both read the values '
+        'as they stand: a transform a hand put on the figure is in the '
+        'answer.',
         {'type': 'object', 'properties': {
             'action': {'type': 'string', 'enum': ['stats', 'export']},
             'figure_key': {'type': 'string'},
