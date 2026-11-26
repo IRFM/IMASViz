@@ -56,18 +56,18 @@ def _greenwald_run(context):
     from imasviz.VizAgent.core import McpGuiCore
     uri = context.uri
     if uri is None:
-        _show_error('Quantités dérivées',
+        _show_error('Derived quantities',
                     'No case is open; open one before asking for the Greenwald fraction.')
         return
     core = McpGuiCore(api=context.api)
     try:
         result = core.greenwald(uri, _DEFAULT_NE, _DEFAULT_IP, _DEFAULT_AREA)
     except ValueError as err:
-        _show_error('Quantités dérivées', str(err))
+        _show_error('Derived quantities', str(err))
         return
     fg = result.get('greenwald_fraction', [])
     lg = result.get('greenwald_limit', [])
-    lines = ['Fraction de Greenwald', '']
+    lines = ['Greenwald fraction', '']
     if fg:
         lines.append('f_G = %g' % fg[0])
     if lg:
@@ -75,7 +75,7 @@ def _greenwald_run(context):
     lines.append('n_e : %s' % result.get('n_e_path', _DEFAULT_NE))
     lines.append('I_p : %s' % result.get('ip_path', _DEFAULT_IP))
     lines.append('A   : %s' % result.get('area_path', _DEFAULT_AREA))
-    _show_success('Quantités dérivées', '\n'.join(lines))
+    _show_success('Derived quantities', '\n'.join(lines))
 
 
 def _beta_run(context):
@@ -83,13 +83,13 @@ def _beta_run(context):
     from imasviz.VizAgent.core import McpGuiCore
     uri = context.uri
     if uri is None:
-        _show_error('Quantités dérivées', 'No case is open.')
+        _show_error('Derived quantities', 'No case is open.')
         return
     core = McpGuiCore(api=context.api)
     try:
         result = core.beta_normal(uri)
     except ValueError as err:
-        _show_error('Quantités dérivées', str(err))
+        _show_error('Derived quantities', str(err))
         return
     _format_and_show('Beta_N', result)
 
@@ -99,15 +99,15 @@ def _pressure_run(context):
     from imasviz.VizAgent.core import McpGuiCore
     uri = context.uri
     if uri is None:
-        _show_error('Quantités dérivées', 'No case is open.')
+        _show_error('Derived quantities', 'No case is open.')
         return
     core = McpGuiCore(api=context.api)
     try:
         result = core.total_pressure(uri)
     except ValueError as err:
-        _show_error('Quantités dérivées', str(err))
+        _show_error('Derived quantities', str(err))
         return
-    _format_and_show('Pression totale', result)
+    _format_and_show('Total pressure', result)
 
 
 def _format_and_show(name, result):
@@ -120,8 +120,8 @@ def _format_and_show(name, result):
     if 'points' in result:
         lines.append('%d point(s)' % result['points'])
     if 'path' in result:
-        lines.append('sur : %s' % result['path'])
-    _show_success('Quantités dérivées', '\n'.join(lines))
+        lines.append('on: %s' % result['path'])
+    _show_success('Derived quantities', '\n'.join(lines))
 
 
 class VizDerivedQuantities(VizPlugin):
@@ -133,9 +133,9 @@ class VizDerivedQuantities(VizPlugin):
     and the dialog, not the physics.
     """
     SCOPE = QVizPluginScope(CASE)
-    LABEL = 'Quantités dérivées'
+    LABEL = 'Derived quantities'
     ACTIONS = (
-        QVizPluginAction(0, 'Fraction de Greenwald', run=_greenwald_run),
+        QVizPluginAction(0, 'Greenwald fraction', run=_greenwald_run),
         QVizPluginAction(1, 'Beta_N', run=_beta_run),
-        QVizPluginAction(2, 'Pression totale', run=_pressure_run),
+        QVizPluginAction(2, 'Total pressure', run=_pressure_run),
     )

@@ -15,7 +15,7 @@
 
 The panel is the surface a user chooses from, so this file pins the two
 things a catalogue on a shelf does not have to: that **choosing is not
-running** -- picking a line fills the prompt box, and *Tourner* stays the
+running** -- picking a line fills the prompt box, and *Run* stays the
 ask -- and that **a value the user did not type is a value they are
 told about**, in the transcript for the combo and in the line under the
 field for the window.
@@ -156,7 +156,7 @@ def test_the_box_holds_the_catalogue_grouped_and_addressable(panel):
     assert box.itemText(0) == NO_PROMPT
     labels = [box.itemText(i) for i in range(1, box.count())]
     assert 'profils — Profils 1D  ·  une ligne' in labels
-    assert '(sans catégorie) — Bilan' in labels
+    assert '(no category) — Bilan' in labels
     # The line is addressable: what the gesture takes is the catalogue and
     # the id, not the label the user reads.
     where = [box.itemData(i) for i in range(box.count()) if box.itemData(i)]
@@ -164,7 +164,7 @@ def test_the_box_holds_the_catalogue_grouped_and_addressable(panel):
     assert ('personal', 'bilan') in where
     # Category first, and a separator between two categories.
     assert labels.index('profils — Profils 1D  ·  une ligne') \
-        < labels.index('(sans catégorie) — Bilan')
+        < labels.index('(no category) — Bilan')
 
 
 def test_a_choice_fills_the_box_and_names_what_answered(panel):
@@ -198,7 +198,7 @@ def test_a_hole_nothing_answers_refuses_rather_than_filling_the_box(panel):
 
 def test_a_choice_is_not_a_turn(panel):
     """Choosing from a menu is not an ask to start a turn: the model is
-    never reached, and the *Tourner* button stays the ask."""
+    never reached, and the *Run* button stays the ask."""
     core = panel.agent.core
     filePrompt(core, 'Spectro', 'le spectrogramme du {shot}')
     panel._loadCatalogue()
@@ -264,7 +264,7 @@ def test_the_window_shows_each_hole_and_where_its_value_would_come_from(panel):
             said.append(item.text())
     assert any("the prompt's own default" in one for one in said)
     assert any('this session' in one for one in said)
-    assert any('rien ne répond' in one for one in said), \
+    assert any('nothing answers this hole' in one for one in said), \
         'a hole nothing answers says so where the value would be typed'
 
 
@@ -280,7 +280,7 @@ def test_putting_in_the_box_does_not_run_and_launching_runs_once(panel):
 
     window.putButton.click()
     assert panel.promptEdit.toPlainText() == 'le spectrogramme du 54924'
-    assert ran == [], 'Mettre dans la boîte ne lance pas le tour'
+    assert ran == [], 'Put in the box does not launch the turn'
     assert 'Spectro' in window.status.text()
     assert '{shot} (this session)' in window.status.text()
 
@@ -370,7 +370,7 @@ def test_an_edit_keeps_the_id_a_delete_forgets_the_values_it_remembered(panel):
     assert promptStore.lastValues() == {}, \
         'a deleted prompt keeps no value on the disk'
     assert panel.promptCatalogueBox.count() == 1
-    assert 'supprimé : rho' in window.status.text()
+    assert 'deleted: rho' in window.status.text()
 
 
 def test_the_window_writes_personally_and_the_core_refuses_an_unnamed_shared(

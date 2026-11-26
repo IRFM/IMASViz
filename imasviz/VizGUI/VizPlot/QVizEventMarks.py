@@ -11,7 +11,7 @@
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
 
-"""The **Événements** entry a figure of curves offers on its view box.
+"""The **Events** entry a figure of curves offers on its view box.
 
 The same detection the tool surface runs (`imasviz/VizAnalysis`, pinned in
 `tests/test_152`), applied to what the figure has already drawn: the first live
@@ -65,13 +65,13 @@ class QVizEventMarks:
     # ------------------------------------------------------------------------ entry
 
     def addMenuEntry(self, menu):
-        """Hang the **Événements** sub-menu on that view box's menu, and answer it."""
-        submenu = QMenu('Événements', menu)
+        """Hang the **Events** sub-menu on that view box's menu, and answer it."""
+        submenu = QMenu('Events', menu)
         for kind, word in KINDS:
             action = QAction(word, submenu)
             action.triggered.connect(lambda checked=False, k=kind: self._on(k))
             submenu.addAction(action)
-        clear = QAction('Retirer les marques', submenu)
+        clear = QAction('Remove the marks', submenu)
         clear.triggered.connect(self._onClear)
         submenu.addAction(clear)
         menu.addMenu(submenu)
@@ -84,12 +84,12 @@ class QVizEventMarks:
             count = self.detect(kind)
         except ValueError as err:
             if frame is not None:
-                QMessageBox.warning(None, 'Événements', str(err))
+                QMessageBox.warning(None, 'Events', str(err))
             return
         else:
             if frame is not None:
-                QMessageBox.information(None, 'Événements',
-                                        '%d marque(s) posée(s).' % count)
+                QMessageBox.information(None, 'Events',
+                                        '%d mark(s) placed.' % count)
 
     def _onClear(self):
         frame = self._frame()
@@ -98,7 +98,7 @@ class QVizEventMarks:
         except ValueError:
             return
         if frame is not None:
-            QMessageBox.information(None, 'Événements', 'Les marques sont retirées.')
+            QMessageBox.information(None, 'Events', 'The marks have been removed.')
 
     # -------------------------------------------------------------------- detection
 

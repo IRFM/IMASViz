@@ -299,8 +299,8 @@ class VizPlugin:
     SCOPE = None
     ACTIONS = ()
     # The sub-menu title a FIGURE-scoped plugin earns on a frame's view-box menu.
-    # When None the registered name is used; a plugin with a French-facing menu
-    # sets this to the words the user reads (e.g. 'Événements').
+    # When None the registered name is used; a plugin whose menu reads a
+    # word of its own sets this to the words the user reads (e.g. 'Events').
     LABEL = None
 
     def offered(self, context):

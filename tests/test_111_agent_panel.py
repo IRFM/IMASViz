@@ -11,7 +11,7 @@
 What it pins, on a scripted agent (no real LLM):
 
 * the panel is registered in ``figureframes`` under ``Agent:1``;
-* typing a prompt and clicking "Tourner" produces transcript lines
+* typing a prompt and clicking "Run" produces transcript lines
   that include the scripted LLM answer;
 * the input box sits below the transcript, so a scrolling answer stays
   readable;

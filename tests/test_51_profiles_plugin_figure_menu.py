@@ -214,8 +214,8 @@ def test_the_entry_is_offered_on_every_ids_of_the_case(session):
     # two lines here only -- it is offered on no other IDS of the case.
     assert session.entriesOf('equilibrium') == [
         ('equilibriumcharts', 0, 'Equilibrium overview...'),
-        ('equilibriumsurfaces', 0, 'Surfaces de flux (début, milieu, fin)...'),
-        ('equilibriumsurfaces', 1, 'Équilibre à un instant (surface + profils)...'),
+        ('equilibriumsurfaces', 0, 'Flux surfaces (begin, middle, end)...'),
+        ('equilibriumsurfaces', 1, 'Equilibrium at an instant (surface + profiles)...'),
         (PLUGIN, 0, 'Plot what the equilibrium IDS holds...')]
 
 

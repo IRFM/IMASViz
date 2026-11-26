@@ -88,7 +88,7 @@ ERROR_LINES = ['Show/Hide error bars', 'Show error bars (with slicing)',
 # are spelled here because the assertion below freezes the whole box, so a line a
 # plugin adds has to be answered here too — which is how this row went red when the
 # scope `FIGURE` came in: the menu was right, the frozen list was a commit behind.
-BRICK_LINES = ['Événements', 'Spectre']
+BRICK_LINES = ['Events', 'Spectrum']
 
 # What pyqtgraph leaves a curve drawn without a pen at, measured.
 LIBRARY_DEFAULT = (200, 200, 200)

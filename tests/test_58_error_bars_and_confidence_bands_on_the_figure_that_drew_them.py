@@ -195,7 +195,7 @@ def test_the_figure_answers_the_three_lines_the_manual_names(session):
              in frame.pgPlotWidget.getViewBox().menu.actions()
              if action.text()]
     assert texts == (PYQTGRAPH_LINES + DOCUMENTED_LINES
-                     + [STYLING_LINE, 'Événements', 'Spectre']), texts
+                     + [STYLING_LINE, 'Events', 'Spectrum']), texts
     assert [line for line in DOCUMENTED_LINES if line not in texts] == []
 
 

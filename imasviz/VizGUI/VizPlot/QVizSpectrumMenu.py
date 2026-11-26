@@ -11,7 +11,7 @@
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
 
-"""The **Spectre** entry a figure of curves offers on its view box.
+"""The **Spectrum** entry a figure of curves offers on its view box.
 
 The same spectral facts the tool surface runs (`imasviz/VizAnalysis/spectra`,
 pinned in `tests/test_155`), applied to what the figure has already drawn: the
@@ -20,7 +20,7 @@ case -- the data is on screen -- and the refusal voice of the pure layer is the
 one a slot offers: a flat series is a flat series, a figure with no live curve
 says so rather than acting.
 
-It is the sibling of the **Événements** entry (`QVizEventMarks`): the same
+It is the sibling of the **Events** entry (`QVizEventMarks`): the same
 sub-menu on the same view box, the same `liveCurve` read, and the same rule --
 hold the frame through a `weakref`, never a bound method of it, which is the
 cycle that has this package segfaulting on this stack. The entry is a sub-menu,
@@ -49,9 +49,9 @@ class QVizSpectrumMenu:
     # ------------------------------------------------------------------------ entry
 
     def addMenuEntry(self, menu):
-        """Hang the **Spectre** sub-menu on that view box's menu, and answer it."""
-        submenu = QMenu('Spectre', menu)
-        action = QAction('Sommets du spectre (top %d)' % TOP_PEAKS, submenu)
+        """Hang the **Spectrum** sub-menu on that view box's menu, and answer it."""
+        submenu = QMenu('Spectrum', menu)
+        action = QAction('Spectral peaks (top %d)' % TOP_PEAKS, submenu)
         action.triggered.connect(lambda checked=False: self._on())
         submenu.addAction(action)
         menu.addMenu(submenu)
@@ -64,10 +64,10 @@ class QVizSpectrumMenu:
             answer = self.spectrum()
         except ValueError as err:
             if frame is not None:
-                QMessageBox.warning(None, 'Spectre', str(err))
+                QMessageBox.warning(None, 'Spectrum', str(err))
             return
         if frame is not None:
-            QMessageBox.information(None, 'Spectre', self._format(answer))
+            QMessageBox.information(None, 'Spectrum', self._format(answer))
 
     # -------------------------------------------------------------------- the read
 
@@ -105,16 +105,16 @@ class QVizSpectrumMenu:
         """The top peaks as a window reads them: the dominant first, then the list."""
         dom = answer['dominant']
         lines = [
-            'Dominant : f = %g  ·  période %g  ·  %g %% de la puissance'
+            'Dominant: f = %g  ·  period %g  ·  %g %% of the power'
             % (dom['frequency'], dom['period'], 100 * dom['fraction']),
-            'Puissance totale : %g' % answer['total_power'],
-            '%d échantillon(s)' % answer['samples'],
+            'Total power: %g' % answer['total_power'],
+            '%d sample(s)' % answer['samples'],
             '',
-            'Pics :',
+            'Peaks:',
         ]
         for i, peak in enumerate(answer['peaks']):
             lines.append(
-                '  %d.  f = %g  ·  période %g  ·  %g %%'
+                '  %d.  f = %g  ·  period %g  ·  %g %%'
                 % (i + 1, peak['frequency'], peak['period'],
                    100 * peak['fraction']))
         return '\n'.join(lines)

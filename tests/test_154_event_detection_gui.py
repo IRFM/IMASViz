@@ -11,7 +11,7 @@
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
 
-"""The **Événements** entry a figure of curves offers on its view box.
+"""The **Events** entry a figure of curves offers on its view box.
 
 `test_152` pins the math, `test_153` pins the tool surface. This pins the GUI
 face of the same: a real `QVizCurvePlot` built off-screen carries the sub-menu
@@ -58,12 +58,12 @@ def test_the_entry_is_on_the_view_box_menu(qapp):
     frame = _frame(qapp)
     try:
         names = [a.text() for a in frame.pgPlotWidget.getViewBox().menu.actions()]
-        assert 'Événements' in names
+        assert 'Events' in names
         sub = [a.menu() for a in
                frame.pgPlotWidget.getViewBox().menu.actions()
-               if a.text() == 'Événements'][0]
+               if a.text() == 'Events'][0]
         words = {a.text() for a in sub.actions()}
-        assert words == {'ELM', 'sawtooth', 'transition L-H', 'Retirer les marques'}
+        assert words == {'ELM', 'sawtooth', 'transition L-H', 'Remove the marks'}
     finally:
         frame.close()
         qapp.processEvents()

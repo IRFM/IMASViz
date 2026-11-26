@@ -34,7 +34,7 @@ and the client read and write (``~/.imasviz/prompts`` and
 like every other surface asks them: a prompt chosen here arrives in the
 box with the holes this session already answered -- its open case, its
 open window -- and the source of each named. Filling is not running: the
-box is what is asked, through the same *Tourner* as any other prompt.
+box is what is asked, through the same *Run* as any other prompt.
 """
 
 import threading
@@ -111,7 +111,7 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
         # Transcript
         self.transcript = QPlainTextEdit()
         self.transcript.setReadOnly(True)
-        self.transcript.setPlaceholderText('Le transcript apparaît ici.')
+        self.transcript.setPlaceholderText('The transcript appears here.')
         self.transcript.setLineWrapMode(QPlainTextEdit.NoWrap)
         layout.addWidget(self.transcript)
 
@@ -140,21 +140,21 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
         # Prompt
         self.promptEdit = QPlainTextEdit()
         self.promptEdit.setPlaceholderText(
-            'Demandez à l\'agent d\'ouvrir un cas, de tracer, de chercher…')
+            'Ask the agent to open a case, to plot, to search…')
         self.promptEdit.setMaximumHeight(80)
         layout.addWidget(self.promptEdit)
 
         # Buttons
         self.buttonRow = QHBoxLayout()
         buttons = self.buttonRow
-        self.runButton = QPushButton('Tourner')
+        self.runButton = QPushButton('Run')
         self.runButton.clicked.connect(self._onRun)
         buttons.addWidget(self.runButton)
-        self.stopButton = QPushButton('Arrêter')
+        self.stopButton = QPushButton('Stop')
         self.stopButton.setEnabled(False)
         self.stopButton.clicked.connect(self._onStop)
         buttons.addWidget(self.stopButton)
-        self.clearButton = QPushButton('Effacer')
+        self.clearButton = QPushButton('Clear')
         self.clearButton.clicked.connect(self._onClear)
         buttons.addWidget(self.clearButton)
         # The catalogue in its own window: the list, the holes of the one
@@ -174,7 +174,7 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
         # file preference, which is also where `off` is written, and which
         # the switch mirrors on build without overwriting it.
         buttons.addStretch(1)
-        self.toolsBox = QCheckBox('Appels aux outils')
+        self.toolsBox = QCheckBox('Tool calls')
         buttons.addWidget(self.toolsBox)
         layout.addLayout(buttons)
 
@@ -292,7 +292,7 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
         """Clear the transcript and the prompt.
 
         The history is not cleared: a prompt the run has typed is what
-        the run reached this time, and `Effacer` leaves that in place so
+        the run reached this time, and `Clear` leaves that in place so
         a run does not lose its own past just because it wants a fresh
         box. A panel rebuilt after a run types the same prompts back out,
         which is the one that makes the history matter.
@@ -357,7 +357,7 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
         box.addItem(NO_PROMPT)
         core = self._promptCore()
         if core is None:
-            box.addItem('(aucun agent pour répondre le catalogue)')
+            box.addItem('(no agent to answer the catalogue)')
         else:
             try:
                 answer = core.list_prompts()
@@ -370,7 +370,7 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
                         box.insertSeparator(box.count())
                     last = entry['category']
                     label = '%s — %s' % (entry['category']
-                                         or '(sans catégorie)', entry['name'])
+                                         or '(no category)', entry['name'])
                     if entry['description']:
                         label += '  ·  %s' % entry['description']
                     box.addItem(label, (entry['scope'], entry['id']))
@@ -384,7 +384,7 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
         value they are told about before it is sent.
 
         The box is filled, not run: choosing from a menu is not an ask to
-        start a turn. *Tourner* stays the ask.
+        start a turn. *Run* stays the ask.
         """
         where = self.promptCatalogueBox.itemData(index)
         if not where:
@@ -405,7 +405,7 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
         self._appendTranscript('Catalogue — %s : %s' % (
             answer['name'],
             '; '.join('{%s} (%s)' % (name, answer['values'][name]['source'])
-                      for name in filled) or 'aucun trou à remplir'))
+                      for name in filled) or 'no hole to fill'))
 
     def _onPromptsWindow(self):
         """The catalogue in its own window: the list, the holes of the one

@@ -13,9 +13,9 @@
 
 """The two FIGURE-scope brick plugins and the mechanism that offers them.
 
-`test_154` pins the detection domain logic and the four lines of the Événements
+`test_154` pins the detection domain logic and the four lines of the Events
 sub-menu; `test_160` pins the spectral domain logic and the one line of the
-Spectre sub-menu. This pins the **plugin mechanism** that now builds those
+Spectrum sub-menu. This pins the **plugin mechanism** that now builds those
 sub-menus:
 
 * both plugins declare ``SCOPE = FIGURE`` and ``LABEL`` (the sub-menu title
@@ -71,8 +71,8 @@ def test_labels_match_the_titles_the_user_reads():
     from imasviz.VizPlugins.viz_event_detection.VizEventDetection import VizEventDetection
     from imasviz.VizPlugins.viz_spectral.VizSpectral import VizSpectral
 
-    assert VizEventDetection.LABEL == 'Événements'
-    assert VizSpectral.LABEL == 'Spectre'
+    assert VizEventDetection.LABEL == 'Events'
+    assert VizSpectral.LABEL == 'Spectrum'
 
 
 def test_figureMenuFor_adds_both_sub_menus(qapp):
@@ -80,15 +80,15 @@ def test_figureMenuFor_adds_both_sub_menus(qapp):
     frame = _frame(qapp)
     try:
         names = _viewBoxMenuNames(frame)
-        assert 'Événements' in names
-        assert 'Spectre' in names
-        # Four lines in Événements (ELM, sawtooth, L-H, clear).
+        assert 'Events' in names
+        assert 'Spectrum' in names
+        # Four lines in Events (ELM, sawtooth, L-H, clear).
         ev_menu = [a.menu() for a in frame.pgPlotWidget.getViewBox().menu.actions()
-                   if a.text() == 'Événements'][0]
+                   if a.text() == 'Events'][0]
         assert len(ev_menu.actions()) == 4
-        # One line in Spectre.
+        # One line in Spectrum.
         sp_menu = [a.menu() for a in frame.pgPlotWidget.getViewBox().menu.actions()
-                   if a.text() == 'Spectre'][0]
+                   if a.text() == 'Spectrum'][0]
         assert len(sp_menu.actions()) == 1
     finally:
         frame.close()
@@ -96,9 +96,9 @@ def test_figureMenuFor_adds_both_sub_menus(qapp):
 
 
 def test_a_disabled_plugin_is_absent_from_the_menu(qapp, monkeypatch):
-    """Disabling `VizEventDetection` removes 'Événements' from the next frame built.
+    """Disabling `VizEventDetection` removes 'Events' from the next frame built.
 
-    The other sub-menu (Spectre) stays. The domain logic (`eventMarks`) is
+    The other sub-menu (Spectrum) stays. The domain logic (`eventMarks`) is
     still on the frame -- the plugin controls the menu, not the physics.
     """
     saved = QVizPreferences.Disabled_bricks
@@ -106,7 +106,7 @@ def test_a_disabled_plugin_is_absent_from_the_menu(qapp, monkeypatch):
     QVizPreferences.Disabled_bricks = frozenset()
     frame1 = _frame(qapp)
     try:
-        assert 'Événements' in _viewBoxMenuNames(frame1)
+        assert 'Events' in _viewBoxMenuNames(frame1)
     finally:
         frame1.close()
         qapp.processEvents()
@@ -116,8 +116,8 @@ def test_a_disabled_plugin_is_absent_from_the_menu(qapp, monkeypatch):
         frame2 = _frame(qapp)
         try:
             names = _viewBoxMenuNames(frame2)
-            assert 'Événements' not in names
-            assert 'Spectre' in names
+            assert 'Events' not in names
+            assert 'Spectrum' in names
             # `eventMarks` is still on the frame: the plugin controls the menu,
             # not the domain logic the user can reach programmatically.
             assert frame2.eventMarks is not None
@@ -130,15 +130,15 @@ def test_a_disabled_plugin_is_absent_from_the_menu(qapp, monkeypatch):
 
 
 def test_disabling_spectral_removes_spectre(qapp):
-    """Disabling `VizSpectral` removes 'Spectre' but not 'Événements'."""
+    """Disabling `VizSpectral` removes 'Spectrum' but not 'Events'."""
     saved = QVizPreferences.Disabled_bricks
     try:
         QVizPreferences.Disabled_bricks = frozenset({'VizSpectral'})
         frame = _frame(qapp)
         try:
             names = _viewBoxMenuNames(frame)
-            assert 'Spectre' not in names
-            assert 'Événements' in names
+            assert 'Spectrum' not in names
+            assert 'Events' in names
         finally:
             frame.close()
             qapp.processEvents()
@@ -155,8 +155,8 @@ def test_disabling_both_removes_both_sub_menus(qapp):
         frame = _frame(qapp)
         try:
             names = _viewBoxMenuNames(frame)
-            assert 'Événements' not in names
-            assert 'Spectre' not in names
+            assert 'Events' not in names
+            assert 'Spectrum' not in names
         finally:
             frame.close()
             qapp.processEvents()
@@ -173,12 +173,12 @@ def test_derived_quantities_declare_case_scope():
 
     assert VizDerivedQuantities.SCOPE.kind == 'case'
     assert VizDerivedQuantities.SCOPE.appliesToCase()
-    assert VizDerivedQuantities.LABEL == 'Quantités dérivées'
+    assert VizDerivedQuantities.LABEL == 'Derived quantities'
     assert len(VizDerivedQuantities.ACTIONS) == 3
     labels = {a.label for a in VizDerivedQuantities.ACTIONS}
-    assert 'Fraction de Greenwald' in labels
+    assert 'Greenwald fraction' in labels
     assert 'Beta_N' in labels
-    assert 'Pression totale' in labels
+    assert 'Total pressure' in labels
 
 
 def test_case_plugin_in_case_entries(qtbot):
@@ -230,10 +230,10 @@ def test_campaign_trend_declares_app_scope():
 
     assert VizCampaignTrend.SCOPE.kind == 'app'
     assert VizCampaignTrend.SCOPE.appliesToApp()
-    assert VizCampaignTrend.LABEL == 'Campagne'
+    assert VizCampaignTrend.LABEL == 'Campaign'
     assert len(VizCampaignTrend.ACTIONS) == 2
     labels = {a.label for a in VizCampaignTrend.ACTIONS}
-    assert 'Exporter le rapport' in labels
+    assert 'Export the report' in labels
 
 
 def test_app_plugin_in_app_entries(qtbot):
