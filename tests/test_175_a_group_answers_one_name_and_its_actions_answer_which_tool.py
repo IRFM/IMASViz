@@ -44,6 +44,9 @@ Both halves are pinned here, and so is what makes the seam safe to keep:
 * prose that INSTRUCTS a call names only names the model is offered. The
   two vocabularies are real, and a re-anchor that says ``plot_report(...)``
   after the merge tells the model to make a call it will be refused for.
+  The rule is asked of the re-anchor text AND of the two copies of the
+  working method: a prompt left naming a merged member is a sentence no
+  schema guard can see, and it is the sentence the model obeys first.
 """
 
 import importlib.util
@@ -56,7 +59,9 @@ from imasviz.VizAgent.agent import AgentLoop
 from imasviz.VizAgent.llm_client import LLMResponse
 from imasviz.VizAgent.tools import (
     ACTION_PARAMETERS,
+    CHAT_INSTRUCTIONS,
     FAMILIES,
+    SYSTEM_INSTRUCTIONS,
     TOOLS,
     TOOL_PARAMETERS,
     argumentsForMember,
@@ -70,9 +75,26 @@ from imasviz.VizAgent.tools import (
     resolveCall,
     unknownParameters,
 )
+from mcp_server.tools import INSTRUCTIONS as MCP_INSTRUCTIONS
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOL_NAMES = [tool['function']['name'] for tool in TOOLS]
+
+
+def _calledNames(text):
+    """Every name a copy of the working method spells as a call.
+
+    Two shapes, because the copies are written differently: the in-app
+    prompt wraps its names in backticks (``manage_idss(action="load")``)
+    while the MCP copy writes a bare word, sometimes with its explanation
+    in the parenthesis after it (``describe_node (what one node holds)``).
+    The spaced shape is asked of underscored names only -- ``case (the
+    open one)`` is prose, ``search_nodes (uri, query)`` is a call, and an
+    underscore is what tells the two apart without a list of exceptions.
+    """
+    tight = re.findall(r'\b([a-z][a-z0-9_]*)\(', text)
+    spaced = re.findall(r'\b([a-z][a-z0-9_]*_[a-z0-9_]*)\s{1,3}\(', text)
+    return sorted(set(tight) | set(spaced))
 
 
 def _discriminatedOffers():
@@ -499,6 +521,25 @@ def test_the_spelling_of_a_call_is_the_one_the_model_may_type():
         'generate_report(scope="plot", figure_key)'
     assert callSpelling('case_report') == \
         'generate_report(scope="case_loaded", uri)'
+
+
+def test_the_instruction_copies_call_only_names_the_model_is_offered():
+    """The two copies of the working method are the longest prose that
+    INSTRUCTS a call: a model reads them before it reads a single schema,
+    and it answers with what they spell. A copy left saying
+    ``search_nodes(uri, query)`` after the tree group was merged sends it
+    to a name the very next call refuses for -- and nothing on the wire
+    can see it, because the sentence lives in the prompt and not in a
+    schema. So the rule the re-anchor text follows is asked of the prompts
+    themselves.
+    """
+    for label, copy in (('in-app', SYSTEM_INSTRUCTIONS),
+                        ('mcp', MCP_INSTRUCTIONS),
+                        ('chat', CHAT_INSTRUCTIONS)):
+        stale = [name for name in _calledNames(copy) if name not in TOOL_NAMES]
+        assert not stale, \
+            ('the %s instruction calls %s, which is not offered'
+             % (label, ', '.join(stale)))
 
 
 def test_a_merged_member_is_still_vocabulary_but_never_a_spelling():

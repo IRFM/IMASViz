@@ -43,6 +43,27 @@ from imasviz.VizAgent.tools import (
 INSTRUCTIONS = """IMASViz, the ITER/CEA visualization front-end for IMAS plasma-fusion
 cases, driven by name and answered by name.
 
+The words a call is answered with, said once here and not by each tool:
+- uri: the case, spelled as manage_case(action='list') named it.
+- ids_name: which IDS of that case. occurrence: which version of it. The
+  two go together, and manage_idss(action='filled') names both for the
+  case.
+- path: a leaf of the tree, in any spelling inspect_tree(action='search')
+  answered. Which member of an array of structures it is sits IN the path,
+  never in indices.
+- indices: the 0-based index of a tensor dimension or of a nested array,
+  one entry per array of structures; it pins an axis the curve does not
+  run along.
+- along: the axis a curve runs along. time: one instant -- the value the
+  user asked AT, not the value the case holds there.
+- figure_key: a window of curves; window: any window on the screen. Both
+  spelled as an answer or manage_window(action='list') named them, and a
+  window the close box took down keeps its key.
+- A group of asks says which one is meant with action, mode, operation or
+  scope; a call that leaves it out is refused, never run on a guess.
+- A refusal is an answer: report its reason, then answer again in the
+  spelling that refusal names.
+
 How to work with it:
 1. manage_case(action='open', uri) -- the data dictionary is asked of the
    case when you do not name one;
@@ -51,9 +72,9 @@ How to work with it:
    roots the dictionary declares but the case leaves empty;
 3. manage_idss(action='load', uri, ids_name, occurrence) builds the tree
    branch;
-4. search_nodes(uri, query) names the leaves in every spelling the tree
-   holds -- the paths manage_selection(action='select'), plot and
-   get_signal take are any of those spellings;
+4. inspect_tree(action='search', uri, query) names the leaves in every
+   spelling the tree holds -- the paths manage_selection(action='select'),
+   plot and get_signal take are any of those spellings;
 5. plot draws, and its `mode` says which drawing: 'single' one quantity
    into the figure its axes call for, 'slice' one value at an instant,
    'selection' what the case holds selected, 'table' one panel per
@@ -66,13 +87,13 @@ How to work with it:
    coming back in the answer;
 6. state is read with manage_selection(action='list') (what the case
    holds selected),
-   describe_node (what one node holds: documentation, units, size, the
-   finite minimum and maximum, the nan and inf counts, a bounded
-   preview), describe_ids (what the data dictionary says about an IDS:
-   comment, homogeneous_time, units, time units, data dictionary
-   version), and list_quantities (the filled tensors of one occurrence,
-   grouped by array of structures) -- answers, not guesses, and empty is
-   an answer too;
+   inspect_tree(action='node') for what one node holds: documentation,
+   units, size, the finite minimum and maximum, the nan and inf counts, a
+   bounded preview; inspect_tree(action='ids') for what the data
+   dictionary says about an IDS: comment, homogeneous_time, units, time
+   units, data dictionary version; and inspect_tree(action='quantities')
+   for the filled tensors of one occurrence, grouped by array of
+   structures -- answers, not guesses, and empty is an answer too;
 7. a report is self-contained HTML on disk, and it is one entry asked with
    `scope`: generate_report(scope='plot') names one window of curves (its
    image, one row per curve it drew, with the statistics of each),
