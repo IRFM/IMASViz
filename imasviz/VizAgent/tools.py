@@ -66,7 +66,7 @@ You control the GUI strictly through the provided tools.
 - **NO FAKE ACTIONS:** Never say you plotted a curve, wrote a report, or saved a note unless the corresponding tool returned `error: null` in this turn. If a tool fails or refuses, report the exact refusal reason.
 - **MULTIPLE FAMILIES:** When asked to plot two different families (e.g., probes then flux loops), create two separate figures unless the user explicitly asks to overlay them ("sur la même figure" / "on the same figure").
 - **WINDOWS & FOCUS:** Do NOT call `manage_window(action="focus")` or `manage_window(action="show")` automatically after plotting. Only call them if the user explicitly asks to bring a window to the front.
-- **DESTRUCTIVE & SHARED ACTIONS:** Never call `manage_window(action="close")`, `manage_case(action="close")`, `manage_session(action="new")`, or write with `scope="shared"` (`manage_note`, the prompt tools) unless the user explicitly asks for it in their prompt.
+- **DESTRUCTIVE & SHARED ACTIONS:** Never call `manage_window(action="close")`, `manage_case(action="close")`, `manage_session(action="new")`, or write with `scope="shared"` (`manage_note`, the prompt tools) unless the user explicitly asks for it in their prompt. Nor write anything they did not ask for: a note, a prompt filed, a report, a session saved. A turn that only drew a figure is not an ask to file its wording.
 - **AMBIGUITY:** If a user request is ambiguous (e.g., "sonde 2" when multiple probes exist), list the exact paths found by `inspect_tree(action="search")` and ask the user to choose.
 
 ### RESPONSE FORMAT
@@ -1073,77 +1073,52 @@ TOOLS = [
     # `add_note(scope, ...)` already answers `scope` for which of the two
     # journals it writes, and a group merged under a word its own members
     # take is one word answering two questions (test_175 refuses it).
+    #
+    # The sentence is short on purpose, and so are the notes: the word
+    # budget says what a tool may hold, and what every one of these eight
+    # asks shares -- where the two journals live, that a write to the
+    # shared one is a line others read and stands only on the user's own
+    # ask -- is said once in the instruction, not eight times here.
     _tool(
         'manage_note',
-        'The lab notebook of the two journals, and `action` says what is '
-        'asked of it. "search": the notebook asked as a RAG -- the '
-        'structured filters (machine, campaign, shot, date_from, date_to, '
-        'author) narrow to the notes that name each field asked of, then '
-        '`query` is ranked over them, by embeddings when the preferences '
-        'name the embedding endpoint and it answers, else by keyword, and '
-        'the answer names which it used; with no `query` the notes come '
-        'back newest first. "list": the same filters without a query, '
-        'newest first -- and an empty answer is an answer. "read": the '
-        'full body of one `note_id`; the `snippet` of "search" is the hand '
-        'that leads to it, not the text. "stats": what the two journals '
-        'are on this node -- the folder each is under, how many notes each '
-        'holds, whether the embedding endpoint is named and which model it '
-        'names; ask it before a search and it names the method the run '
-        'will rank with, and the shared one answers a refusal (not a '
-        'folder named) when it is not set up. "reindex": put the '
-        'journal(s) in step with their index -- the ask of a fresh, stale '
-        'or guarded index (written under an embedding endpoint the run is '
-        'no longer under: its vectors are in a different space than the '
-        'query), answering per journal how many it kept, wrote and '
-        'dropped. "add": one new note, `text` required and `author` '
-        'defaulting to $USER -- a write with no author at all is refused '
-        'by name, the write being visible to whoever reads the journal. '
-        '"edit": one existing note changed in place, keeping the id the '
-        'other writers read it under; a field left out keeps the one the '
-        'note held, a field named replaces it and an empty one clears it, '
-        'except the author (a note keeps its author) and the body (an '
-        'empty `text` is a refusal). "delete": one note gone, its file and '
-        'the cache entry the run holds for it. A note that names machine, '
-        'campaign, shot and date is the one about a shot, and one that '
-        'names none of them is a general one, in the same journal. '
-        'A `note_id` the journal does not hold is refused by name, naming '
-        'the ids it does hold. A write to the shared journal is a visible '
-        'line in a place everyone you share it with reads, and it is the '
-        'loop that asks for it in the user\'s own words before it runs.',
+        'The lab notebook of the two journals, and `action` says which '
+        'ask. "search": the filters narrow to the notes that name them, '
+        '`query` ranks them, and the answer names the `method` it ranked '
+        'by. "list": the same filters without a query, newest first. '
+        '"read": one `note_id` whole. "add": one new note, `text` '
+        'required. "edit": one note changed in place; a field left out '
+        'keeps what it held. "delete": one note, gone. "stats": what the '
+        'two journals are on this node, and the endpoint a search ranks '
+        'with. "reindex": the journals in step with their index. A '
+        '`note_id` a journal lacks is refused by name.',
         {'type': 'object', 'properties': {
             'action': {'type': 'string',
                        'enum': ['search', 'list', 'read', 'add', 'edit',
                                 'delete', 'stats', 'reindex']},
             'scope': {'type': ['string', 'null'],
                       'enum': ['personal', 'shared', None],
-                      'description': 'Which journal the action is made on: '
-                                     '"personal" under ~/.imasviz/journals, '
-                                     '"shared" under the folder '
-                                     'SharedJournalDir names. Required of '
-                                     '"read", "add", "edit" and "delete"; '
-                                     'left out of "search", "list" and '
-                                     '"reindex" to ask the two at once; '
-                                     'not a parameter of "stats".'},
+                      'description': 'Which journal: "personal" under '
+                                     '~/.imasviz/journals, "shared" under '
+                                     'the folder SharedJournalDir names. '
+                                     'Required of "read", "add", "edit" '
+                                     'and "delete"; left out of "search", '
+                                     '"list" and "reindex" to ask both.'},
             'note_id': {'type': 'string',
                         'description': '"read", "edit" and "delete": the '
-                                       'note, under the id the journal '
-                                       'names it (a file name without .md), '
-                                       'the one "search" and "list" answer '
-                                       'it by'},
+                                       'id "search" and "list" answer by '
+                                       '(a file name without .md)'},
             'query': {'type': ['string', 'null'],
-                      'description': '"search": the text to rank the '
-                                     'filtered notes by; left out, the '
-                                     'notes come back newest first'},
+                      'description': '"search": the text to rank by; '
+                                     'left out, newest first'},
             'limit': {'type': 'integer',
-                      'description': '"search": how many notes to answer'},
+                      'description': '"search": how many notes'},
             'text': {'type': ['string', 'null'],
                      'description': '"add": the body, required. "edit": '
                                     'the new body; left out, the one the '
-                                    'note held, and an empty one is a '
-                                    'refusal'},
+                                    'note held'},
             'machine': {'type': ['string', 'null'],
-                        'description': 'a filter of "search" and "list", a '
-                                       'field of "add" and "edit"'},
+                        'description': 'a filter of "search" and "list", '
+                                       'a field of "add" and "edit"'},
             'campaign': {'type': ['string', 'null'],
                          'description': 'a filter of "search" and "list", '
                                         'a field of "add" and "edit"'},
@@ -1151,8 +1126,8 @@ TOOLS = [
                      'description': 'a filter of "search" and "list", a '
                                     'field of "add" and "edit"'},
             'date': {'type': ['string', 'null'],
-                     'description': '"add" and "edit": the note\'s shot '
-                                    'date, ISO 8601 YYYY-MM-DD'},
+                     'description': '"add" and "edit": the shot date, '
+                                    'ISO 8601 YYYY-MM-DD'},
             'date_from': {'type': ['string', 'null'],
                           'description': '"search" and "list": ISO 8601 '
                                          'YYYY-MM-DD, inclusive'},
@@ -1160,11 +1135,12 @@ TOOLS = [
                         'description': '"search" and "list": ISO 8601 '
                                        'YYYY-MM-DD, inclusive'},
             'author': {'type': ['string', 'null'],
-                       'description': 'a filter of "search" and "list"; on '
-                                      '"add" and "edit" the writer, '
-                                      'defaulting to $USER'},
+                       'description': 'a filter of "search" and "list"; '
+                                      'the writer on "add", $USER left '
+                                      'out'},
             'title': {'type': ['string', 'null'],
-                      'description': '"add" and "edit": the note\'s title'},
+                      'description': '"add" and "edit": the note\'s '
+                                     'title'},
         }, 'required': ['action'], 'additionalProperties': False},
     ),
     # One name for the corpus of documents the agent reads for itself: what
@@ -1174,35 +1150,23 @@ TOOLS = [
     # refuses a discriminant a member already answers for itself). `rel`
     # keeps the spelling the answers already use: a search hit names the
     # document it came from by that word, so the read asks with it.
+    #
+    # What the short sentence leaves out stands in the answers themselves:
+    # a store written under another embedding endpoint holds vectors in a
+    # different space than the query, so the keyword alone ranks and
+    # `guarded` says so; "reindex" keeps what it has, embeds what moved
+    # and drops what left the folder; an unnamed AgentDocsDir is a
+    # refusal that names it, as an unnamed shared journal folder is.
     _tool(
         'manage_documents',
-        'The corpus of documents the in-app agent reads for its own RAG -- '
-        'the markdown, text and PDF files the folder AgentDocsDir names -- '
-        'and `action` says which ask. "list": the corpus as named (the '
-        'name, the size, the date, the `rel` a search answers by); a folder '
-        'with no document is an answer and a folder not named is a refusal '
-        'that names it, the same shape a shared journal without its folder '
-        'answers. "search": the ranked chunks of those files, one hit per '
-        'chunk -- the document `rel`, the chunk, a snippet -- the ask when '
-        'the question is about the user\'s own writing; `query` is what to '
-        'look for and `limit` how many chunks come back, 8 left out. The '
-        'answer names the `method` it ranked with (hybrid / embeddings / '
-        'keyword / empty); a store written under another embedding endpoint '
-        'is `guarded`, its vectors stand in a different space than the '
-        'query, the keyword alone ranks, and "reindex" is what sets the two '
-        'in step. "read": one document whole, by the `rel` a hit names -- '
-        'the ask when a hit is worth reading entire; not in the corpus is a '
-        'refusal naming the ones it does read, and so is a document it '
-        'cannot read. "reindex": the corpus in step with its store, after a '
-        'document was added to the folder or after the embedding endpoint '
-        'changed; it keeps what it has, embeds what moved, drops what left '
-        'the folder, and answers how many documents and chunks it kept, '
-        'wrote and dropped and whether this pass vectorized. "stats": how '
-        'many documents and chunks the corpus holds, the endpoint and model '
-        'it was written under, and when it was built -- the answer to "can '
-        'the agent read my documents" when it is "not indexed yet" or '
-        '"indexed under another endpoint". A corpus the run cannot read '
-        'is refused by name in every one of the five.',
+        'The corpus the agent reads for its own RAG, in the AgentDocsDir '
+        'folder; `action` says which ask. "list": the corpus as named, '
+        'with the `rel` a search answers by. "search": the ranked chunks, '
+        'naming the `method` it ranked with. "read": one document whole, '
+        'by its `rel`. "reindex": the corpus in step with its store. '
+        '"stats": how many documents and chunks, under which endpoint. A '
+        'store under another embedding endpoint answers `guarded` and '
+        'ranks by keyword alone.',
         {'type': 'object', 'properties': {
             'action': {'type': 'string',
                        'enum': ['list', 'search', 'read', 'reindex',
@@ -1225,102 +1189,65 @@ TOOLS = [
     # refuses a discriminant a member already answers for itself). `scope`
     # is not the discriminant here either -- it is WHICH catalogue, and
     # four of the six members answer it for themselves.
+    #
+    # What the short sentence leaves out is what the answers say anyway:
+    # a hole is filled from the first source that answers it -- what the
+    # call names in `values`, what was typed last time for that prompt,
+    # what the session knows (its open case, its one open window), what
+    # the file declares -- and the answer names which one it was, never
+    # a guess. An unnamed SharedPromptsDir costs its own half of a list
+    # and is named in `catalogues_unavailable`; an edit keeps the id the
+    # pages, the sessions and the remembered values read a prompt under;
+    # "detail" remembers nothing, it is the look and not the typing. That
+    # a prompt is filed or taken away only on the user's own words is
+    # said once, in the instruction, for every write of that kind.
     _tool(
         'manage_prompt',
-        'The catalogue of prompts the user wrote once and keeps to ask '
-        'again -- `action` picks the ask. "list": the prompts, each with '
-        'its id, its name, its category, its one-line description and '
-        'the holes it opens; `category` and `query` narrow it and '
-        '`categories` answers how many prompts each category holds. The '
-        'personal catalogue is under ~/.imasviz/prompts and the shared '
-        'one under the folder SharedPromptsDir names (an unnamed shared '
-        'folder costs its own half of the list, named in '
-        'catalogues_unavailable -- the personal prompts still answer). '
-        'Ask of it when the user says "relance le prompt ..." or "run my '
-        'usual X" and you do not know the wording they filed. "detail": '
-        'one prompt whole -- its body with its holes still open, and '
-        '`values`: what each hole would be answered from right now (what '
-        'the user typed last time, what this session knows, what the '
-        'file declares) and null for the ones that still need a value. '
-        '`name` is the id or the display name; a name two prompts carry '
-        'is refused naming their ids. Asking this remembers nothing: it '
-        'is the look, not the typing. "fill": the prompt as it will be '
-        'asked, its holes filled, and nothing run. A hole is filled from '
-        'the first source that answers it -- what you name in `values`, '
-        'what was typed last time for that prompt, what this session '
-        'knows (its open case: case, uri, shot, run, database; its one '
-        'open window: figure), what the file declares -- and the answer '
-        'says which one it was. A hole none of them answers is a refusal '
-        'naming the holes: a prompt is never sent with {shot} in it and '
-        'never sent with a guess. Take the `text` this answers and ask '
-        'it as the user asked it -- filling is not running. "save": one '
-        'prompt into the catalogue, named and described, so the next run '
-        'does not type it again; `text` is the prompt as it is asked, '
-        'with its holes spelled {name}, and `variables` left out is read '
-        'off the text (every hole it opens, asked for on every run), a '
-        'hole declared and never opened being refused by name. The user '
-        'asks for this in their own words ("garde ce prompt", '
-        '"enregistre-le") -- a turn that merely drew a figure is not an '
-        'ask to file its wording, and `scope="shared"` files it in the '
-        'folder the team reads, which is a line others see. "edit": one '
-        'prompt of the catalogue '
-        'changed in place, keeping the id the pages, the sessions and the '
-        'remembered values read it under. A field you leave out keeps the '
-        'one the prompt held, a field you name replaces it, an empty one '
-        'clears it -- the body excepted, which an edit cannot empty; a '
-        'new prompt is "save". "delete": one prompt out of the '
-        'catalogue, and the values that were remembered for it. Not '
-        'there is a refusal naming the ids the catalogue holds. This '
-        'takes a file the user wrote off the disk: it is asked for in '
-        'their own words, not decided for them. `scope` is WHICH '
-        'catalogue, not which ask -- left out, both are asked.',
+        'The prompts the user filed to ask again; `action` picks which. '
+        '"list": the prompts with their ids and the holes each opens; '
+        '`category` and `query` narrow it. "detail": one prompt whole, '
+        'with `values`: what each hole would take now. "fill": the '
+        'filled prompt, and nothing run; a hole no source answers is '
+        'refused naming it. "save": a new prompt, `text` with its holes '
+        'spelled {name}. "edit": one prompt changed in place, keeping '
+        'its id. "delete": one prompt out of the catalogue. `scope` is '
+        'WHICH catalogue, not which ask.',
         {'type': 'object', 'properties': {
             'action': {'type': 'string',
                        'enum': ['list', 'detail', 'fill', 'save', 'edit',
                                 'delete']},
             'name': {'type': 'string',
-                     'description': 'the id or the display name of the '
-                                    'prompt; asked of the five asks but '
-                                    '"list", which is what `query` '
-                                    'narrows'},
+                     'description': 'the prompt, by id or display name; '
+                                    'asked by every action but "list"'},
             'scope': {'type': ['string', 'null'],
                       'enum': ['personal', 'shared'],
-                      'description': 'the one catalogue to ask of; left '
-                                     'out, both are asked'},
+                      'description': 'which catalogue; left out, both'},
             'text': {'type': ['string', 'null'],
-                     'description': '"save": the prompt, holes spelled '
-                                    '{name}. "edit": its new body, the '
-                                    'one it held when left out'},
+                     'description': '"save": the body, holes spelled '
+                                    '{name}. "edit": its new body'},
             'category': {'type': ['string', 'null'],
-                         'description': '"list": the prompts that name '
-                                        'this category, compared without '
-                                        'minding the case. "save" and '
-                                        '"edit": the category to put'},
+                         'description': '"list": a filter. "save" and '
+                                        '"edit": where to file it'},
             'description': {'type': ['string', 'null'],
                             'description': '"save" and "edit": one line '
-                                           'saying what it asks, for the '
-                                           'reader of the list'},
+                                           'for the reader of the list'},
             'variables': {'type': ['object', 'string', 'null'],
                           'description': '"save" and "edit": hole -> '
-                                         'default, as an object or as the '
-                                         '"a=1; b=" line the file spells; '
-                                         'left out, read off the text'},
+                                         'default; left out, read off the '
+                                         'text'},
             'prompt_id': {'type': ['string', 'null'],
-                          'description': '"save": the file name to file '
-                                         'it under; left out, the slug of '
-                                         'the name'},
+                          'description': '"save": the file name; left '
+                                         'out, the slug of the name'},
             'values': {'type': ['object', 'null'],
                        'additionalProperties': {'type': 'string'},
-                       'description': '"fill": the hole -> the value to '
-                                      'use this time, for the holes the '
-                                      'session does not answer'},
+                       'description': '"fill": hole -> value, for the '
+                                      'holes the session does not answer'},
             'query': {'type': ['string', 'null'],
                       'description': '"list": a word of the name, the '
-                                     'description, the category or the '
-                                     'id'},
+                                     'description, the category or the id'},
             'limit': {'type': ['integer', 'null'],
-                      'description': '"list": how many prompts come back; '
-                                     '100 when left out'},
+                      'description': '"list": how many come back; 100 '
+                                     'left out'},
         }, 'required': ['action'], 'additionalProperties': False},
     ),
 ]
