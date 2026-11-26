@@ -123,6 +123,11 @@ How to work with it:
    log on values that cross zero is refused by name, and a figure that is
    not a single one (a table, or the flux-surface figure) is refused the
    same way -- name the figure the single curve was drawn in.
+9. two asks that draw one window: a plugin entry and the tool that entry
+   answers are the same window -- plugin(action='run') on an
+   equilibriumsurfaces entry IS equilibrium(action='surfaces') -- so ask
+   one, not both. And a screenshot is a picture you cannot read: say what
+   a figure shows from the arrays get_signal answers, never from the PNG.
 
 The state of a figure is what the calls of this session made, and a read
 this session answered -- not what was said of it. A curve you say was

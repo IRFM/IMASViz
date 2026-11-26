@@ -99,24 +99,27 @@ def test_the_standing_show_vocabulary_is_gone():
 
 def test_the_windows_group_reads_its_show_as_the_users_command():
     """The name the model calls on the strength of the prompt reads itself
-    the same way: the user's "show me this" command, bringing the window
-    to the front -- shown when off screen, raised when not -- keeping
-    the size it holds unless pixels are named, and refusing the draw and
-    the mention as reasons to call it. Without the system prompt and the
-    tool description agreeing, one of them would keep the standing-show
+    the same way: the user's "show me this" command, raised to the front
+    and resized only when pixels are named, and refusing the draw and the
+    mention as reasons to call it. Without the system prompt and the tool
+    description agreeing, one of them would keep the standing-show
     posture and the model would have two of the opposite mind about the
-    same call."""
+    same call.
+
+    The half keep -- a side left out holding the size the window holds on
+    that side -- is not in that sentence any more. T7 gave every tool
+    description a word budget (40 words, plus 8 per action it answers with)
+    and the keep is one fact about two parameters, so it stands where the
+    pixels are named: the next test reads it off `width` and `height`, and
+    test_122 reads the size back off the gesture's own answer.
+    """
     text = _windowsDescription()
     assert 'the user\'s "show me this" command' in text, \
         'the windows description is not the user\'s command: the ' \
         'standing-show reading is back'
-    assert 'keeps the size it holds' in text, \
+    assert 'resized only when' in text, \
         'the windows description lost the size keep: a call with ' \
         'no pixels resizes the window again'
-    assert 'a side left out keeps the size the window holds on that side' \
-        in text, \
-        'the windows description lost the half keep: one named side ' \
-        'and one kept side must stand'
     assert 'a draw is not an ask to show it' in text, \
         'the windows description lets the model focus on a draw: ' \
         'the standing show is back in the tool it would call'

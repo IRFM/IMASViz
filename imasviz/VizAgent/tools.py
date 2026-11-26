@@ -66,6 +66,8 @@ You control the GUI strictly through the provided tools.
 - **NO FAKE ACTIONS:** Never say you plotted a curve, wrote a report, or saved a note unless the corresponding tool returned `error: null` in this turn. If a tool fails or refuses, report the exact refusal reason.
 - **MULTIPLE FAMILIES:** When asked to plot two different families (e.g., probes then flux loops), create two separate figures unless the user explicitly asks to overlay them ("sur la même figure" / "on the same figure").
 - **WINDOWS & FOCUS:** Do NOT call `manage_window(action="focus")` or `manage_window(action="show")` automatically after plotting. Only call them if the user explicitly asks to bring a window to the front.
+- **ONE WINDOW PER ASK:** A plugin entry and the tool that entry answers draw the same window. Ask one, not both.
+- **PICTURES:** A screenshot is a picture you cannot read. Say what a figure shows from the arrays `get_signal` answers, never from the PNG.
 - **DESTRUCTIVE & SHARED ACTIONS:** Never call `manage_window(action="close")`, `manage_case(action="close")`, `manage_session(action="new")`, or write with `scope="shared"` (`manage_note`, the prompt tools) unless the user explicitly asks for it in their prompt. Nor write anything they did not ask for: a note, a prompt filed, a report, a session saved. A turn that only drew a figure is not an ask to file its wording.
 - **AMBIGUITY:** If a user request is ambiguous (e.g., "sonde 2" when multiple probes exist), list the exact paths found by `inspect_tree(action="search")` and ask the user to choose.
 
@@ -822,31 +824,26 @@ TOOLS = [
     # by one word. The window itself is named `window` here although three
     # of the gestures were written against `key`: one group, one word (the
     # rename is `ACTION_RENAMES`, applied once, after the checks).
+    #
+    # What the sentence no longer has room for, and where it stands: the
+    # size keep is on the two parameters that take pixels -- a side left out
+    # keeps the size the window holds on that side, and the gesture test
+    # (test_122) reads the size back off the answer. "close" deleting a
+    # window and forgetting its key is refused on a call that names no
+    # window; the destructive half of that is the instruction's. A window
+    # that is on screen but not in front is "focus", and a window named
+    # `app` is the application, raised with no figure touched; a side that
+    # is not a pixel count and a name the session does not hold are both
+    # refused, the second from the open ones.
     _tool(
         'manage_window',
         'What one window of the session is asked to do, and `action` says '
-        'which. "list": every window of the session, in the order the menus '
-        'draw them -- kind, label, key, and whether it is on screen. '
-        '"show": the user\'s "remets Plot1 à l\'écran" command -- put a '
-        'window back on the screen after a hide, at the size it holds; it '
-        'keeps its key either way. "hide": take it off the screen without '
-        'deleting it, and "show" brings it back. "close": delete it and '
-        'forget its key -- asked for, never taken on a request that names '
-        'no window. "focus": the user\'s "show me this" command -- the '
-        'window is brought to the front, shown when it is off the screen '
-        'and raised when it is not, and keeps the size it holds unless '
-        '`width` and `height` name the pixels to put it at -- a side left '
-        'out keeps the size the window holds on that side. A window that '
-        'is on screen but not in front is "focus", and a draw is neither: '
-        'showing and raising are the gestures of the user\'s *Windows* '
-        'menu, so a figure you drew or named in your answer is not a '
-        'reason to call it -- a draw is not an ask to show it. `window` is '
-        '"app" for the application, a figure key for one figure, a case '
-        'URI for its shot view; left out of "focus", the application. '
-        'Call "focus" when the user asks to see or bring a window forward '
-        '("montre-moi Plot1", "ramène Plot1 devant", "je ne vois pas la '
-        'figure"), and to size one for a requested picture before the '
-        'get_screenshot on it; it answers the size the window now holds.',
+        'which. "list": every window -- kind, label, key, on screen or not. '
+        '"show": put a hidden window back on the screen; "hide": take it '
+        'off without deleting it. "close": delete it and forget its key. '
+        '"focus": the user\'s "show me this" command -- raised to the '
+        'front, resized only when `width` and `height` name the pixels. A '
+        'draw is not an ask to show it.',
         {'type': 'object', 'properties': {
             'action': {'type': 'string',
                        'enum': ['list', 'show', 'hide', 'close', 'focus']},
@@ -872,27 +869,27 @@ TOOLS = [
     # rows of `ACTION_PARAMETERS` answer is the other half: a "run" without its
     # `entry` is an incomplete call, and a `plugin` beside "list" is a word
     # that went to the wrong ask.
+    #
+    # What the sentence no longer has room for: "list" answers the entries
+    # in registration order, the feature number, its label and its
+    # description for each, and beside them the refusals of the plugins the
+    # case cannot offer. "run" hands `occurrence` and `time` instead of
+    # letting the entry ask them, because a modal window asked on a surface
+    # that answers in the user's place holds the whole session; an entry
+    # that asks an instant and is handed none is therefore refused by name,
+    # and so is an entry the case does not offer. `ids_name` left out of
+    # "run" is resolved from the case, several branches earning that entry
+    # being refused with them named. The entry draws its own window: `drawn`
+    # names the ones it opened or redrew, `reused` the one it drew again --
+    # the same entry with the same answers draws into the window that
+    # already stands rather than another over it.
     _tool(
         'plugin',
-        'The plugins a case offers, and `action` says which ask. "list": the '
-        'entries an IDS root earns, in registration order -- the feature '
-        'number, its label, its description for each -- and beside them the '
-        'refusals of the plugins the case cannot offer. "run": one entry of '
-        'one plugin, with the answers the entry would have asked the user: '
-        '`occurrence` and `time` are handed instead of being asked, so an '
-        'entry that asks an instant and is handed none is refused by name, '
-        'not left to open a dialog. `ids_name` says which IDS branch the line '
-        'is asked on; left out, the branch is resolved from the case, and '
-        'several branches earning that entry is refused with them named. '
-        'Refused by name when the case does not offer that entry. The entry '
-        'draws its own window: `drawn` names the ones it opened or redrew and '
-        '`reused` the one it drew again. Asking the same entry again with the '
-        'same answers draws into the window that already stands instead of '
-        'opening another over it. What does double is asking the entry AND '
-        'the tool that entry answers with: the two `equilibriumsurfaces` '
-        'entries ARE `equilibrium(action="surfaces")` (entry 0) and '
-        '`equilibrium(action="at_time")` (entry 1), as the profiles entry is '
-        'the table and curve draws. Ask one per window.',
+        'The plugins a case offers, and `action` says which ask. "list": '
+        'the entries an IDS root earns, beside the refusals of the plugins '
+        'that case cannot offer. "run": one entry, with `occurrence` and '
+        '`time` handed instead of asked; the same entry asked again draws '
+        'into the window that stands, and `drawn` names what came back.',
         {'type': 'object', 'properties': {
             'action': {'type': 'string', 'enum': ['list', 'run']},
             'uri': {'type': 'string',
@@ -989,41 +986,44 @@ TOOLS = [
                                           'Table Plot View to write out'},
         }, 'required': ['action'], 'additionalProperties': False},
     ),
+    # One name for the three pages a request can ask for, because the three
+    # are the same ask -- put what the session knows where the user can open
+    # it -- and `scope` answers which page. The discriminant is `scope` and
+    # not `action`: `action` is the word the other groups answer with, and a
+    # group naming a discriminant its own members already take is the
+    # confusion this table exists to end (test_175).
+    #
+    # What the sentence no longer holds: this is the "rapport" / "report"
+    # the user asks for, and "case_ids" is the "inventaire du cas". A report
+    # is one window, so a report of more than one plot is one call per plot,
+    # and the page lists the ones a request wrote together. "plot" refuses a
+    # window that draws no curve it could stat; "case_loaded" is one row per
+    # curve the loaded tree holds -- an IDS not yet loaded is not a curve,
+    # so the answer says how many curves it gave and
+    # ``manage_idss(action="declared")`` names what the case still holds --
+    # and a loaded tree with no curve is refused. "case_ids" adds, per
+    # loaded occurrence, the header of its ``ids_properties`` and the
+    # signals the tree carries as available for it (the same test its own
+    # colouring applies, a 0-D scalar held by the dynamic array among them);
+    # a property left empty is named empty, an occurrence without an
+    # available signal is named as such, and a case holding no data at all
+    # is refused. A `name` that names a place is refused by every scope.
     _tool(
         'generate_report',
-        'A self-contained HTML report on disk under `~/.imasviz/reports`; '
-        '`scope` says which report. "plot" -- a window of curves: the '
-        'image of the window, and one row per trace it drew -- the '
-        'quantity, the number of samples, the finite minimum and maximum, '
-        'and the nan/inf counts. This is the "rapport"/"report" the user '
-        'asks for. For a report of more than one plot, call it once per '
-        'plot -- a report is one window, and the page lists the ones a '
-        'request wrote together. A window that draws no curve it could '
-        'stat is refused by name. "case_loaded" -- the loaded tree of a '
-        'case: one row per curve the tree holds -- the numeric arrays its '
-        'leaves read, in tree order -- with the statistics of each. An IDS '
-        'not yet loaded is not a curve, so the answer says how many curves '
-        'it gave and manage_idss(action="declared") names what the case '
-        'still holds. A case '
-        'whose loaded tree has no curve is refused by name. "case_ids" -- '
-        'the case itself: every IDS the case\'s data dictionary holds and '
-        'the occurrences each one holds, which of those the session '
-        'loaded, and for each loaded occurrence the header of its '
-        '`ids_properties` values and available signals -- the signals the '
-        'tree holds for it, kept to the ones the tree carries as available '
-        '(the same test its own colouring applies), a 0-D scalar held by '
-        'the dynamic array among them. The "inventaire du cas" / "what '
-        'does this case hold" report. A property the case leaves empty is '
-        'named empty, an occurrence without an available signal is named '
-        'as such, and a case that holds no data at all is refused by name. '
-        '`scope="plot"` takes the `figure_key` of the window, the other '
-        'two the `uri` of the case; `name` is the report name (a place, '
-        'not a report, is refused).',
+        'A self-contained HTML page in ~/.imasviz/reports; `scope` says '
+        'which. "plot": one window of curves -- its image and one row per '
+        'trace it drew, saying the quantity, the samples and the counts. '
+        '"case_loaded": one row per curve the loaded tree of a case holds. '
+        '"case_ids": every IDS the case\'s dictionary holds, the '
+        'occurrences each holds, and which the session loaded.',
         {'type': 'object', 'properties': {
             'scope': {'type': 'string',
                       'enum': ['plot', 'case_loaded', 'case_ids']},
-            'figure_key': {'type': 'string'},
-            'uri': {'type': 'string'},
+            'figure_key': {'type': 'string',
+                           'description': '"plot": the window of curves'},
+            'uri': {'type': 'string',
+                    'description': '"case_loaded" and "case_ids": the '
+                                   'case'},
             'name': {'type': ['string', 'null']},
         }, 'required': ['scope'], 'additionalProperties': False},
     ),
@@ -1037,18 +1037,24 @@ TOOLS = [
             'dd_version': {'type': ['string', 'null']},
         }, 'required': ['uri', 'target_uri'], 'additionalProperties': False},
     ),
+    # The explicit picture ask, and the one answer the model cannot read: on
+    # this stack the PNG is handed to the transcript as a file, not as pixels
+    # the endpoint parses, so an answer that describes what a picture shows
+    # describes what it never read. The way to say what a figure shows is to
+    # read the arrays under it, with get_signal; the way to make a picture
+    # readable is to size its window first, with manage_window(action=
+    # "focus"), which answers the size the window then holds.
     _tool(
         'get_screenshot',
-        'The explicit picture ask: a window as it stands, in PNG. '
-        '"app" for the application, a figure key for one figure, a case '
-        'URI for its shot view. The picture is the size the window is, '
-        'and no bigger: when a requested picture should be readable and '
-        'the window answers small, size it with '
-        'manage_window(action="focus") first, then take the picture. The '
-        'LLM cannot parse this PNG on this stack; describe a figure by '
-        'reading its underlying arrays with get_signal instead.',
+        'The explicit picture ask: a window as it stands, in PNG. The '
+        'picture is the size the window holds, so size it first with '
+        'manage_window(action="focus") when the picture has to be '
+        'readable.',
         {'type': 'object', 'properties': {
-            'window': {'type': 'string', 'default': 'app'},
+            'window': {'type': 'string', 'default': 'app',
+                       'description': '"app" for the application, a figure '
+                                      'key, or a case URI for its shot '
+                                      'view'},
         }, 'additionalProperties': False},
     ),
     _tool(
