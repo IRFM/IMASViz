@@ -21,24 +21,29 @@ offered and grouped nowhere, a tool claimed by two groups -- is a table
 nobody can read, so the doc itself is parsed and asked. A row names what a
 reader can call, which since the first merge is not always the group's
 member list: the reports row says ``generate_report``, because the three
-report tools it merged are off the wire. The catalogue of
-prompts is the one group the manual documents in its own section rather
-than in that table: it is grouped here (its six tools answer each other's
-parameters) and owes that row to the pass that redraws the table.
+report tools it merged are off the wire. The comparison runs both ways: a
+row the table groups nowhere, and a group of the table the page draws no
+row for, are both refused -- which is what keeps a merge that adds a group
+(the catalogue of prompts, 2026-11-25) from landing on one side of the page
+only.
 
 **The grouping answers a question the flat schemas cannot.** The loop
-offers over eighty tools and their 86 parameter names repeat (``figure_key``
-in 18 schemas, ``uri`` in 37, ``along`` in 12), so the likelier mistake is a
-real parameter put on the wrong neighbour, not a parameter invented out of
-nothing. The refusal that only lists what is *not* there -- what
+offers 23 names carrying 88 distinct parameter blocks, and those blocks
+repeat (``action`` and ``uri`` in 14 schemas each, ``path`` in 7,
+``figure_key`` in 6, ``along`` in 5); a merged schema moreover lists the
+**union** of its actions' parameters. So the likelier mistake is a real
+parameter put on the wrong action of the right tool, or on the wrong
+neighbour of the group -- not a parameter invented out of nothing. The
+refusal that only lists what is *not* there -- what
 ``test_117_dispatch_refuses_unknown_parameters.py`` pins -- leaves the
 model guessing which neighbour wanted it. ``time_index`` on ``plot_one``
 is the measured case: ``get_signal`` takes it, and said so.
 
 What the grouping does NOT do is decide what a call runs: the merge of a
-group into one name is ``test_175``'s subject, and until a group is merged
-each of its tools is still offered by its own name and validated against
-its own schema.
+group under one name is ``test_175``'s subject, and a group is offered as
+its row of ``FAMILIES`` says -- one name with a discriminant, or, for a
+group of one tool (the read, the export, the screen, the log), that tool by
+its own name.
 """
 
 import importlib.util
@@ -186,14 +191,28 @@ def test_the_groups_are_the_manual_s():
 def test_the_groups_are_in_the_manual_s_order():
     """The manual introduces its table with "the tools, in the order the
     faces group them". The table keeps that order, so a reader who has the
-    page open finds a group where they left it. The catalogue of prompts is
-    the one group the page documents in its own section rather than in that
-    table, so it is left out of the comparison."""
+    page open finds a group where they left it."""
     manual = _manualGroups()
     spelled = [label for label, _, _ in FAMILIES if label in manual]
     assert spelled == list(manual), \
         ('the groups are not in the order the manual draws them: %s'
          % ' / '.join(spelled))
+
+
+def test_the_manual_draws_a_row_for_every_group():
+    """The other half of the comparison, and the one that was missing.
+
+    A group the page draws no row for is a group a reader of the manual
+    cannot see: they get every other row, and the tools of the missing one
+    are named nowhere on the page. The catalogue of prompts sat in exactly
+    that state after its merge -- a section of its own, a row of none --
+    and the table grew a group while the page did not notice, because the
+    only direction asked was "does the table know the rows". It now asks
+    both."""
+    manual = _manualGroups()
+    missing = [label for label, _, _ in FAMILIES if label not in manual]
+    assert not missing, \
+        'the manual draws no row for: %s' % ', '.join(missing)
 
 
 # --- what the grouping answers -----------------------------------------

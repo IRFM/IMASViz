@@ -374,6 +374,23 @@ the same descriptions. The tools, in the order the faces group them:
        another endpoint" are answered; ``reindex`` sets the corpus and its
        index back in step. A corpus with no folder named is refused by
        name, naming the folder it would have read (:ref:`agentics_documents`).
+   * - the prompts
+     - ``manage_prompt``
+     - one tool for the catalogue of prompts **the user wrote themselves**,
+       and ``action`` says which of the six is meant: ``list`` answers the
+       catalogue grouped by category, each category saying how many it
+       holds, narrowed by ``category`` or a word of ``query``; ``detail``
+       answers one prompt whole, with for each of its holes -- spelled with
+       braces -- the value it would take today and **where that value comes
+       from**; ``fill`` fills those holes from four sources in order (what
+       the call names, the last value typed for **that** prompt, what this
+       session knows, the default the file declares), a hole none of them
+       answers being a refusal **naming the holes** rather than a prompt
+       sent with ``{shot}`` still in it; ``save``, ``edit`` and ``delete``
+       write the catalogue, ``scope`` saying the user's own folder or the
+       shared one. Filling is not running: no face offers a ``run_prompt``
+       gesture, so the text comes back and the face asks the turn with it
+       (:ref:`agentics_prompts`).
 
 .. _agentics_documents:
 
