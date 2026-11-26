@@ -51,7 +51,19 @@ class _LLM:
 
 
 class _Core:
-    """A stand-in gesture surface; the scripted turn never reaches it."""
+    """A stand-in gesture surface; the scripted turn never reaches it.
+
+    The PANEL does reach it, though, and before the turn: a panel built on
+    an agent fills its prompt box from ``list_prompts``, so a core that
+    cannot answer that is a panel that cannot be built. The shelf stays
+    empty here -- what the catalogue answers is ``test_166`` (the store)
+    and ``test_167`` (the gesture), and what the panel does with the answer
+    is ``test_170``.
+    """
+    def list_prompts(self, scope=None, category=None, query=None,
+                     limit=None):
+        return {'prompts': [], 'total': 0, 'categories': {},
+                'context': {'note': 'no case is open'}}
 
 
 class _Dispatcher:

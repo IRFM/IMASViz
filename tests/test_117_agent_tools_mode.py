@@ -50,13 +50,28 @@ class FakeLLMClient:
 
 
 class RecordingCore:
-    """A core that records that it was reached: a gesture the agent asked."""
+    """A core that records that it was reached: a gesture the agent asked.
+
+    ``list_prompts`` is here because a panel built on this core asks its
+    catalogue while it is being built -- the prompt box is filled from that
+    answer, so a core that cannot answer it is a panel that cannot be built
+    (``test_111``'s ``FakeCore`` carries the same shelf, for the same
+    reason). It is deliberately **not** recorded: what ``called`` counts is
+    the gesture the *agent* asked, and the catalogue read is the panel's
+    own, before any turn. The catalogue itself is ``test_166``/``test_167``,
+    the panel's use of it is ``test_170``.
+    """
     def __init__(self):
         self.called = []
 
     def list_cases(self):
         self.called.append('list_cases')
         return [{'uri': 'imas:hdf5?path=/fake', 'dd_version': '3.35.0'}]
+
+    def list_prompts(self, scope=None, category=None, query=None,
+                     limit=None):
+        return {'prompts': [], 'total': 0, 'categories': {},
+                'context': {'note': 'no case is open'}}
 
 
 class FakeDispatcher:
