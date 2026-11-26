@@ -1633,15 +1633,17 @@ class McpGuiCore:
     def scale_curve(self, figure_key, factor, curve=None):
         """Multiply a figure's drawn curve(s) by a constant.
 
-        In place, on the curves the figure named, so the reader sees the
-        picture change and `curve_stats` / `export_curve` read the value
-        back multiplied. `curve` is `None` for every curve the figure holds,
-        an index in draw order, or a quantity-name substring. `factor` must
-        be a finite number, refused by name when it is not. `reset_curve`
-        takes the multiplication off (or `plot_one` redraws the unmultiplied
-        curve), because a transform is one of the view, not of the quantity
-        in the tree. A window that holds no curve to multiply is refused by
-        name, naming what it holds instead.
+        The factor is kept by the figure beside the values it read for that
+        trace (`QVizCurveTransform`), so it is still there when a slider, a
+        posed row or a re-read brings other values under the curve: the picture
+        then shows the new element at the scale the hand asked for, not the raw
+        one. `curve_stats` / `export_curve` read the value back multiplied.
+        `curve` is `None` for every curve the figure holds, an index in draw
+        order, or a quantity-name substring. `factor` must be a finite number,
+        refused by name when it is not. `reset_curve` takes the multiplication
+        off (or `plot_one` redraws the unmultiplied curve), because a transform
+        is one of the view, not of the quantity in the tree. A window that holds
+        no curve to multiply is refused by name, naming what it holds instead.
         """
         import math
 
@@ -1656,8 +1658,8 @@ class McpGuiCore:
             x, y = self._curveData(item)
             if x is None or y is None:
                 continue
-            self._rememberOrig(item)
-            item.setData(x, y * factor)
+            already = source.transformOf(item)
+            source.setTransform(item, already[0] * factor, already[1] * factor)
             done.append(self._curveName(node, rank))
         if not done:
             raise ValueError(
@@ -1673,8 +1675,9 @@ class McpGuiCore:
         """Add a constant to a figure's drawn curve(s): a vertical offset.
 
         The inverse of a subtraction; `reset_curve` takes it off. Everything
-        else is the rule of `scale_curve`: in place, `curve` the one or the
-        figure's, and the named refusals the figure's holds earn.
+        else is the rule of `scale_curve`: the offset is kept by the figure and
+        goes back under the values a later read answers, in place, `curve` the
+        one or the figure's, and the named refusals the figure's holds earn.
         """
         import math
 
@@ -1689,8 +1692,8 @@ class McpGuiCore:
             x, y = self._curveData(item)
             if x is None or y is None:
                 continue
-            self._rememberOrig(item)
-            item.setData(x, y + offset)
+            already = source.transformOf(item)
+            source.setTransform(item, already[0], already[1] + offset)
             done.append(self._curveName(node, rank))
         if not done:
             raise ValueError(
@@ -1710,8 +1713,12 @@ class McpGuiCore:
         sample goes to 1), or `mean` (divide by the mean -- the mean goes to
         1); `curve` selects the curve or the figure's as elsewhere. The
         reference is read off the curve as it stands, so a shift already on
-        of it is what the reference is taken from. A reference that is zero
-        or not a number is refused by name -- the division is then `inf` or
+        of it is what the reference is taken from. It is the divisor from
+        then on: a curve the figure re-reads under a slider comes back
+        divided by that same reference, not by the peak of the element it is
+        now -- two curves of one figure stay comparable, which is the whole
+        reason for dividing them. A reference that is zero or not a number is
+        refused by name -- the division is then `inf` or
         `nan`, and the reader would read a picture full of them for a
         quantity nobody divided by anything. `reset_curve` restores the
         unnormalized values.
@@ -1743,8 +1750,9 @@ class McpGuiCore:
                     'be the inf or nan of a picture full of no signal). '
                     'Name a curve that holds a non-zero value to %s from.'
                     % (self._curveName(node, rank), mode, reference, mode))
-            self._rememberOrig(item)
-            item.setData(x, values / reference)
+            already = source.transformOf(item)
+            source.setTransform(item, already[0] / reference,
+                                already[1] / reference)
             done.append(self._curveName(node, rank))
         if not done:
             raise ValueError(
@@ -1758,13 +1766,16 @@ class McpGuiCore:
                 'reference': float(reference), 'curves': done}
 
     def reset_curve(self, figure_key, curve=None):
-        """Take the transforms off: put the curve(s) back to the data they
-        were drawn with.
+        """Take the transforms off: put the curve(s) back to the data the figure
+        holds for them.
 
-        Scale, shift and normalize each capture the drawn (x, y) on the
-        first they are asked on a curve; this takes it off, and `curve`
-        targets the one or the figure's as elsewhere. A curve nobody
-        transformed keeps the data it was drawn with and is not in the
+        The figure keeps, per trace, the values its last read answered and the
+        (factor, offset) a hand laid on them; this takes the affine off and
+        leaves those values where the read left them. Which is the element the
+        row of a band is posed at when a slider moved it -- not the element the
+        hand started on, which is what a stashed copy of the first capture would
+        have brought back under a curve the figure had already moved. A curve
+        nobody transformed keeps the data it was drawn with and is not in the
         answer's list: nothing to reset is refused by name, saying what is
         held as drawn already and what a re-plot would give back, so the
         caller does not mistake a clean window for an empty one.
@@ -1774,11 +1785,8 @@ class McpGuiCore:
         held = 0
         for node, rank, item, source in curves:
             held += 1
-            if not hasattr(item, '_imastemp_orig'):
+            if not source.clearTransform(item):
                 continue
-            x, y = item._imastemp_orig
-            item.setData(x, y)
-            del item._imastemp_orig
             restored.append(self._curveName(node, rank))
         if not restored:
             raise ValueError(
@@ -4927,19 +4935,6 @@ class McpGuiCore:
         """
         label = McpGuiCore._nodeLabel(node)
         return label if rank == 0 else '%s (trace %d)' % (label, rank)
-
-    @staticmethod
-    def _rememberOrig(curve):
-        """The first call on a curve captures its (x, y) under a marker,
-        so `reset_curve` can take the transform off. Subsequent calls leave
-        the original it was first asked off, which is the composition the
-        analyst expects: scale then shift is scale and then shift, not
-        both asked in parallel from the original."""
-        try:
-            if not hasattr(curve, '_imastemp_orig'):
-                curve._imastemp_orig = (curve.xData, curve.yData)
-        except Exception:
-            pass
 
     def _namedExport(self, name, ext, count):
         """The file an export writes: under `~/.imasviz/exports`, the guard

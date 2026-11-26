@@ -100,6 +100,12 @@ Released 11/12/2026
   shots -- and it reads a corpus of the user's own documents, which is a
   folder of their choosing and an index of their choosing
   (:ref:`agentics_documents`).
+  A transform of that family is the state of the window, not a coat of paint on
+  one read: a curve a hand normalised stays normalised when a slider or a posed
+  row brings another element under it, and the window answers that element
+  divided by the reference that was asked for -- not re-scaled to its own peak.
+  ``reset`` takes the transform off the values the window holds *now*, which is
+  the element the row stands on, not the one the hand started on.
 - **A window that draws is a window that holds its own height.** The
   equilibrium window of :ref:`IMASViz_plugins` drew its thirteen curves and
   answered a picture 91% empty body: an invisible spacer had left its row of
