@@ -32,6 +32,12 @@ Both halves are pinned here, and so is what makes the seam safe to keep:
 * the actions of an offer cover its members once each, and no member of a
   merged group is offered any more -- the coup is clean, and a member
   spelled out is refused by naming the call that took its place;
+* an offer the table spells is an offer the wire answers, its discriminant
+  required there and enumerating exactly those actions in that order. Both
+  faces are generated from that table (T6), so a merge written down and not
+  built is a table reading falsely: the manual prints the name, a refusal
+  re-anchors onto it, and the model is refused for a name it was never
+  offered;
 * the discriminant of a group is a parameter NO member of that group takes.
   ``add_note(scope, ...)`` already answers ``scope``, so the journals group
   can only be merged under ``action``; a group merged under a word two of
@@ -98,8 +104,13 @@ def _calledNames(text):
 
 
 def _discriminatedOffers():
-    """Every offer the table spells with a discriminant, merged or still
-    planned: (name, discriminant, actions, the members they answer)."""
+    """Every offer the table spells with a discriminant: (name,
+    discriminant, actions, the members they answer).
+
+    Since ``test_the_table_declares_no_merge_the_wire_does_not_answer``
+    below, every one of them is on the wire as well: an offer written into
+    the table is an offer the faces answer, so "declared but not built" is
+    no longer a state this file has to work around."""
     out = []
     for label, _members, offers in FAMILIES:
         for name, discriminant, actions in offers or ():
@@ -111,11 +122,22 @@ def _discriminatedOffers():
 
 
 def _mergedOffers():
-    """The offers that ARE merged today: the name is on the wire, so the
-    members it answers are off it. A group the table plans to merge and the
-    loop still offers member by one is not a merge yet, and pinning it as
-    one would refuse tomorrow's work rather than today's mistake."""
+    """The offers that ARE merged: the name is on the wire, so the members
+    it answers are off it. Kept as the shape the seam tests want -- and the
+    guard below is what makes it every offer with a discriminant, not a
+    subset chosen to spare tomorrow's work."""
     return [one for one in _discriminatedOffers() if one[0] in TOOL_NAMES]
+
+
+def _offers():
+    """Every offer of the table, discriminant or not: a group of one tool
+    is offered by that tool's own name, which the table spells as no offer
+    at all."""
+    for label, members, offers in FAMILIES:
+        for name, discriminant, actions in (offers
+                                            or [(one, None, ())
+                                                for one in members]):
+            yield label, name, discriminant, tuple(actions)
 
 
 # --- the table, and what is on the wire --------------------------------
@@ -133,6 +155,51 @@ def test_a_merged_group_offers_its_name_and_no_longer_its_members():
             assert member not in TOOL_NAMES, \
                 '%s is merged under %s and still offered on its own' \
                 % (member, name)
+
+
+def test_the_table_declares_no_merge_the_wire_does_not_answer():
+    """A merge is declared by being built, not by being written down.
+
+    ``FAMILIES`` is the one account of what the faces offer, and since T6
+    both faces are generated from it. An offer written into that table --
+    a name, and the word that says which gesture it answers -- while the
+    wire still carries the members is therefore not a plan but a table
+    reading falsely: the manual's row (``test_174``) prints that name as
+    something a reader can call, a stray parameter is re-anchored onto it
+    (``test_174`` again), and the call the model then makes is refused for
+    a name it was never offered.
+
+    Three halves, and the last two are how a merge rots without a word:
+    the offer is on the wire; its discriminant is **required** there and
+    enumerates exactly the actions the table declares, in the order it
+    declares them, because that order is the one the refusal reads out; and
+    each action resolves to the gesture the table names, not to another one
+    of the same group."""
+    planned = ['%s of %s' % (name, label)
+               for label, name, _discriminant, _actions in _offers()
+               if name not in TOOL_NAMES]
+    assert not planned, \
+        ('the table offers %s, which the faces answer nowhere: declare the '
+         'merge in the pass that builds the entry' % ', '.join(planned))
+
+    schemas = {tool['function']['name']: tool['function']['parameters']
+               for tool in TOOLS}
+    for name, discriminant, actions, _members in _mergedOffers():
+        schema = schemas[name]
+        assert discriminant in schema.get('required', []), \
+            ('%s leaves "%s" optional: a call may answer no action at all'
+             % (name, discriminant))
+        offered = schema['properties'][discriminant].get('enum')
+        assert offered == list(actions), \
+            ('the wire offers %s("%s"=%s), the table declares %s'
+             % (name, discriminant, offered, list(actions)))
+
+    for _label, name, discriminant, actions in _offers():
+        for action, gesture in actions:
+            answer = resolveCall(name, {discriminant: action})[0]
+            assert answer == gesture, \
+                ('%s("%s"=%s) reaches %s, the table says it answers %s'
+                 % (name, discriminant, action, answer, gesture))
 
 
 def test_the_offers_are_a_partition_of_the_vocabulary():
