@@ -218,7 +218,9 @@ the same descriptions. The tools, in the order the faces group them:
        ``image_window`` sets the **window of pictures** -- moved with
        ``start``, resized with ``count``; ``slice_index`` poses one row of
        a slider band at a named index, in the words the band spells that
-       row; ``log`` dresses an axis, refused where the values cross zero;
+       row; ``log`` dresses an axis, refused where the values cross zero,
+       and carries a span the reader pinned across the scale -- an axis it
+       cannot carry, its span reaching zero, is named in ``refitted``;
        ``invert`` turns one around. A table and a stacked window are
        refused by name, and so is a row a band does
        not hold -- naming the rows it does.

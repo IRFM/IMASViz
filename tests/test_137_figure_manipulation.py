@@ -558,6 +558,90 @@ def test_set_log_scale_moves_the_drawn_values_onto_the_log_scale(curve_figure):
         session.reset_curve(key)
 
 
+def test_set_log_scale_carries_a_pinned_span_through_the_scale(curve_figure):
+    """A window a hand pinned stays pinned across the scale change.
+
+    `PlotItem.updateLogMode` ends with `enableAutoRange()`, so installing a log
+    axis drops a manual pin unless the gesture carries it: measured offscreen,
+    a y span pinned at [1,3] came back as the auto-fit [0,85 ; 4,15] once the
+    events were pumped. The carry goes through the mapping the gesture installs
+    -- log10 going to log, the power of ten coming back -- and an axis the ask
+    does not name keeps its pin unchanged, since its mapping does not move.
+    pyqtgraph pads a range it is asked for, so the assertion is held against
+    the span the box really holds, not against the two numbers typed.
+    """
+    from math import log10
+
+    session, _h, key, frame = curve_figure
+    vb = frame.pgPlotWidget.getViewBox()
+    session.shift_curve(key, 80000.0, curve=1)
+    try:
+        session.set_axis_range(key, ymin=30.0, ymax=50.0)
+        assert vb.state['autoRange'][1] == 0, 'the pin should be a pin'
+        pinned = [float(v) for v in vb.state['viewRange'][1]]
+        assert pinned[1] > pinned[0] > 0.0, pinned
+
+        answer = session.set_log_scale(key, y=True)
+        assert vb.state['autoRange'][1] == 0, 'the scale move un-pinned y'
+        for got, was in zip(answer['yRange'], [log10(v) for v in pinned]):
+            assert abs(got - was) < 1e-9, \
+                'the window should sit on the logarithms of %s: %s' % (
+                    pinned, answer['yRange'])
+
+        # Asking the scale the axis already wears must not walk the window.
+        again = session.set_log_scale(key, y=True)
+        for got, was in zip(again['yRange'], [log10(v) for v in pinned]):
+            assert abs(got - was) < 1e-9, 'the span moved on a no-op ask'
+
+        # And coming back lands on the numbers the hand pinned.
+        back = session.set_log_scale(key, y=False)
+        for got, was in zip(back['yRange'], pinned):
+            assert abs(got - was) < 1e-9, \
+                'the round trip should end where it started: %s vs %s' % (
+                    back['yRange'], pinned)
+        assert 'refitted' not in back and 'refitted' not in answer
+    finally:
+        session.set_axis_range(key, auto=True)
+        session.reset_curve(key)
+
+
+def test_set_log_scale_names_a_pinned_span_it_cannot_carry(curve_figure):
+    """A pinned span reaching zero has no logarithm: the axis re-fits, out loud.
+
+    The values guard refuses a log axis over samples that cross zero, but a
+    *window* can straddle zero while every sample stays positive -- the reader
+    padded it that way. There is no number to carry such a span to, so the
+    gesture leaves that axis to the library re-fit rather than inventing one,
+    and says which axis in `refitted` and in the log of the case.
+    """
+    session, _h, key, frame = curve_figure
+    vb = frame.pgPlotWidget.getViewBox()
+    session.shift_curve(key, 80000.0, curve=1)
+    try:
+        session.set_axis_range(key, ymin=-1000.0, ymax=100000.0)
+        # `set_axis_range` disables the auto range on both axes, so the
+        # abscissa stands pinned where the auto-fit left it, and the ask names
+        # only the ordinate: its span must not move.
+        xPinned = [float(v) for v in vb.state['viewRange'][0]]
+        answer = session.set_log_scale(key, y=True)
+        assert answer.get('refitted') == ['y'], \
+            'the axis that could not be carried should be named: %s' % answer
+        assert vb.state['autoRange'][1] == 1, \
+            'the refused pin should be visibly back to auto'
+        assert vb.state['logMode'][1] is True, \
+            'refusing the span costs the scale nothing: y should be log'
+        assert vb.state['autoRange'][0] == 0, \
+            'an axis the ask does not name keeps the pin it was left on'
+        for got, was in zip(answer['xRange'], xPinned):
+            assert abs(got - was) < 1e-9, \
+                'the abscissa was not asked and its window moved: %s vs %s' % (
+                    answer['xRange'], xPinned)
+    finally:
+        session.set_log_scale(key, y=False)
+        session.set_axis_range(key, auto=True)
+        session.reset_curve(key)
+
+
 # ==================================================================== invert
 
 

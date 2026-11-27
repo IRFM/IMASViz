@@ -1955,10 +1955,12 @@ class McpGuiCore:
         answer for a flux loop that runs through zero.
 
         Going log resamples the traces along log10 and makes the axis tick
-        logarithmically, and the library re-fits the view over the mapped
-        values: a range pinned with `configure_axes(operation="range")` is
-        released by the change, so pin it again after going log, on the
-        logarithms of the numbers it used to name.
+        logarithmically. A span pinned with `configure_axes(operation="range")`
+        is carried through the change on the axis it belongs to -- the same
+        window on the logarithms going in, on the powers of ten coming back --
+        so the scale move never throws the reading away. A pinned span that
+        reaches zero or below has no logarithm to be carried to: the view
+        re-fits on that axis and the answer says which one in `refitted`.
         """
         import numpy as np
 
@@ -2012,17 +2014,51 @@ class McpGuiCore:
         # leaves the drawn values at [10, 100, 1000, 10000] while its state
         # reads [False, True], so a gesture that asked only the view box
         # answered "done" over an untouched picture.
+        box = plot.getViewBox()
+        # Installing the scale runs `updateLogMode`, which re-enables the auto
+        # range on both axes: a span a hand pinned is dropped by the change
+        # unless it is carried over -- across the mapping on the axis asked,
+        # unchanged on the one it was not asked to touch. A span whose two ends
+        # are not both above zero has no logarithm to be carried to, and the
+        # view re-fits there: said in the answer and in the log, not left for
+        # the reader to notice by a window that moved on its own.
+        spans = []
+        for name, index, side, on in (('x', 0, 'bottom', x),
+                                      ('y', 1, 'left', y)):
+            if box.state['autoRange'][index]:
+                continue
+            was = [float(v) for v in box.state['viewRange'][index]]
+            if on is None or bool(plot.getAxis(side).logMode) == on:
+                span = was
+            elif on:
+                span = ([float(np.log10(v)) for v in was]
+                        if min(was) > 0.0 else None)
+            else:
+                span = [float(10.0 ** v) for v in was]
+            spans.append((name, span))
         plot.setLogMode(x=None if x is None else bool(x),
                         y=None if y is None else bool(y))
+        for name, span in spans:
+            if span is not None:
+                box.setRange(**{'%sRange' % name: span}, padding=0.)
         # The two axes the figure draws are what the picture wears; the view
         # box flag is derived from them, through the axis-view link.
         logMode = [bool(plot.getAxis('bottom').logMode),
                    bool(plot.getAxis('left').logMode)]
+        refitted = [name for name, span in spans if span is None]
         self._logFor(record.cases,
-                     'set_log_scale: %s, x=%s, y=%s (now %s).'
-                     % (figure_key, x, y, str(logMode)))
-        return {'window': figure_key, 'x': logMode[0],
-                'y': logMode[1], 'logMode': logMode}
+                     'set_log_scale: %s, x=%s, y=%s (now %s).%s'
+                     % (figure_key, x, y, str(logMode),
+                        '' if not refitted else
+                        ' The pinned %s span has no logarithm to be carried '
+                        'to: the view re-fits there.' % ', '.join(refitted)))
+        answer = {'window': figure_key, 'x': logMode[0],
+                  'y': logMode[1], 'logMode': logMode,
+                  'xRange': [float(v) for v in box.state['viewRange'][0]],
+                  'yRange': [float(v) for v in box.state['viewRange'][1]]}
+        if refitted:
+            answer['refitted'] = refitted
+        return answer
 
     def invert_axis(self, figure_key, x=None, y=None):
         """Invert (flip) an axis: the negative side goes the other way, and

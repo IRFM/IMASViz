@@ -570,8 +570,8 @@ TOOLS = [
         '"image_window" moves (`start`) or resizes (`count`) the band of '
         'pictures a picture window sits on. "slice_index" poses one slider '
         'row (`axis`) at `index`. "log" makes an axis log or linear '
-        '(`x`/`y`), refused where the values cross zero. "invert" turns '
-        'one around.',
+        '(`x`/`y`), refused where the values cross zero, and carries a '
+        'pinned span across the scale. "invert" turns one around.',
         {'type': 'object', 'properties': {
             'figure_key': {'type': 'string'},
             'operation': {
