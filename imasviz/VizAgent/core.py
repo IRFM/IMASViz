@@ -255,6 +255,17 @@ def axesAddressing(axesSpec, along=None, indices=None):
     from imasviz.VizDataAccess import QVizCurveAbscissa as AB
     from imasviz.VizDataAccess.QVizAxesSpec import QVizAxis
 
+    if indices is not None and not isinstance(indices, dict):
+        # A bare index where the mapping belongs is a schema miss, not a
+        # number to argue with: refused by naming the shape, not as an
+        # `'int' object is not iterable` the model reads as a data problem
+        # and retries into the turn budget.
+        raise ValueError(
+            '`indices` is a mapping of axis name to 0-based index -- e.g. '
+            '{"time_slice": 5} or {"psi": 50} -- one entry per axis the '
+            'curve does NOT run along; it was %r. A bare index belongs in '
+            'the path (equilibrium.time_slice[5]....) or as one entry of '
+            'that mapping.' % (indices,))
     if not axesSpec.isPlottable():
         raise ValueError(_scalarRefusal(axesSpec))
 
@@ -901,6 +912,27 @@ class McpGuiCore:
             self.api.addPlotWidgetToMDI(frame)
             frame.show()
 
+    def _asInstant(self, time, what):
+        """One instant, or the named refusal that names the shape that works.
+
+        `time` is a single number in the case clock. A list or tuple is the
+        ask the loop makes when it means several instants of the same profile:
+        refused by naming the call that does that (one per instant, into the
+        same figure), not as a `float() ... not 'list'` the model reads as a
+        data problem and retries -- and, when it stops, invents.
+        """
+        if isinstance(time, bool) or not isinstance(time, (int, float)):
+            raise ValueError(
+                '%s: `time` is one instant, a number in seconds on the case '
+                'clock. For several instants of the same profile on one '
+                'figure, draw one per instant and put them in the same '
+                'figure with into_figure_key (the first call opens it, the '
+                'rest name it) -- the same profile at each of the instants, '
+                'compared at equal bounds. A bare index of the time array '
+                'belongs in `indices`, not in `time`.'
+                % what)
+        return float(time)
+
     def plot_one(self, uri, path, along_time=None, into_figure_key=None,
                  time=None, time_interp=False, along=None, indices=None):
         """One quantity, drawn by `QVizPlotOneNode` into the frame its axes call for.
@@ -956,6 +988,7 @@ class McpGuiCore:
             raise ValueError(self._scalarRefusal(path))
         if time is not None:
             import numpy as np
+            T = self._asInstant(time, 'plot_one')
             node = self._nodeForPath(view, path)
             tbase = self._timeBase(view, node)
             if tbase is None or tbase.size == 0:
@@ -964,8 +997,7 @@ class McpGuiCore:
                     'the time parameter applies to a quantity held by a '
                     'dynamic time array (e.g. time_slice[i]); this one is '
                     'not, so a time value there has no slice to resolve to.'
-                    % (path, float(time)))
-            T = float(time)
+                    % (path, T))
             time_index = int(np.argmin(np.abs(tbase - T)))
             clamped = bool(T < float(tbase[0]) or T > float(tbase[-1]))
             # The value is answered the same way plot_slice answers one:
@@ -1161,6 +1193,12 @@ class McpGuiCore:
         tensor, or a leaf whose x and y sizes disagree).
         """
         import numpy as np
+        # The node is found by every spelling the tree holds (alias); the
+        # walk below needs the data name (dots + brackets), so ask the node
+        # for it -- a display path (slashes + parentheses) is the same leaf
+        # and must not be refused as "not a leaf of an IDS".
+        node = self._nodeForPath(view, leafPath)
+        leafPath = node.getDataName() or leafPath
         ids, dot, rel = leafPath.partition('.')
         if not dot or not rel:
             raise ValueError(
@@ -1191,7 +1229,6 @@ class McpGuiCore:
                 'plot_slice: %r holds no value at this instant in the case: '
                 'the branch is empty, so there is nothing to draw.' % leafPath)
         from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
-        node = self._nodeForPath(view, leafPath)
         try:
             x_raw, _ = QVizTensorDataAccess(view.dataSource).GetSignal(
                 treeNode=node, plotWidget=None,
@@ -1240,6 +1277,13 @@ class McpGuiCore:
         interp = getattr(_id, self._INTERPOLATIONS[interpolation])
 
         view = self._viewForUri(uri)
+        # The node is found by every spelling the tree holds (alias); the
+        # occurrence check and the read below need the data name (dots +
+        # brackets), so ask the node for it -- a display path (slashes +
+        # parentheses) is the same leaf and must not be refused as "not a
+        # leaf" or misread as the IDS root.
+        node = self._nodeForPath(view, leaf)
+        leaf = node.getDataName() or leaf
         ids = leaf.split('.', 1)[0]
         if not self.api.IDSDataAlreadyFetched(view, ids, occurrence):
             self.load_ids(uri, ids, occurrence)
@@ -1248,8 +1292,7 @@ class McpGuiCore:
         # the ask: the answer reports `time_requested` and `time_slice_time`
         # separately, so a value asked far outside the pulse is still named
         # as the slice the case actually answered with.
-        node = self._nodeForPath(view, leaf)
-        T = float(time)
+        T = self._asInstant(time, 'plot_slice')
         tbase = self._timeBase(view, node)
         if tbase is not None and tbase.size > 0:
             T = float(min(max(T, float(tbase[0])), float(tbase[-1])))
