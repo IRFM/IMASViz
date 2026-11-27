@@ -436,6 +436,24 @@ menus still name one line for it.
    the file still stands**: losing the number because the colour is missing would
    hide the half that still means something. See :ref:`2d_colour_scale`.
 
+   The scale a hand gave the **values** of a curve is kept on the same terms. A
+   multiplication, an offset or a normalisation is the state of one trace of one
+   window -- the ``transform_curve`` gesture of :ref:`agentics`, and the same state
+   a time slider does not take off -- so it is written under the quantity that drew
+   that trace, named by the rank of that trace among its own quantity's traces. What
+   the file holds is the **two numbers the gestures composed**, never the gestures:
+   a curve divided by its own peak comes back divided by that same reference, not
+   divided again by the peak of the curve that came back, which is what keeps two
+   probes normalised to one reference comparable across the two runs. A window
+   nobody scaled writes nothing, so its traces come back at the values the case
+   answers -- and unlike a pen, an affine needs no record of *which* traces were
+   touched, because no palette hands one out. An affine whose quantity the reopened
+   case no longer holds, or whose trace rank that window does not draw, is named in
+   the log of the case and costs its own entry and nothing else. The error bars and
+   the confidence band of a dressed curve come back at the dressed extent: the
+   affine is put back **before** those lines are asked for, so a bar is drawn once,
+   at the height of the curve it hangs from.
+
 .. warning::
    A plugin window comes back **as its entry draws it**, not as the user left it.
    The file keeps the gesture -- which entry, on which IDS, at which occurrence --

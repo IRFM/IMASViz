@@ -44,8 +44,9 @@ from imasviz.VizGUI.VizConfigurations.QVizSessionFile import (
     QVizSessionCursor, QVizSessionCursors, QVizSessionView, QVizSessionErrors,
     QVizSessionWindow, QVizSessionPluginWindow,
     QVizSessionCurveStyle, QVizSessionTextStyle, QVizSessionColourScale,
+    QVizSessionTransform,
     CURVE_STYLE_ATTRIBUTES, TEXT_STYLE_ATTRIBUTES, TEXT_SIDES,
-    COLOUR_SCALE_ATTRIBUTES,
+    COLOUR_SCALE_ATTRIBUTES, TRANSFORM_ATTRIBUTES,
     CURVE, IMAGE, TABLE, STACKED,
     cursorKeyOf, cursorKeyText)
 from imasviz.VizPlugins.VizPlugin import QVizPluginWindow
@@ -312,15 +313,16 @@ def test_a_file_of_another_root_is_refused_naming_that_root():
 @pytest.mark.ui
 def test_a_file_of_another_version_is_refused_naming_both_versions():
     """Guessing a format this module does not know is how a session comes back
-    describing less than it says. Version 4 is read -- it simply carries no
-    colour scale; version 6 is not, because there is nothing to guess from."""
-    path = _write('future.vsess', '<IMASVizSession version="6"><Case uri="x"/>'
+    describing less than it says. Version 5 is read -- it simply carries no
+    `<Transform>`, the same answer as a curve nobody scaled; version 7 is not,
+    because there is nothing to guess from."""
+    path = _write('future.vsess', '<IMASVizSession version="7"><Case uri="x"/>'
                                   '</IMASVizSession>')
 
     with pytest.raises(ValueError) as raised:
         QVizSessionFile.read(path)
 
-    assert '"6"' in str(raised.value) and 'writes version 5' \
+    assert '"7"' in str(raised.value) and 'writes version 6' \
         in str(raised.value)
 
 
@@ -936,7 +938,7 @@ def test_a_session_of_an_older_version_names_no_plugin_window():
 
 
 @pytest.mark.ui
-def test_a_plugin_window_written_by_this_release_is_version_5():
+def test_a_plugin_window_written_by_this_release_is_version_6():
     written = QVizSessionFile(
         cases=[QVizSessionCase(uri=URI, dd_version=None, label=None, loads=[],
                                expanded=[], selection=[],
@@ -947,7 +949,7 @@ def test_a_plugin_window_written_by_this_release_is_version_5():
     with open(written) as handle:
         body = handle.read()
 
-    assert 'version="5"' in body and '<PluginWindow' in body
+    assert 'version="6"' in body and '<PluginWindow' in body
 
 
 @pytest.mark.ui
@@ -1503,3 +1505,177 @@ def test_the_words_of_the_colour_scale_are_the_words_of_its_record():
     present to answer it.
     """
     assert COLOUR_SCALE_ATTRIBUTES == QVizSessionColourScale._fields
+
+
+# ---------------------------------------------------------------------------
+# Version 6: the scale a hand gave the values of a trace.
+
+def aDressedFigure(*transforms):
+    """One figure of two curves, and whatever a hand scaled on the first one."""
+    return QVizSessionFigure(
+        key='Plot1', kind=CURVE,
+        quantities=[QVizSessionQuantity('magnetics/flux_loop(0)/flux/data', 0,
+                                        URI, None, None,
+                                        transforms=transforms),
+                    QVizSessionQuantity('magnetics/bpol_probe(0)/field/data', 0,
+                                        URI, None, None)],
+        axis=None, tensor=False)
+
+
+@pytest.mark.ui
+def test_the_affine_of_a_trace_comes_back_through_the_file():
+    """Two numbers under the quantity whose trace they dress.
+
+    The rank is `<Style>`'s rank -- among the traces of *that* quantity -- because
+    a quantity read at several rows draws several traces, and the order the window
+    holds them in is the order they were drawn, not an identity.
+    """
+    written = QVizSessionFile(cases=[], figures=[aDressedFigure(
+        QVizSessionTransform(trace=0, factor=10.0, offset=-2.5),
+        QVizSessionTransform(trace=1, factor=0.25, offset=0.0))]).write(
+        QVizSessionFile.named('scaled'))
+    read = QVizSessionFile.read(written)
+
+    assert read.figures[0].quantities[0].transforms == (
+        QVizSessionTransform(trace=0, factor=10.0, offset=-2.5),
+        QVizSessionTransform(trace=1, factor=0.25, offset=0.0))
+    assert read.figures[0].quantities[1].transforms == ()
+    body = open(written).read()
+    assert '<Transform trace="0"' in body and 'factor="10.0"' in body, body
+    assert 'offset="-2.5"' in body, body
+
+
+@pytest.mark.ui
+def test_a_reference_that_is_not_a_round_number_comes_back_as_it_was():
+    """A normalisation divides by the peak of the case, and the peak is not round.
+
+    The factor is written as `repr(float)`, as a `<View>` range and a
+    `<ColourScale>` write their numbers: rounded, a save and a restore would move
+    the curve, and two traces divided by one reference would stop being comparable
+    by the hundredth the rounding cost them.
+    """
+    reference = 0.06196762900799513
+    written = QVizSessionFile(cases=[], figures=[aDressedFigure(
+        QVizSessionTransform(trace=0, factor=1. / reference,
+                             offset=0.0))]).write(
+        QVizSessionFile.named('normalised'))
+
+    assert (QVizSessionFile.read(written).figures[0].quantities[0]
+            .transforms[0].factor == 1. / reference)
+
+
+@pytest.mark.ui
+def test_a_curve_nobody_scaled_writes_no_transform():
+    """(1, 0) is what a freshly drawn curve answers, so it needs no saying.
+
+    A transform is the one state of a window that can be recognised by its own
+    value -- no palette hands an affine out, as it hands out a pen -- so there is
+    no hand to mistake for the drawing and no record of which traces were touched
+    needed to tell them apart.
+    """
+    written = QVizSessionFile(cases=[], figures=[aDressedFigure()]).write(
+        QVizSessionFile.named('plain_curve'))
+    body = open(written).read()
+
+    assert '<Transform' not in body
+    assert QVizSessionFile.read(
+        written).figures[0].quantities[0].transforms == ()
+
+
+@pytest.mark.ui
+@pytest.mark.parametrize('version', ['1', '2', '3', '4', '5'])
+def test_a_file_of_an_older_version_names_no_transform(version):
+    """A version 5 file holds no `<Transform>`, which is the same answer as a curve
+    at the scale the case holds -- not the scale of the run that saved it."""
+    path = _write('v%s_transform.vsess' % version, """
+    <IMASVizSession version="%s">
+      <Figure key="Plot1" kind="curve">
+        <Quantity path="a/b" occurrence="0"/>
+      </Figure>
+    </IMASVizSession>""" % version)
+
+    assert QVizSessionFile.read(
+        path).figures[0].quantities[0].transforms == ()
+
+
+@pytest.mark.ui
+@pytest.mark.parametrize('body,expected', [
+    ('<Transform factor="2"/>', 'no trace'),
+    ('<Transform trace="0"/>', 'transforms nothing'),
+    ('<Transform trace="0" factor="1"/>', '(1, 0)'),
+    ('<Transform trace="0" factor="1" offset="0"/>', '(1, 0)'),
+    ('<Transform trace="0" facteur="2"/>', 'a transform names'),
+    ('<Transform trace="zero" factor="2"/>', 'trace'),
+    ('<Transform trace="-1" factor="2"/>', 'ranked from 0'),
+    ('<Transform trace="0" factor="a"/>', 'not a number'),
+    ('<Tranform trace="0" factor="2"/>', '<Tranform>'),
+])
+def test_a_transform_that_cannot_be_put_back_is_refused_at_the_file(body,
+                                                                    expected):
+    """The same refusals as a `<Style>`, one level deeper than the element guard.
+
+    A transform that does not say which trace it dresses would have to go on every
+    trace of its quantity: a figure of three rows of one quantity would come back
+    with three curves scaled by a gesture made on one of them.
+    """
+    path = _write('transform.vsess',
+                  '<IMASVizSession version="6"><Figure key="F" kind="curve">'
+                  '<Quantity path="a/b" occurrence="0">%s</Quantity>'
+                  '</Figure></IMASVizSession>' % body)
+
+    with pytest.raises(ValueError) as raised:
+        QVizSessionFile.read(path)
+
+    assert expected in str(raised.value), str(raised.value)
+    assert 'transform.vsess' in str(raised.value)
+
+
+@pytest.mark.ui
+def test_a_file_that_names_only_a_factor_puts_the_curve_there():
+    """`<Transform trace="1" factor="2"/>` is a scale, not an incomplete answer.
+
+    The offset of a curve nobody shifted is 0, and a hand correcting a file by hand
+    writes the number it changed. A refusal here would send that hand back through
+    the application to say what the file already says.
+    """
+    path = _write('factor_only.vsess',
+                  '<IMASVizSession version="6"><Figure key="F" kind="curve">'
+                  '<Quantity path="a/b" occurrence="0">'
+                  '<Transform trace="1" factor="2"/></Quantity>'
+                  '</Figure></IMASVizSession>')
+
+    assert (QVizSessionFile.read(path).figures[0].quantities[0].transforms
+            == (QVizSessionTransform(trace=1, factor=2.0, offset=0.0),))
+
+
+@pytest.mark.ui
+def test_a_transform_under_the_figure_is_refused_naming_the_figure():
+    """The affine belongs to a trace, not to the window.
+
+    `<View>` and `<ColourScale>` are the window's, because a zoom and a colour map
+    answer for a whole window. A scale over values answers for one curve: dressing
+    every curve of a figure because one was multiplied is the opposite of what the
+    gesture asked for.
+    """
+    path = _write('transform_on_figure.vsess',
+                  '<IMASVizSession version="6"><Figure key="F" kind="curve">'
+                  '<Transform trace="0" factor="2"/>'
+                  '<Quantity path="a/b" occurrence="0"/>'
+                  '</Figure></IMASVizSession>')
+
+    with pytest.raises(ValueError) as raised:
+        QVizSessionFile.read(path)
+
+    assert 'Transform' in str(raised.value), str(raised.value)
+
+
+@pytest.mark.ui
+def test_the_words_of_the_transform_are_the_words_of_its_record():
+    """`factor` then `offset`, in the file and in the record -- one list, not two.
+
+    `QVizCurveTransform.affine()` answers a factor and then an offset, and the file
+    writes its attributes in that order; `trace` is the identifier, as it is for a
+    `<Style>`, and is not part of the answer. The other half of the seam -- a real
+    window answering the affine -- is pinned in `test_181`.
+    """
+    assert TRANSFORM_ATTRIBUTES == QVizSessionTransform._fields[1:]

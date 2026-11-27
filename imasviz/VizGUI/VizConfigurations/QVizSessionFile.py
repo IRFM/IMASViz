@@ -167,12 +167,45 @@ gives for a pen: the answer a drawing gives itself has to stay free to be given
 again -- and a level range is a statement about *this* case's values, which a
 file has no business pinning.
 
-Versions 1 to 5 are all read, and writing produces 5. A version 1 file simply
+Version 6, and what it adds
+---------------------------
+
+A session of version 5 came back with its pens, its labels, its colours and its
+zoom -- and with every curve at the scale the case holds. A probe multiplied so
+it could be seen beside another one, or divided by its own peak so two probes
+could be compared, came back un-multiplied under axes and pens that had both come
+back: the affine a hand asks for is the state of a *trace*, and no element said
+which trace carried one.
+
+So version 6 writes, under the ``<Quantity>`` whose trace was dressed:
+
+* ``<Transform trace="N" factor="a" offset="b"/>`` -- the affine on the values as
+  they were last read, ``displayed = read * a + b``. ``trace`` ranks a trace among
+  the traces *of that quantity*, exactly as ``<Style>`` does and for the same
+  reason: a quantity read at several rows draws several traces, and the order the
+  window holds them in is the order they were drawn, not an identity.
+
+The two numbers are the **composition** of whatever the hand asked -- scale,
+shift, divide by a reference -- because the reference a normalisation settles is
+settled when the hand asks and stays: the file does not re-derive it from the
+values the case answers the next month, and a curve the window re-reads under a
+slider is divided by the same reference again. Neither number is asked again either:
+``normalize_curve`` is not replayed, which would divide a second time.
+
+The identity ``(1, 0)`` is not written, and a file that names it is refused. This
+is the rule every other state follows -- what a freshly drawn curve answers needs
+no saying -- and unlike a pen, an affine *can* be recognised by its value: a pen
+is never absent (the palette hands one out), an affine is. So a window nobody
+dressed writes no ``<Transform>``, and its curves come back at the scale the case
+holds.
+
+Versions 1 to 6 are all read, and writing produces 6. A version 1 file simply
 has no state element, which is the same as the user having set nothing; a version
 2 file has no ``<PluginWindow>``, which is the same as having no plugin window
 open; a version 3 file has no ``<Style>``, which is the same as nobody having
 styled anything; a version 4 file has no ``<ColourScale>``, which is the same as
-a picture drawn with the colours it opens with.
+a picture drawn with the colours it opens with; a version 5 file has no
+``<Transform>``, which is the same as a curve nobody scaled.
 
 One version, and a refusal rather than a guess: ``version`` is checked, and an
 element this module does not know is named in a ``ValueError``. Ignoring what it
@@ -192,11 +225,22 @@ QVizSessionLoad = namedtuple('QVizSessionLoad', 'ids occurrence slices')
 QVizSessionExpanded = namedtuple('QVizSessionExpanded', 'ids occurrence')
 QVizSessionSelection = namedtuple('QVizSessionSelection', 'path occurrence')
 QVizSessionQuantity = namedtuple('QVizSessionQuantity',
-                                 'path occurrence uri row column styles text',
+                                 'path occurrence uri row column styles text '
+                                 'transforms',
                                  # A quantity of a version 3 file names no style
                                  # at all, which is the same answer as a trace
-                                 # nobody touched: the palette colours it again.
-                                 defaults=((), ()))
+                                 # nobody touched: the palette colours it again. A
+                                 # quantity of a version 5 file names no
+                                 # transform, which is the same answer as a curve
+                                 # at the scale the case holds.
+                                 defaults=((), (), ()))
+# One trace whose values a hand moved, and the affine on the values as they were
+# last read. `trace` ranks it among the traces of its own quantity, exactly as
+# `QVizSessionCurveStyle` does; the two numbers are what
+# `QVizCurveTransform.affine()` answers, in that order, and they are the
+# *composition* of every gesture the hand asked -- so putting them back draws the
+# curve the screen held without asking a normalisation to divide a second time.
+QVizSessionTransform = namedtuple('QVizSessionTransform', 'trace factor offset')
 # One trace a hand was on, and what the hand left on it. The values are read off
 # the live curve when the file is written and put back on the curve it lands on,
 # so this holds no copy of a pen -- only the attributes the user actually changed
@@ -252,16 +296,17 @@ QVizSessionPluginWindow = namedtuple('QVizSessionPluginWindow',
                                      defaults=(None,))
 
 ROOT = 'IMASVizSession'
-VERSION = '5'
-# All five are read. A version 1 file holds no `<Cursors>`, `<View>`, `<Errors>`
+VERSION = '6'
+# All six are read. A version 1 file holds no `<Cursors>`, `<View>`, `<Errors>`
 # or `<Window>`, which is the same answer as a user who set nothing on those
 # windows; a version 2 file holds no `<PluginWindow>`, which is the same answer
 # as a screen with no plugin window open; a version 3 file holds no `<Style>`,
 # which is the same answer as a figure nobody coloured; a version 4 file holds no
 # `<ColourScale>`, which is the same answer as a picture drawn with the colours it
-# opens with. None is guessed at: what a version does not name comes back as the
-# drawing leaves it.
-READABLE_VERSIONS = ('1', '2', '3', '4', '5')
+# opens with; a version 5 file holds no `<Transform>`, which is the same answer as
+# a curve at the scale the case holds. None is guessed at: what a version does not
+# name comes back as the drawing leaves it.
+READABLE_VERSIONS = ('1', '2', '3', '4', '5', '6')
 
 # The name of the session the application writes when it closes and offers when
 # it starts. A name, not a path: where it lives is the folder's business, and the
@@ -291,6 +336,14 @@ CURVE_STYLE_ATTRIBUTES = ('color', 'style', 'width', 'symbol', 'size', 'fill',
                           'outline')
 TEXT_SIDES = ('title', 'bottom', 'left', 'top', 'right')
 TEXT_STYLE_ATTRIBUTES = ('text', 'bold', 'italic', 'size')
+
+# The two numbers of the affine a hand laid on one trace. `trace` says *which*
+# trace and is not part of the answer, exactly as it is for a `<Style>`.
+# `QVizCurveTransform.affine()` answers a factor and then an offset: the same two
+# words in the same order, and `tests/test_66_...` pins the pair against the
+# record's fields, because a name either side renames alone is a transform that
+# silently stops being put back.
+TRANSFORM_ATTRIBUTES = ('factor', 'offset')
 
 # What a picture window's colour scale is made of: the map every picture draws
 # with and the two ends of the range those colours span. One element per figure
@@ -513,6 +566,7 @@ class QVizSessionFile:
                     leaf.set('row', str(quantity.row))
                     leaf.set('column', str(quantity.column))
                 self._writeStyles(leaf, quantity.styles)
+                self._writeTransforms(leaf, quantity.transforms)
                 self._writeTextStyles(leaf, quantity.text)
             self._writeTextStyles(element, figure.text)
             self._writeColourScale(element, figure.scale)
@@ -547,6 +601,27 @@ class QVizSessionFile:
                 value = style.attributes.get(name)
                 if value is not None:
                     child.set(name, str(value))
+
+    @staticmethod
+    def _writeTransforms(element, transforms):
+        """One `<Transform>` per trace of this quantity whose values a hand moved.
+
+        Nothing is written for a trace at (1, 0). That is what a freshly drawn
+        curve answers, so saying it would pin nothing and buy nothing -- and a
+        transform, unlike a pen, is recognisable by its value: no palette hands one
+        out, so there is no hand to mistake for the drawing and no record of *which*
+        traces were touched needed to tell them apart.
+        """
+        for transform in transforms or ():
+            child = ET.SubElement(element, 'Transform')
+            child.set('trace', str(transform.trace))
+            for name, value in zip(TRANSFORM_ATTRIBUTES,
+                                   (transform.factor, transform.offset)):
+                # `repr(float)`, as a `<View>` range and a `<ColourScale>` do: the
+                # factor of a normalisation is the quotient of two readings off the
+                # case, and a rounded one would not come back as the height the
+                # screen held -- a save and a restore would move the curve.
+                child.set(name, repr(float(value)))
 
     @staticmethod
     def _writeTextStyles(element, styles):
@@ -786,14 +861,16 @@ def _quantityOf(element, path):
                          'names %s without %s.'
                          % (path, 'row' if row is not None else 'column',
                             'column' if row is not None else 'row'))
-    _knownChildren(element, ('Style', 'TextStyle'), path)
+    _knownChildren(element, ('Style', 'Transform', 'TextStyle'), path)
     return QVizSessionQuantity(
         path=_attribute(element, 'path', path, 'Quantity'),
         occurrence=_integer(element, 'occurrence', 0, path),
         uri=element.get('uri'), row=row, column=column,
         styles=tuple(_styleOf(child, path) for child in element.findall('Style')),
         text=tuple(_textStyleOf(child, path)
-                   for child in element.findall('TextStyle')))
+                   for child in element.findall('TextStyle')),
+        transforms=tuple(_transformOf(child, path)
+                         for child in element.findall('Transform')))
 
 
 def _styleOf(element, path):
@@ -818,6 +895,52 @@ def _styleOf(element, path):
                          'set says nothing at all.'
                          % (path, trace, ' '.join(CURVE_STYLE_ATTRIBUTES)))
     return QVizSessionCurveStyle(trace=trace, attributes=attributes)
+
+
+def _transformOf(element, path):
+    """One trace of one quantity, and the affine a hand left on its values.
+
+    `trace` is required for the reason `<Style>` gives: an affine that does not say
+    which trace it dresses would have to go on all of them, and a quantity read at
+    three rows comes back with three curves scaled by a gesture made on one.
+
+    An element naming neither number is refused as an empty `<Style>` is -- it
+    transforms nothing, and a writer that changed its mind is not a file the reader
+    should pretend to understand. So is the identity: `(1, 0)` is what a curve the
+    drawing left alone answers, and a file that names it for a trace says the curve
+    was dressed when nothing was. `factor="0"` is *not* refused: the tool set
+    refuses to be *asked* to multiply by nothing, but a flat line is a legitimate
+    affine for a window to draw, and a hand correcting a file by hand is entitled to
+    the picture it wrote.
+    """
+    trace = _integer(element, 'trace', None, path)
+    if trace is None:
+        raise ValueError('"%s" holds a <Transform> with no trace: an affine says '
+                         'which trace of its quantity it dresses.' % path)
+    if trace < 0:
+        raise ValueError('"%s" gives a <Transform trace="%d">: a trace is ranked '
+                         'from 0.' % (path, trace))
+    for name in element.keys():
+        if name not in TRANSFORM_ATTRIBUTES and name != 'trace':
+            raise ValueError('"%s" gives a <Transform %s="...">: a transform '
+                             'names %s.' % (path, name,
+                                            ' '.join(TRANSFORM_ATTRIBUTES)))
+    if not any(element.get(name) is not None
+               for name in TRANSFORM_ATTRIBUTES):
+        raise ValueError('"%s" holds a <Transform trace="%d"> naming none of %s: '
+                         'it transforms nothing, and a session that cannot say '
+                         'what was set says nothing at all.'
+                         % (path, trace, ' '.join(TRANSFORM_ATTRIBUTES)))
+    factor = (_number(element, 'factor', path)
+              if element.get('factor') is not None else 1.0)
+    offset = (_number(element, 'offset', path)
+              if element.get('offset') is not None else 0.0)
+    if factor == 1.0 and offset == 0.0:
+        raise ValueError('"%s" gives a <Transform trace="%d"> whose affine is '
+                         '(1, 0): that is the scale a curve the hand left alone '
+                         'is drawn at, and a file says what was set.'
+                         % (path, trace))
+    return QVizSessionTransform(trace=trace, factor=factor, offset=offset)
 
 
 def _textStyleOf(element, path):

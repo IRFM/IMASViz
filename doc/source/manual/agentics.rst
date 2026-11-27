@@ -199,8 +199,12 @@ the same descriptions. The tools, in the order the faces group them:
        or exploring the quantity along an axis brings another element under
        the curve and the transform still holds -- a normalised curve re-read
        at another element comes back divided by the same reference, not
-       re-scaled to that element's own peak. All reversible, all read back
-       by one tool of its own --
+       re-scaled to that element's own peak. A saved session carries the two
+       numbers a composition settled, under the quantity whose trace was
+       dressed, so the scale survives the run that asked for it and is not
+       derived again from the curve that came back
+       (:ref:`save_load_session`). All reversible, all read back by one tool
+       of its own --
        ``read_figure``, whose ``action`` says which read: ``stats`` answers
        the sample count, the finite min/max/mean/std, the nan/inf counts and
        the peak with its abscissa, ``export`` writes the values **as they

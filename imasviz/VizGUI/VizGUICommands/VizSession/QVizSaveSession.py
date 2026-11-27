@@ -59,6 +59,21 @@ and one that dragged the handles keeps whatever map this node draws with. The
 scale a window chose for itself is not written at all, for the reason a pen nobody
 chose is not: a level range is a statement about the values of *this* case, and
 pinning it would draw next month's case at yesterday's scale.
+
+Version 6 adds what a hand left on the **values** of a trace. A curve multiplied,
+shifted or divided by its own peak keeps that affine beside the values the figure
+read for it (``QVizCurveTransform``), so it survives every re-read the window does
+-- and until now it did not survive the run: a session of version 5 put the pens,
+the labels, the colours and the zoom back and redrew every curve at the scale the
+case holds. So a ``<Transform trace="N" factor="a" offset="b"/>`` goes under the
+``<Quantity>`` whose trace was dressed, with the same rank ``<Style>`` uses and for
+the same reason -- a quantity read at several rows draws several traces, and the
+order the window holds them in is not an identity. The two numbers are read off the
+record as the composition of every gesture the hand asked: a normalisation is not
+replayed, which would divide a second time, and its reference is not re-derived
+from the values the case answers next month. A trace at ``(1, 0)`` writes nothing,
+which costs nothing to notice -- an affine, unlike a pen, is recognisable by its
+own value.
 """
 
 import logging
@@ -71,9 +86,11 @@ from imasviz.VizGUI.VizConfigurations.QVizSessionFile import (
     QVizSessionCursor, QVizSessionCursors, QVizSessionView, QVizSessionErrors,
     QVizSessionWindow, QVizSessionPluginWindow,
     QVizSessionCurveStyle, QVizSessionTextStyle, QVizSessionColourScale,
+    QVizSessionTransform,
     CURVE, IMAGE, TABLE, STACKED, ALL, ONE_IN_TEN as ONE_IN_TEN_WORD,
     FIRST, INDEX_PREFIX)
 from imasviz.VizGUI.VizPlot.QVizColourScales import colourScaleOf
+from imasviz.VizGUI.VizPlot.QVizCurveTransform import touchedTransforms
 from imasviz.VizGUI.VizPlot.QVizPlotStyling import (styleKey, styledText,
                                                     styledTraces)
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
@@ -310,10 +327,13 @@ class QVizSaveSession:
         The styles a hand left on each quantity travel with it, which is where the
         file writes them: a `<Style>` belongs to the trace's quantity, and a panel
         of a table or a stacked window owns the labels written under its own
-        `<Quantity>`.
+        `<Quantity>`. So does the affine on its values: a `<Transform>` is written
+        under the same quantity, ranked the same way, because the hand asked it for
+        one trace and not for the window.
         """
         places = self.placesOf(frame)
         styles = self.stylesOf(frame)
+        transforms = self.transformsOf(frame)
         quantities = []
         for uri, treeNode in self.api.figToNodes.get(figureKey, {}).values():
             place = places.get(treeNode)
@@ -325,7 +345,8 @@ class QVizSaveSession:
                 row=None if place is None else place[0],
                 column=None if place is None else place[1],
                 styles=styles.get(key, ()),
-                text=self.textOf(frame, key)))
+                text=self.textOf(frame, key),
+                transforms=transforms.get(key, ())))
         return quantities
 
     # --------------------------------------------------------------- styling
@@ -343,6 +364,25 @@ class QVizSaveSession:
             styles.setdefault(styleKey(treeNode), []).append(
                 QVizSessionCurveStyle(trace=index, attributes=dict(attributes)))
         return dict((key, tuple(entries)) for key, entries in styles.items())
+
+    # ------------------------------------------------------------- transforming
+    @staticmethod
+    def transformsOf(frame):
+        """{styleKey: [QVizSessionTransform]} for the traces whose values a hand moved.
+
+        Asked of the frame, which is where the affine lives -- beside the values
+        each trace was last read, not in this command and not on the pyqtgraph
+        item. As with a pen, the value is read here, at the moment the session is
+        written, and only for the traces that carry one: a curve the drawing left
+        alone answers (1, 0) and writes nothing, so a session never pins the scale
+        of a quantity it never dressed.
+        """
+        transforms = {}
+        for treeNode, index, affine in touchedTransforms(frame):
+            transforms.setdefault(styleKey(treeNode), []).append(
+                QVizSessionTransform(trace=index, factor=affine[0],
+                                     offset=affine[1]))
+        return dict((key, tuple(entries)) for key, entries in transforms.items())
 
     @staticmethod
     def textOf(frame, key=None):

@@ -45,13 +45,21 @@ only by accident.
 
 Two things this deliberately does not hold. The x values are kept as they were
 read -- the transform family is a vertical one, and a curve whose abscissa moved
-is a different quantity, not a dressed one. And nothing here is written to a
-session: a `.vsess` `<Figure>` has no element for a transform, so a window put
-back from a file still comes at its raw scale. That is a format question, with
-the `<Style>` / `<ColourScale>` / `<View>` elements as its shape, not this record.
+is a different quantity, not a dressed one.
+
+A session, on the other hand, does write it: a `.vsess` `<Figure>` carries a
+``<Transform trace factor offset>`` under the `<Quantity>` whose trace was dressed,
+for the traces whose affine is not the one a freshly drawn curve answers. It is
+written and put back through the three helpers at the bottom of this file, which
+walk a window exactly the way `QVizPlotStyling.styledTraces` walks it -- the rank
+of a trace among *its own quantity's* traces, one answer per panel of a table --
+so the file and the frame cannot name two different traces. See
+`tests/test_181_*`.
 """
 
 import numpy as np
+
+from imasviz.VizGUI.VizPlot.QVizPlotStyling import sourcesOf, styleKey
 
 
 class QVizCurveTransform(object):
@@ -113,3 +121,81 @@ class QVizCurveTransform(object):
     def __repr__(self):
         return '<QVizCurveTransform factor=%g offset=%g n=%d>' % (
             self.factor, self.offset, len(self.raw))
+
+
+# --------------------------------------------------- what a session asks of a window
+# A session writes what a hand left on a window in the words the window itself
+# uses for it, and it walks the window the way `QVizPlotStyling` walks it: a figure
+# of curves answers for itself, a Table or a Stacked window answers one panel at a
+# time. Those two walks have to agree about which trace a rank names, or a file
+# dresses the neighbour of the curve the hand was on.
+
+def transformableSources(window):
+    """The sources of this window whose traces carry values a hand can move.
+
+    A picture figure is not one of them: it answers neither `tracesForStyling` nor
+    `transformOf`, because a scale over a picture is a colour range, not an affine
+    on a value. A window a plugin drew is not one either, and a session meets it on
+    the way to the four it draws itself.
+    """
+    return [source for source in sourcesOf(window)
+            if all(getattr(source, name, None) is not None
+                   for name in ('tracesForStyling', 'transformOf',
+                                'setTransform'))]
+
+
+def drawnTransforms(source):
+    """[(treeNode, rank, (factor, offset))] for the traces of one source that carry one.
+
+    The rank is `tracesForStyling`'s own: a trace ranked among the traces *of that
+    quantity*, never a position in the window.
+
+    A trace whose affine is (1, 0) is not in the list, whether or not a hand asked
+    for it. That is the rule every other state of a session follows -- the identity
+    is what a freshly drawn curve answers, so writing it says nothing about the
+    screen. It can be recognised by its value here, and does not need the record of
+    *which* traces were touched that a pen needs: every trace carries a pen, so a
+    colour cannot tell a hand from the palette, while no palette hands out an
+    affine. `scale_curve(key, 1.0)` therefore leaves the file silent, and the curve
+    it dressed is put back at the same height.
+    """
+    entries = []
+    for treeNode, rank, curve in source.tracesForStyling():
+        factor, offset = source.transformOf(curve)
+        if factor == 1.0 and offset == 0.0:
+            continue
+        entries.append((treeNode, rank, (factor, offset)))
+    return entries
+
+
+def touchedTransforms(window):
+    """[(treeNode, rank, (factor, offset))] for every trace a hand scaled, shifted or divided."""
+    return [entry for source in transformableSources(window)
+            for entry in drawnTransforms(source)]
+
+
+def replayTransforms(window, transforms):
+    """Put recorded affines back on the traces of this window; answers how many landed.
+
+    `transforms` is [(treeNode, rank, (factor, offset))], as the session recorded
+    them for that window. A trace is found by the identity its quantity writes --
+    path and run -- and its rank, through `setTransform`, which is the one place a
+    frame lays an affine on the values it read: a replayed transform is therefore
+    kept by the record like a hand's, and a session written again from a window
+    that came back keeps it. A trace this window does not draw costs its entry and
+    nothing else; the caller knows which quantity named it and says so.
+    """
+    applied = 0
+    for source in transformableSources(window):
+        drawn = {}
+        for treeNode, rank, curve in source.tracesForStyling():
+            key = styleKey(treeNode)
+            if key is not None:
+                drawn[(key, rank)] = curve
+        for treeNode, rank, affine in transforms:
+            curve = drawn.get((styleKey(treeNode), rank))
+            if curve is None:
+                continue
+            if source.setTransform(curve, affine[0], affine[1]):
+                applied += 1
+    return applied

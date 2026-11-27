@@ -110,6 +110,14 @@ Released 11/12/2026
   extents *over* the curve, so a factor reaches them as it reaches the values, an
   offset reaches their two sides not at all, and ``reset`` puts them back at the
   error the case holds.
+  A saved session keeps it too, at **version 6** of its file: the two numbers a
+  composition settled are written under the quantity whose trace was dressed, the
+  traces nobody scaled write nothing, and the run that opens the session divides by
+  *the same reference* rather than deriving a new one off the curve that came back.
+  An affine whose quantity or whose trace rank the reopened case no longer draws is
+  named in the log of the case and costs its own entry; the error lines of a dressed
+  curve come back at the dressed extent, because the affine goes on before they are
+  asked for.
 - **A window that draws is a window that holds its own height.** The
   equilibrium window of :ref:`IMASViz_plugins` drew its thirteen curves and
   answered a picture 91% empty body: an invisible spacer had left its row of
