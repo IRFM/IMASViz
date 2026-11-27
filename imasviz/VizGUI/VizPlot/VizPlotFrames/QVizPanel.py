@@ -40,6 +40,7 @@ from imasviz.VizDataAccess.QVizTensorExtractor import QVizTensorExtractor
 from imasviz.VizDataAccess.QVizSlices import elementLabel
 from imasviz.VizGUI.VizGuiCustomization import QVizStyle
 from imasviz.VizGUI.VizPlot.QVizCurveColors import penFor
+from imasviz.VizGUI.VizPlot.QVizCurveTransform import QVizCurveTransform
 from imasviz.VizGUI.VizPlot.QVizPlotStyling import QVizPlotStyling
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizSliceControls import QVizSliceControls
 from imasviz.VizUtils import QVizGlobalValues
@@ -78,6 +79,13 @@ class QVizPanel(QWidget):
         # The words the panel holds instead of a curve, when the read refused
         # the quantity: read by whoever wants to say which panel refused what.
         self.refusalText = None
+        # {curve: QVizCurveTransform} -- what each curve of this panel was read
+        # with, and the (factor, offset) a hand laid on those values. A panel is
+        # a source of traces like a curve figure is: its own controls re-read it
+        # through `refresh`, and a transform asked on one of its curves has to
+        # survive that read or it is a coat of paint, not a state. See
+        # `QVizCurveTransform`.
+        self._transforms = {}
 
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
@@ -140,6 +148,7 @@ class QVizPanel(QWidget):
 
         self.pgPlotWidget.clear()
         self._curves = []
+        self._transforms = {}
         # The legend tells which element of which array the panel holds. The
         # AOS index is spelled into the path (elementLabel, on the same reading
         # as the curve figure uses), and for a time-based AOS the value at that
@@ -150,9 +159,11 @@ class QVizPanel(QWidget):
         self.pgPlotWidget.addLegend()
         for index in range(y.shape[0]):
             suffix = '' if y.shape[0] == 1 else '[%d]' % index
-            self._curves.append(self.pgPlotWidget.plot(x[0], y[index],
-                                                       pen=penFor(index),
-                                                       name=label + suffix))
+            curve = self.pgPlotWidget.plot(x[0], y[index],
+                                           pen=penFor(index),
+                                           name=label + suffix)
+            self._curves.append(curve)
+            self._transforms[curve] = QVizCurveTransform(x[0], y[index])
 
         self.pgPlotWidget.setTitle(self._frame.dataPathOf(treeNode))
         self.setAxisLabels(treeNode, axesSpec, alongTime)
@@ -170,9 +181,11 @@ class QVizPanel(QWidget):
         panel -- one curve in the palette's order, a title and a label. It
         keeps no band, because there is no read for the band to fix.
         """
-        self._curves = [self.pgPlotWidget.plot(
-            np.asarray(x, dtype=float), np.asarray(y, dtype=float),
-            pen=penFor(0), name=name)]
+        values = (np.asarray(x, dtype=float), np.asarray(y, dtype=float))
+        curve = self.pgPlotWidget.plot(values[0], values[1], pen=penFor(0),
+                                       name=name)
+        self._curves = [curve]
+        self._transforms = {curve: QVizCurveTransform(*values)}
         # The abscissa the curve runs along: the window that stacks the
         # panels (`QVizStackedPlot`) settles it on this first panel and
         # checks the rest against it, on the same identity both sides spell.
@@ -185,17 +198,25 @@ class QVizPanel(QWidget):
         return 1
 
     def refresh(self):
-        """Re-read this panel through its own controls."""
+        """Re-read this panel through its own controls.
+
+        The values a re-read answers go back *under* the affine the curve
+        carries, as they do in a curve figure: a panel whose controls moved is
+        another element of its quantity, not a reason to draw it at the raw
+        scale a hand left.
+        """
         if not getattr(self, '_curves', None) or getattr(self, 'treeNode', None) is None:
             return
         for row, curve in enumerate(self._curves):
             x, y = self.accessFor(self.treeNode).GetSignal(
                 treeNode=self.treeNode, plotWidget=self,
                 as_function_of_time=self.asFunctionOfTime)
+            record = self._transforms[curve]
             if y.shape[0] > row and x.shape[0] > 0:
-                curve.setData(x[0], y[row])
+                record.read(x[0], y[row])
             else:
-                curve.setData([], [])
+                record.read([], [])
+            record.drawInto(curve)
 
     def curveCount(self):
         return len(getattr(self, '_curves', []))
@@ -280,6 +301,35 @@ class QVizPanel(QWidget):
         node = getattr(self, 'treeNode', None)
         return [(node, index, curve)
                 for index, curve in enumerate(self.curves())]
+
+    # ------------------------- what the curve transforms ask of the panel
+
+    def transformOf(self, curve):
+        """The (factor, offset) this panel has on that curve, (1, 0) when none."""
+        record = self._transforms.get(curve)
+        return record.affine() if record is not None else (1.0, 0.0)
+
+    def setTransform(self, curve, factor, offset):
+        """Lay (factor, offset) on the values this curve was read with, and redraw.
+
+        False when the curve is not one this panel drew.
+        """
+        record = self._transforms.get(curve)
+        if record is None:
+            return False
+        record.set(factor, offset)
+        record.drawInto(curve)
+        return True
+
+    def clearTransform(self, curve):
+        """Take the transform off that curve, leaving the values the read left."""
+        record = self._transforms.get(curve)
+        if record is None:
+            return False
+        was = record.isTouched()
+        record.clear()
+        record.drawInto(curve)
+        return was
 
     def setAxisLabels(self, treeNode, axesSpec, alongTime):
         """Label both axes from the axes the read actually drew.

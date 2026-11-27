@@ -741,12 +741,20 @@ the image below.
 'Show error bars (with slicing)' diplays error bars every N data points
 where N is a value asked to the user.
 
-'Show/Hide confidence bands' displays confidence bands as shown in 
+'Show/Hide confidence bands' displays confidence bands as shown in
 the image below.
 
   .. figure:: images/confidence_bands.png
      :align: center
      :width: 550px
+
+A bar is an **extent** over the curve it belongs to, so it wears whatever scale
+that curve was given. A curve multiplied, shifted or divided by
+``transform_curve`` keeps its uncertainty at the same scale -- the reference of a
+normalisation divides the error as it divides the value -- and taking the
+transform off takes it off the bars and the band with it. An offset costs the two
+extents nothing, because adding to a value adds to neither side of its error, and
+a factor under zero leaves each side on its own side of the curve.
  
 
 MultiPlot features

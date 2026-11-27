@@ -329,6 +329,13 @@ def test_a_page_of_the_panel_is_a_table_of_the_application(session):
     cost = time.time() - t0
 
     assert frame is not None
+    # Handed to the session before anything is asserted about the window: the
+    # two tests after this one ask `session.frames[0]`, and one of the bounds
+    # below is a wall-clock bound on a node with other tenants on it. Left at
+    # the end, a page that costs too much costs three red ids -- two of them an
+    # `IndexError` naming neither the page nor its cost -- instead of the one
+    # refusal that says what happened.
+    session.frames.append(frame)
     assert sorted(set(session.api.figureframes) - before) == [frame.figureKey]
     assert frame.figureKey == '%s1' % FigureTypes.TABLEPLOTTYPE
     assert frame.panelCount() == PAGE_QUANTITIES, \
@@ -350,7 +357,6 @@ def test_a_page_of_the_panel_is_a_table_of_the_application(session):
     # in the `TablePlotView:` namespace, listed by the *Windows* menu.
     assert session.api.GetFiguresKeys(
         figureType=FigureTypes.TABLEPLOTTYPE) == [frame.figureKey]
-    session.frames.append(frame)
 
 
 def test_the_panels_of_that_window_answer_their_own_right_click(session):

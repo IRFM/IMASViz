@@ -64,6 +64,7 @@ from imasviz.VizDataAccess.QVizSlices import elementLabel
 from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
 from imasviz.VizGUI.VizPlot.QVizCurveColors import penFor
 from imasviz.VizGUI.VizPlot.QVizCurveErrors import QVizCurveErrors
+from imasviz.VizGUI.VizPlot.QVizCurveTransform import QVizCurveTransform
 from imasviz.VizGUI.VizPlot.QVizEventMarks import QVizEventMarks
 from imasviz.VizGUI.VizPlot.QVizSpectrumMenu import QVizSpectrumMenu
 from imasviz.VizGUI.VizPlot.QVizPlotStyling import QVizPlotStyling
@@ -81,10 +82,14 @@ class QVizTrace:
 
     A row with no movable axis is frozen: keeping it is what makes it comparable
     with the one still moving, so it is not read again at all.
+
+    `transform` is the record of what the row was read with and of the
+    (factor, offset) a hand laid on those values -- so a re-read through a slider
+    redraws the row as the hand left it. See `QVizCurveTransform`.
     """
 
     def __init__(self, treeNode, row, curve, asFunctionOfTime, fixed, movable,
-                 pinned, suffix, legend=None, abscissa=None):
+                 pinned, suffix, legend=None, abscissa=None, transform=None):
         self.treeNode = treeNode
         self.row = row
         self.curve = curve
@@ -101,6 +106,27 @@ class QVizTrace:
         self.pinned = pinned
         self.suffix = suffix
         self.legend = legend
+        self._transform = transform
+
+    @property
+    def transform(self):
+        """What this row was read with, and the affine a hand has on it.
+
+        The figure hands the record over when it reads the row itself, so the
+        values under the affine are the ones that read answered. A row that
+        arrives without one -- a figure assembled around a curve somebody else
+        drew -- is drawn with the values its item holds, and those are what a
+        transform composes against: a factor of what is on screen, never of a
+        number the figure never read.
+        """
+        if self._transform is None:
+            self._transform = QVizCurveTransform(self.curve.xData,
+                                                 self.curve.yData)
+        return self._transform
+
+    @transform.setter
+    def transform(self, record):
+        self._transform = record
 
     def isFrozen(self):
         return not self.movable
@@ -354,7 +380,8 @@ class QVizCurvePlot(QWidget):
                                           as_function_of_time, fixed, movable,
                                           pinned, suffix,
                                           self.legendLabelFor(label + suffix),
-                                          abscissa))
+                                          abscissa,
+                                          QVizCurveTransform(x[0], y[row])))
 
         self.setAbscissaLabel(axesSpec)
         self.setQuantityLabel(treeNode)
@@ -396,9 +423,13 @@ class QVizCurvePlot(QWidget):
                 logging.getLogger(self.logChannel()).error(str(e))
                 continue
             if y.shape[0] > trace.row and x.shape[0] > 0:
-                trace.curve.setData(x[0], y[trace.row])
+                # The values just read go *under* the affine the row already
+                # carries: a row moved is another element of the array, not a
+                # reason to forget that a hand divided this curve by its peak.
+                trace.transform.read(x[0], y[trace.row])
             else:
-                trace.curve.setData([], [])
+                trace.transform.read([], [])
+            trace.transform.drawInto(trace.curve)
             # A curve whose sliders moved is not the element the figure opened
             # on: the legend has to say the element it is now.
             if trace.legend is not None:
@@ -593,6 +624,58 @@ class QVizCurvePlot(QWidget):
             ranks[trace.treeNode] = index + 1
             entries.append((trace.treeNode, index, trace.curve))
         return entries
+
+    # ------------------------- what the curve transforms ask of the window
+
+    def transformOf(self, curve):
+        """The (factor, offset) this figure has on that curve, (1, 0) when none.
+
+        The transform family asks it before composing the next one, because the
+        affine is the figure's state, not something to be read back off painted
+        values: scale what a shift already moved, divide what a scale already
+        stretched.
+        """
+        for trace in self._curves:
+            if trace.curve is curve:
+                return trace.transform.affine()
+        return (1.0, 0.0)
+
+    def setTransform(self, curve, factor, offset):
+        """Lay (factor, offset) on the values this row was read with, and redraw.
+
+        The one place the figure writes a hand's affine, so a row moved under a
+        slider and a curve dressed by a session meet the same record. False when
+        the curve is not one this figure draws.
+        """
+        for trace in self._curves:
+            if trace.curve is curve:
+                trace.transform.set(factor, offset)
+                trace.transform.drawInto(trace.curve)
+                # The bars and the band hang from those values: a hand changing the
+                # affine changes what they are an extent over, so they are drawn
+                # again -- the same redraw `refresh` already asks when a slider
+                # re-reads the curve under them.
+                self.errors.refresh()
+                return True
+        return False
+
+    def clearTransform(self, curve):
+        """Take the transform off that curve, leaving the values the read left.
+
+        False when the curve is not one this figure draws, True when there was
+        something on it to take off -- which asks whether a hand was on the
+        curve, not whether its affine happens to be the identity one: a hand
+        that asked to be multiplied by 1 asked for a transform, and `reset_curve`
+        owes it an answer rather than a "nothing to take off".
+        """
+        for trace in self._curves:
+            if trace.curve is curve:
+                was = trace.transform.isTouched()
+                trace.transform.clear()
+                trace.transform.drawInto(trace.curve)
+                self.errors.refresh()
+                return was
+        return False
 
     def sliceKeys(self):
         return list(self._slices)

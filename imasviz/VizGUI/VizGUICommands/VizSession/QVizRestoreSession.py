@@ -61,6 +61,7 @@ from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsTable import \
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsStacked import \
     QVizPlotAsStacked
 from imasviz.VizGUI.VizPlot.QVizColourScales import mapNamed, restoreColourScale
+from imasviz.VizGUI.VizPlot.QVizCurveTransform import replayTransforms
 from imasviz.VizGUI.VizPlot.QVizPlotStyling import replayCurves, replayText
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
 
@@ -359,8 +360,8 @@ class QVizRestoreSession:
         """Put back what the user had set on that window, in the order that holds.
 
         The order is not a taste. The styling goes on first -- the pens of a
-        figure of curves, then the colours of a window of pictures -- and then the
-        sliders:
+        figure of curves, then the affine on the values of a trace, then the
+        colours of a window of pictures -- and then the sliders:
         moving one re-reads the figure through the band's own `changed` signal
         -- measured on the
         reference case, **0,001 s** for one move over a 17-element array and
@@ -384,11 +385,54 @@ class QVizRestoreSession:
         back after the first move would be the moved one, not the saved one.
         """
         self.applyStyles(figure, frame, view)
+        self.applyTransforms(figure, frame, view)
         self.applyColourScale(figure, frame, view)
         self.applyCursors(figure, frame, view)
         self.applyErrors(figure, frame, view)
         self.applyView(figure, frame, view)
         self.applyWindow(figure, frame, view)
+
+    def applyTransforms(self, figure, frame, view):
+        """The affine a hand laid on the values of a trace, put back on that trace.
+
+        Like a pen, and for the same reason, this goes on **before** the sliders
+        move: the figure draws a trace from the values of its last read and the
+        affine kept beside them, so a re-read under a moved slider comes back at the
+        height the hand asked for and nothing has to be drawn twice. It goes through
+        the frame's own `setTransform`, never by writing values into the pyqtgraph
+        item: that is the one place the record is laid down, so a replayed transform
+        is kept by the record as a hand's is, and saving the session again from a
+        window that came back keeps it.
+
+        A normalisation is **not** replayed. The file holds the composition -- the
+        factor the reference settled is already in it -- so asking `normalize_curve`
+        again would divide a second time, and re-deriving a reference from the values
+        the case answers today would make the curve mean something nobody asked it to
+        mean. What a `<Transform>` cannot put back is named, like a style that lands
+        on no trace: the quantity is gone from the tree, or the window draws fewer of
+        its traces than the file dressed.
+        """
+        log = logging.getLogger(view.uri)
+        for quantity in figure.quantities:
+            if not quantity.transforms:
+                continue
+            node = self.findNode(view, quantity.path, quantity.occurrence)
+            if node is None:
+                log.warning(
+                    'The scale of "%s" is not put back on the figure "%s" of "%s": '
+                    'that quantity is not in the tree of this case, and its window '
+                    'draws no trace to scale.'
+                    % (quantity.path, figure.key, self.path))
+                continue
+            asked = [(node, transform.trace,
+                      (transform.factor, transform.offset))
+                     for transform in quantity.transforms]
+            applied = replayTransforms(frame, asked)
+            if applied < len(asked):
+                log.warning(
+                    'The figure "%s" of "%s" scales %d trace(s) of "%s": this '
+                    'window draws %d of them.'
+                    % (figure.key, self.path, len(asked), quantity.path, applied))
 
     def applyColourScale(self, figure, frame, view):
         """The colours and the level range a hand left on a window of pictures.
@@ -511,6 +555,12 @@ class QVizRestoreSession:
         and a restore that asked again would make the user answer their own click.
         A quantity this case holds no error for is named by `QVizCurveErrors`
         itself, on the log of the case it was read from.
+
+        A bar is an extent over its curve, so it is drawn at the scale that curve
+        stands at -- and the affine is put back *before* this runs, which is what
+        makes a restored window of a dressed curve answer the error of the case at
+        that scale rather than the raw one. Put the bars back first and they would
+        be redrawn by `setTransform` a second time for nothing.
         """
         state = figure.errors
         if state is None:

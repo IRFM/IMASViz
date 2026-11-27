@@ -193,8 +193,18 @@ the same descriptions. The tools, in the order the faces group them:
      - one tool, and ``operation`` says what is done to the curve: ``scale``
        multiplies it, ``shift`` offsets it, ``normalize`` divides it by a
        reference of its own (``reference``: ``max``, ``first``, ``mean``),
-       ``reset`` puts it back to the values it was drawn with, ``remove``
-       takes it off. All reversible, all read back by one tool of its own --
+       ``reset`` puts it back to the values the window last read, ``remove``
+       takes it off. A scale, an offset or a normalisation is the *state* of
+       the curve, not a coat of paint on one read: posing a row on a slider
+       or exploring the quantity along an axis brings another element under
+       the curve and the transform still holds -- a normalised curve re-read
+       at another element comes back divided by the same reference, not
+       re-scaled to that element's own peak. A saved session carries the two
+       numbers a composition settled, under the quantity whose trace was
+       dressed, so the scale survives the run that asked for it and is not
+       derived again from the curve that came back
+       (:ref:`save_load_session`). All reversible, all read back by one tool
+       of its own --
        ``read_figure``, whose ``action`` says which read: ``stats`` answers
        the sample count, the finite min/max/mean/std, the nan/inf counts and
        the peak with its abscissa, ``export`` writes the values **as they
