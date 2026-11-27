@@ -1953,6 +1953,12 @@ class McpGuiCore:
         read as "no data" where it holds a half-empty axis). A shift of the
         values (a `shift_curve` to clear negative values) is the honest
         answer for a flux loop that runs through zero.
+
+        Going log resamples the traces along log10 and makes the axis tick
+        logarithmically, and the library re-fits the view over the mapped
+        values: a range pinned with `configure_axes(operation="range")` is
+        released by the change, so pin it again after going log, on the
+        logarithms of the numbers it used to name.
         """
         import numpy as np
 
@@ -1968,7 +1974,7 @@ class McpGuiCore:
                     '%s is %r: `True` to go log, `False` to go back to '
                     'linear.' % (name, value))
         record, frame = self._windowForKey(figure_key)
-        box = self._viewBoxOf(frame, figure_key)
+        plot = self._plotItemOf(frame, figure_key)
         for axis, on in (('x', x), ('y', y)):
             if on is not True:
                 continue
@@ -1996,11 +2002,22 @@ class McpGuiCore:
                     'is the answer to give it back.'
                     % (axis, n_bad, int(finite.size),
                        '' if finite.size == 1 else 's'))
-        if x is not None:
-            box.setLogMode('x', bool(x))
-        if y is not None:
-            box.setLogMode('y', bool(y))
-        logMode = list(box.state.get('logMode') or [None, None])
+        # The ask goes to the plot item, not to the view box, and that is the
+        # whole of the difference. In pyqtgraph 0.13.7 a log axis is applied
+        # in two places: each `PlotDataItem` resamples itself along log10 and
+        # the `AxisItem` draws log ticks, the axis then informing the view
+        # box. `ViewBox.setLogMode` -- which the library's own right-click
+        # menu never calls on its own -- only records a flag, read back by
+        # `_effectiveLimits` to clamp pan and zoom. Measured offscreen: it
+        # leaves the drawn values at [10, 100, 1000, 10000] while its state
+        # reads [False, True], so a gesture that asked only the view box
+        # answered "done" over an untouched picture.
+        plot.setLogMode(x=None if x is None else bool(x),
+                        y=None if y is None else bool(y))
+        # The two axes the figure draws are what the picture wears; the view
+        # box flag is derived from them, through the axis-view link.
+        logMode = [bool(plot.getAxis('bottom').logMode),
+                   bool(plot.getAxis('left').logMode)]
         self._logFor(record.cases,
                      'set_log_scale: %s, x=%s, y=%s (now %s).'
                      % (figure_key, x, y, str(logMode)))
@@ -2030,7 +2047,7 @@ class McpGuiCore:
                     '%s is %r: `True` to invert, `False` to put back.'
                     % (name, value))
         record, frame = self._windowForKey(figure_key)
-        box = self._viewBoxOf(frame, figure_key)
+        box = self._plotItemOf(frame, figure_key).getViewBox()
         if x is not None:
             state = box.state
             state['xInverted'] = bool(x)
@@ -4896,16 +4913,18 @@ class McpGuiCore:
                 % (figure_key or 'this window'))
         return [pgPlot.getViewBox()]
 
-    def _viewBoxOf(self, frame, figure_key=None):
-        """The single axis set of a curve figure: `pgPlotWidget`'s ViewBox.
+    def _plotItemOf(self, frame, figure_key=None):
+        """The single figure a curve figure draws into: `pgPlotWidget`'s PlotItem.
 
-        The log and inversion gestures address curve figures: a table and a
-        stacked window have one panel per picture and keep their own, the
-        flux-surface figure draws inside a graphics layout, and a picture
-        window is the span of its own pictures -- the one `set_axis_range`
-        answers. Each refusal names the window the caller tried, and the
-        gesture that answers it, so the refusal the caller reads says what
-        to do next instead of repeating the call.
+        The two axis gestures address it, each on its own half: the log mapping
+        is applied by the figure over its traces and its axes and the view box
+        is only told afterwards, while an inversion is a property of the axis
+        mapping the view box holds. A table and a stacked window have one panel
+        per picture and keep their own, the flux-surface figure draws inside a
+        graphics layout, and a picture window is the span of its own pictures --
+        the one `set_axis_range` answers. Each refusal names the window the
+        caller tried, and the gesture that answers it, so the refusal the caller
+        reads says what to do next instead of repeating the call.
         """
         if callable(getattr(frame, 'plotItems', None)):
             raise ValueError(
@@ -4916,14 +4935,14 @@ class McpGuiCore:
                 'the curve was drawn '
                 'in.' % (figure_key or 'this window'))
         pgPlot = getattr(frame, 'pgPlotWidget', None)
-        if pgPlot is None or not hasattr(pgPlot, 'getViewBox'):
+        if pgPlot is None or not hasattr(pgPlot, 'getPlotItem'):
             raise ValueError(
                 'The window "%s" draws no single figure whose axes a log '
                 'scale or an inversion can be set on: a curve figure '
                 'does, and the table panels and the flux-surface figure do '
                 'not. Name the figure the single curve was drawn in.'
                 % (figure_key or 'this window'))
-        return pgPlot.getViewBox()
+        return pgPlot.getPlotItem()
 
     @staticmethod
     def _curveName(node, rank):

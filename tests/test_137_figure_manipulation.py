@@ -506,6 +506,58 @@ def test_set_log_scale_success_after_clearing_negative_values(curve_figure):
         session.reset_curve(key)  # restore the shift
 
 
+def test_set_log_scale_moves_the_drawn_values_onto_the_log_scale(curve_figure):
+    """The ask must reach the picture, not only a flag on the view box.
+
+    This is the assertion that was missing while the gesture answered "done"
+    over an untouched window. Measured offscreen on `PyQtGraph/0.13.7`:
+    `ViewBox.setLogMode` -- which the library's own right-click menu never
+    calls on its own -- records the flag `_effectiveLimits` uses to clamp pan
+    and zoom, and nothing else: the traces stay at [10, 100, 1000, 10000]
+    while `state['logMode']` reads `[False, True]`. A log axis is applied by
+    the `PlotItem` over its traces -- each `PlotDataItem` resamples itself
+    along log10 -- and by its `AxisItem`, which draws log ticks and informs
+    the view box it is linked to. So the assertion belongs on the values the
+    figure draws, and the flag alone proves nothing.
+    """
+    from math import log10
+
+    session, _h, key, frame = curve_figure
+    plot = frame.pgPlotWidget.getPlotItem()
+    items = list(plot.listDataItems())
+    assert len(items) == 2, 'expected the two traces of the fixture'
+
+    session.shift_curve(key, 80000.0, curve=1)
+    try:
+        before = [list(map(float, item.getData()[1])) for item in items]
+        assert all(v > 0 for series in before for v in series), \
+            'the shift should have cleared every non-positive sample'
+
+        session.set_log_scale(key, y=True)
+
+        axis = plot.getAxis('left')
+        assert axis.logMode is True, 'the drawn axis is not a log axis'
+        assert plot.getAxis('bottom').logMode is False, \
+            'the abscissa was not asked and should stay linear'
+        for item, raw in zip(items, before):
+            drawn = list(map(float, item.getData()[1]))
+            assert len(drawn) == len(raw), 'a trace lost samples going log'
+            for got, was in zip(drawn, raw):
+                assert abs(got - log10(was)) < 1e-9, (
+                    'the picture still draws %g where log %g is %g'
+                    % (got, was, log10(was)))
+
+        session.set_log_scale(key, y=False)
+        assert axis.logMode is False, 'the axis did not come back linear'
+        for item, raw in zip(items, before):
+            drawn = list(map(float, item.getData()[1]))
+            for got, was in zip(drawn, raw):
+                assert abs(got - was) < 1e-9, \
+                    'the trace did not come back to its raw values'
+    finally:
+        session.reset_curve(key)
+
+
 # ==================================================================== invert
 
 
