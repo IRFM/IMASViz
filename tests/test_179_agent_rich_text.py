@@ -117,6 +117,39 @@ def test_to_html_leaves_the_other_lines_verbatim():
     assert rich.toHtml('<script>') == '&lt;script&gt;'
 
 
+def test_to_html_carries_the_line_breaks_the_model_gave():
+    """The model's ``\\n`` are the line breaks the page reads with
+    ``white-space: pre-wrap``; the Qt engine flattens a bare ``\\n``
+    into a space, so they are carried as ``<br>`` — one per newline, an
+    empty one for two. A real answer's list (shape of the transcript)
+    lands in separate lines, not on one."""
+    line = ('LLM: Les deux figures redessinées :\n\n'
+            '- **Plot7** : 101 points\n'
+            '- **Plot8** : 101 points\n\n'
+            'Veux-tu que je :\n'
+            '- **les remette à l\'écran** ?')
+    html = rich.toHtml(line)
+    # no bare newline survives: it is all <br>, and the two break the
+    # empty line the way pre-wrap reads it
+    assert '\n' not in html
+    assert '<br>' in html
+    assert '<br><br>' in html
+    # the list items stand where the model put them (the apostrophe is
+    # escaped the way the reader expects it in an HTML attribute context)
+    assert '- <b>Plot7</b> : 101 points<br>' in html
+    assert '<br>- <b>les remette à l&#39;écran</b> ?' in html
+
+
+def test_to_html_keeps_the_fenced_code_breaks():
+    """The line breaks inside a fenced block are its own, kept by
+    ``<pre>``: the prose around it gets ``<br>`` and the code keeps its
+    newlines, not a double break for each."""
+    html = rich.toHtml('LLM: avant\n```\nline one\nline two\n```\naprès')
+    assert '<pre>line one\nline two</pre>' in html
+    assert 'avant<br>' in html
+    assert '<br>après' in html
+
+
 def test_to_terminal_reads_bold_and_carries_the_math():
     text = rich.toTerminal(r'LLM: **gras** et $\alpha + \frac{a}{b}$',
                            ansi=True)
@@ -181,6 +214,28 @@ def test_panel_keeps_the_other_lines_verbatim(qapp):
     panel._appendTranscript('REFUSAL — **brut**')
     assert '**brut**' in panel.transcript.toPlainText()
     assert '<b>' not in panel.transcript.toHtml()
+
+
+def test_panel_reads_a_list_as_separate_lines(qapp):
+    """The one answer the user reported flat: a list. The model gives it
+    with its line breaks, and the panel reads them the way the page
+    does -- one line per item, the empty one for the two breaks --
+    instead of flattening the ``\\n`` into spaces."""
+    panel = _buildPanel(qapp)
+    panel._appendTranscript(
+        'LLM: Les deux figures redessinées :\n\n'
+        '- **Plot7** : 101 points\n'
+        '- **Plot8** : 101 points')
+    plain = panel.transcript.toPlainText()
+    # each item stands on its own line, the way the page's pre-wrap reads
+    # it -- not one line, not the newlines flattened into spaces
+    assert 'Les deux figures redessinées :' in plain
+    assert '- Plot7 : 101 points' in plain
+    assert '- Plot8 : 101 points' in plain
+    lines = [l for l in plain.split('\n') if l.strip()]
+    assert '- Plot7 : 101 points' in lines
+    assert '- Plot8 : 101 points' in lines
+    assert len(lines) == 3
 
 
 def test_panel_transcript_is_nowrap_and_clears(qapp):
