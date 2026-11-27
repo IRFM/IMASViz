@@ -53,6 +53,16 @@ Released 11/12/2026
   pins -- a shared schema of the plot and of the read, so the figure a
   viewer sees and the numbers a read reports are the same element of the
   same array.
+- An index the caller names is **pinned, not offered**. A figure asked for one
+  quantity at several named indices of an array of structures draws one curve
+  per index and lays no slider under an axis the ask has already fixed -- a
+  control under a value the user has just fixed invites moving it. Measured on
+  the reference case before this, the first of those curves kept the figure's
+  shared coordinate slider while the later ones were frozen, so dragging it
+  moved exactly the one curve the ask had pinned first (the pressure of
+  ``psi[0]`` read ``psi[50]``: its peak going 50 317 -> 13 196 Pa). A coordinate
+  nobody named keeps its slider: that is what the tree's element and
+  :guilabel:`Explore this tensor` ask for.
 - The refusals of the runs are named, and cost nothing: a refusal opens no
   empty figure, takes no figure number, and says its reason where the face
   that asked for it reads it. A **plugin entry** refused is now heard by the

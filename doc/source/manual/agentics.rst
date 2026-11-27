@@ -560,10 +560,13 @@ Two figures, two ways (and two ways only):
 - **Stacking on the figure already open.** The first drawing opens the
   figure and **is** what its key is (``Plot1``); the next ones pass that key
   and are drawn on it. N indices of **the same leaf** is N curves on **one**
-  figure: each curve is pinned to the index it carried, and the slider the
-  figure holds is not touched when stacking -- which is what the four identical
-  curves of the old bug would have been, all of them answering the last value
-  the slider was set to.
+  figure, each pinned to the index it carries. An index the ask names **is**
+  the ask: the figure lays no slider under it, because nothing on the screen
+  may move a value the user has just fixed. The old bug left the first of
+  those curves riding the figure's own slice slider while the others were
+  frozen, so dragging that slider moved the one curve that was not meant to
+  move -- and the four identical curves of the older bug answered the last
+  value the slider was set to.
 - **Select first, draw after.** :code:`manage_selection` asked with
   ``action`` ``select`` and the paths, then :code:`plot(mode="selection",
   uri)`: one selection, one figure per figure kind the selection calls for.

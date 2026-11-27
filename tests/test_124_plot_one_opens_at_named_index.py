@@ -28,6 +28,13 @@ This file opens its own session and case rather than joining the journey in
 `test_100`: the `Plot` figure namespace keeps only the newest figure of a
 kind, and the later tests of `test_100` read the earliest one, so a figure
 opened here and a figure opened there cannot share one shared session.
+
+Where the named index is held has moved since this file was written. It used
+to be a control of the figure -- `plot_one` moved the slider to the index the
+user named, and the assertion read the band. A named index is the ask, so the
+frame now pins it on its own row and lays no control under it; the assertion
+reads the row. `test_182` pins that half of the rule on the case, with the
+measured values.
 """
 
 import pytest
@@ -66,6 +73,21 @@ def _latestFigure(session):
     return key, session.api.figureframes[key]
 
 
+def _psiPins(frame):
+    """One entry per drawn curve: the index it pins itself at on the psi axis.
+
+    None when a curve leaves that axis to a control of the figure.
+    """
+    pins = []
+    for trace in frame.traces():
+        index = None
+        for key, value in trace.fixed.items():
+            if str(key[-1]).endswith('.psi'):
+                index = value
+        pins.append(index)
+    return pins
+
+
 def test_the_figure_opens_at_the_named_leaf_index(core):
     """Along the clock, `psi` is the one axis the figure pins; it opens at 50
     -- not the index 0 the tree happened to carry, which is the reported bug.
@@ -79,17 +101,15 @@ def test_the_figure_opens_at_the_named_leaf_index(core):
 
     # The answer says where it opened: on `psi`, at 50.
     assert answer.get('opened_at', {}).get('psi') == 50, answer
-    # And the frame carries it: the one slider the figure holds sits at 50.
-    controls = frame.sliceControls
-    assert controls is not None, 'a profile along time holds a slider for psi'
-    assert any(index == 50 for index in controls.indices().values()), \
-        controls.indices()
-    # ...and it is not the element the tree carried (index 0).
-    assert any(index != 0 for index in controls.indices().values())
+    # And the frame holds it on the row the ask drew, not under a control:
+    # a slider under a value the user has just named invites moving it.
+    assert _psiPins(frame) == [50], [t.fixed for t in frame.traces()]
+    assert frame.sliceControls.sliceCount() == 0, \
+        list(frame.sliceControls.keys())
 
 
-def test_a_different_named_index_opens_the_slider_there(core):
-    """A different named index opens a different figure at that index: the
+def test_a_different_named_index_pins_its_own_curve_there(core):
+    """A different named index opens a different figure pinned there: the
     comparison moves by hand without sliding back to the tree default.
     """
     session, _home = core
@@ -98,12 +118,10 @@ def test_a_different_named_index_opens_the_slider_there(core):
     assert answer['figure'] == key
     assert frame.isDrawing()
     assert answer.get('opened_at', {}).get('psi') == 42, answer
-    controls = frame.sliceControls
-    assert any(index == 42 for index in controls.indices().values()), \
-        controls.indices()
+    assert _psiPins(frame) == [42], [t.fixed for t in frame.traces()]
 
 
-def test_the_same_element_the_value_names_and_the_slider_holds(core):
+def test_the_same_element_the_value_names_and_the_curve_holds(core):
     """The number and the figure answer one element, the same array, the same
     index: what `get_signal` at `psi[50]` answers is what a curve `plot_one`
     opens at `psi[50]` holds.
@@ -118,9 +136,15 @@ def test_the_same_element_the_value_names_and_the_slider_holds(core):
     key, frame = _latestFigure(session)
     assert figure['figure'] == key
     assert frame.isDrawing()
-    # The figure holds the index the value was named at, so the two are about
-    # the same element of the same array -- the read of psi[50].
-    assert any(index == 50 for index in frame.sliceControls.indices().values())
+    # The curve of the figure carries the values of the element the numbers
+    # were read at, so the two are about one element of one array -- and the
+    # peak is the read of psi[50], not of whichever index a slider stood on.
+    read = [float(v) for v in numbers['y'] if v == v]
+    drawn = [float(v) for _, v in zip(*frame.traces()[0].curve.getData())
+             if v == v]
+    assert len(drawn) == len(read)
+    assert max(drawn) == pytest.approx(max(read), rel=1e-6), (max(drawn),
+                                                              max(read))
 
 
 def test_the_time_value_and_a_named_index_are_refused_named(core):
