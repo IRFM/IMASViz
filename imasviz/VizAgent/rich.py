@@ -27,10 +27,12 @@ The two renderers are two media of the same reading:
 
 * ``toHtml`` feeds the panel's transcript. It maps the markup onto the
   tags the Qt rich text engine paints -- ``<b>``, ``<i>``, ``<code>``,
-  ``<pre>``, ``<a href>`` -- and carries the math the way the page
-  carries it, because the engine it would otherwise be left to composes
-  none of it (measured on this Qt: a ``$...$`` stays spelled in the
-  document, ``setHtml`` and ``insertHtml`` alike).
+  ``<pre>``, ``<a href>``, and the line breaks the model gave as
+  ``<br>`` (the page's ``white-space: pre-wrap`` reading, since this
+  engine flattens a bare ``\n`` into a space) -- and carries the math
+  the way the page carries it, because the engine it would otherwise be
+  left to composes none of it (measured on this Qt: a ``$...$`` stays
+  spelled in the document, ``setHtml`` and ``insertHtml`` alike).
 * ``toTerminal`` feeds the client's console and the one-shot's stdout.
   A terminal composes nothing, and the math is carried the way the page
   carries it: the named tokens to their unicode (``\\alpha`` to
@@ -143,8 +145,10 @@ def toHtml(line):
     of a command and the ``$`` of a path are not swallowed as markup.
     The math is carried the way the page carries it (``mathToUnicode``)
     -- the engine the panel's document is painted by composes none of
-    it, measured -- and a line that is not the assistant's own is
-    escaped and left exactly as it is.
+    it, measured -- the line breaks the model gave are carried as
+    ``<br>`` (the page's ``white-space: pre-wrap`` reading, since this
+    engine flattens a bare ``\n`` into a space), and a line that is not
+    the assistant's own is escaped and left exactly as it is.
     """
     if not isAssistantLine(line):
         return _htmlEscape(line)
@@ -177,6 +181,13 @@ def toHtml(line):
     src = re.sub(r'\$\$([^$]+)\$\$',
                  lambda m: mathToUnicode(m.group(1)), src)
     src = re.sub(r'\$([^$\n]+)\$', lambda m: mathToUnicode(m.group(1)), src)
+    # the line breaks the model gave: the page renders them with
+    # ``white-space: pre-wrap`` (one per newline, an empty one for two),
+    # and the Qt engine flattens a bare ``\n`` into a space, so they are
+    # carried as ``<br>``. The fenced code above is still stashed as a
+    # protected region, so its newlines -- kept by ``<pre>`` -- are
+    # untouched by this.
+    src = src.replace('\r\n', '\n').replace('\n', '<br>')
     # the protected regions come back whole, the markup having gone
     # around them
     src = re.sub(r'\x00(\d+)\x00', lambda m: regions[int(m.group(1))], src)
