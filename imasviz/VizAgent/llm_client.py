@@ -273,9 +273,9 @@ class EmbeddingClient:
         self.timeout = timeout
 
     def __call__(self, text):
-        """One text to its vector. The journals' ``rankByVector`` asks
-        of it one note at a time, and it is the callable the core hands
-        to that (a ``text -> list[float]``). An endpoint that is not
+        """One text to its vector. The journals' index asks of it one
+        note at a time, and it is the callable the core hands to the
+        store (a ``text -> list[float]``). An endpoint that is not
         named is a named refusal: the caller reads it and falls back to
         the keyword, and the ``journals`` module is the one that names
         the fallback in the answer, not this client."""

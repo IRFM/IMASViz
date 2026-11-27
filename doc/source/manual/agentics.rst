@@ -506,9 +506,10 @@ server does not answer -- which is what ``manage_note(action="stats")``
 says, in ``method`` and, for the fallback case, in ``fallback_from`` and
 ``fallback_reason``: a search that ran on the keyword with the reason named
 is not a search that presented itself as an embeddings answer. The vectors
-the endpoints answer are cached under the note's journal folder, keyed on
-the note's body, so a second search of the same corpus asks the endpoint for
-the query and reads the rest.
+the endpoint answers are kept by the one SQLite index the journal carries, in step with the notes the run writes and edits, so a second search of
+the same corpus asks the endpoint for the query and reads the rest — a note
+written or edited outside the run is one the search re-indexes before it
+ranks, incrementally.
 
 .. _agentics_axes:
 

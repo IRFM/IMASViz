@@ -4051,9 +4051,8 @@ class McpGuiCore:
         answering is never one the index cost a refusal: a store the run
         cannot open (the shared folder not named) or an embedder that
         refuses are logged, and the note stands on the disk the writers
-        hold — the read falls to the keyword the journal ranks while the
-        index is not in step, and a ``reindex_journals`` is the one that
-        sets the two in step.
+        hold — the search answers the keyword alone if the store does
+        not, and rebuilds the index on a miss before it ranks.
         """
         import logging
         try:
@@ -4071,36 +4070,32 @@ class McpGuiCore:
                         date_from=None, date_to=None, author=None):
         """The RAG of the two journals.
 
-        Two steps, in that order:
-        0. the eager index — the one ``add_note`` / ``edit_note`` /
+        Three steps, in that order:
+        0. the structured filter (``machine``/``campaign``/``shot``/
+           ``date_from``/``date_to``/``author``) narrows to the notes that
+           name each of the fields the caller asked of;
+        1. the eager index — the one ``add_note`` / ``edit_note`` /
            ``delete_note`` keep in step and ``reindex_journals`` builds
            (one SQLite per journal under ``~/.imasviz`` and the shared
-           folder) — is asked of first when it holds rows: the BM25 over
-           the notes' text fused with the cosine of the query against
-           the same (the ``rag_store``'s RRF). It answers
-           ``method: 'hybrid'`` / ``'embeddings'`` / ``'keyword'``, and
-           a store written under an embedder the run is not under
-           answers ``guarded`` with the ``guard_reason`` (vectors
-           ignored, keyword alone) — the one ``reindex_journals`` sets
-           right;
-        1. the structured filter (``machine``/``campaign``/``shot``/
-           ``date_from``/``date_to``/``author``) narrows to the notes
-           that name each of the fields the caller asked of;
-        2. the ranking of what is left — by the lazy cache when the
-           ``AgentEmbedEndpoint`` preference is named and the endpoint
-           answers (the cosine between the query's vector and each
-           note's, through the local cache under the journal's folder),
-           and by keyword (a light BM25, no dependency) when it is not
-           or when the endpoint does not answer — the one the run holds
-           while a journal has not been indexed yet, the answer the
-           reader gets until a ``reindex_journals`` fills the store.
+           folder) — is asked of first: the BM25 over the notes' text
+           fused with the cosine of the query against the same
+           (the ``rag_store``'s RRF). A note the disk holds but the
+           index does not (a write or an edit outside the run, or an
+           index left stale) is caught by a one-line staleness check
+           and re-indexed before the rank, incrementally;
+        2. the ranking of what is left is the one the index answers
+           (method ``hybrid`` / ``embeddings`` / ``keyword``); a store
+           written under an embedder the run is not under answers
+           ``guarded`` with the ``guard_reason`` and its vectors ignored.
 
-        An empty filter answer (a note the filters narrowed out) is the
-        ``total: 0`` the answer holds, and a fallback from embeddings
-        to keyword — the endpoint named but not answering, or answering
-        a shape ``rankByVector`` does not read — is named in the answer
-        as ``method: 'keyword'`` and ``fallback_reason``: the run that
-        read it does not present it as an embeddings answer.
+        The keyword (a light BM25, no dependency) stands only when the
+        index cannot answer at all — the final resort, in which case it
+        is named as such, not presented as the indexed answer. An empty
+        filter answer is the ``total: 0`` the answer holds, and a store
+        that answers with the vectors ignored (the guard), or with the
+        query refused, is named in the answer as ``guarded`` /
+        ``fallback_from`` + ``fallback_reason`` — the run that read it
+        does not present it as an embeddings answer.
         """
         from imasviz.VizAgent import journals
         notes = journals.JournalStore.list_notes(
@@ -4118,18 +4113,16 @@ class McpGuiCore:
                 'notes': [note.asSearchResult() for note in notes[:limit]],
             }
         query = str(query).strip()
-        # The eager index — the one ``add_note`` / ``edit_note`` /
-        # ``delete_note`` keep in step and ``reindex_journals`` builds — is
-        # the ranking asked of first: the BM25 over the notes' text fused
-        # with the cosine of the query against the same, the one
-        # ``rag_store`` answers. A journal the run has not indexed is empty
-        # and the read falls to the keyword the ``journals`` store ranks
-        # (the lazy path below), the note the index did not reach being
-        # still the one the disk holds: the read does not pretend the index
-        # answered when it did not.
         from imasviz.VizAgent import journals_index
-        include_ids = set(note.id for note in notes)
         embedder = self._noteEmbedder()
+        # The one-line staleness rule: the index holds a row whose text
+        # is not the one the disk holds (a write or an edit outside the
+        # run) or a note it does not hold at all — one incremental
+        # reindex pays the embed for what moved, and nothing when the
+        # index is in step.
+        if journals_index.staleIds(scope, notes):
+            journals_index.reindex(scope=scope, embedder=embedder)
+        include_ids = set(note.id for note in notes)
         indexed = journals_index.search(
             scope=scope, include_ids=include_ids, query=query,
             embedder=embedder, limit=limit)
@@ -4146,90 +4139,20 @@ class McpGuiCore:
             if indexed.get('guard_reason'):
                 answer['guarded'] = True
                 answer['guard_reason'] = indexed['guard_reason']
+            if indexed.get('vector_refusal'):
+                # The endpoint was named, the query did not vectorise:
+                # the index answered the keyword, and the refusal is
+                # named rather than hidden.
+                answer['fallback_from'] = 'embeddings'
+                answer['fallback_reason'] = indexed['vector_refusal']
             return answer
-        from imasviz.VizUtils import QVizPreferences
-        endpoint = (QVizPreferences.AgentEmbedEndpoint or '').strip()
-        if endpoint:
-            from imasviz.VizAgent.llm_client import EmbeddingClient
-            cacheFolders = {}
-            if scope in (None, 'personal'):
-                try:
-                    cacheFolders['personal'] = \
-                        journals.JournalStore.personalDirectory()
-                except ValueError:
-                    pass
-            if scope in (None, 'shared'):
-                try:
-                    cacheFolders['shared'] = \
-                        journals.JournalStore.sharedDirectory()
-                except ValueError:
-                    pass
-            try:
-                embedder = EmbeddingClient()
-                # A query the embedder refuses is a refusal the ranking
-                # does not hide: the keyword answers the same question
-                # the embeddings could not, and the answer says it fell
-                # back and why (the same rule the ``rankByVector``'s
-                # own `ValueError` is, one the caller reads).
-                try:
-                    ranked = journals.rankByVector(
-                        notes, query, embedder, cacheFolders=cacheFolders,
-                        limit=limit)
-                except ValueError as e:
-                    # A query the endpoint does not vectorise is not an
-                    # error: it is the keyword, with the reason named.
-                    # A note the endpoint could not vectorise is not
-                    # one the ranked list holds, and the search does
-                    # not say it does not exist either.
-                    ranked = journals.rankByKeyword(notes, query, limit=limit)
-                    return {
-                        'scope': scope or 'both', 'query': str(query).strip(),
-                        'total': total, 'returned': len(ranked),
-                        'method': 'keyword',
-                        'fallback_from': 'embeddings',
-                        'fallback_reason': str(e),
-                        'notes': [n.asSearchResult() for n in ranked],
-                    }
-                answered = bool(ranked)
-                # The query that answered nothing through the embeddings
-                # is one the keyword answers in its own name: the
-                # ranked list is empty, but the note the keyword would
-                # rank is not a note that is not there — it is one
-                # the embeddings did not reach. The answer says which
-                # method the run used, and the caller names the note
-                # it could not rank.
-                if not answered:
-                    keyword = journals.rankByKeyword(notes, query,
-                                                     limit=limit)
-                    return {
-                        'scope': scope or 'both', 'query': str(query).strip(),
-                        'total': total, 'returned': len(keyword),
-                        'method': 'keyword (no embeddings ranked this)',
-                        'notes': [n.asSearchResult() for n in keyword],
-                    }
-                return {
-                    'scope': scope or 'both', 'query': str(query).strip(),
-                    'total': total, 'returned': len(ranked),
-                    'method': 'embeddings',
-                    'notes': [note.asSearchResult() for note in ranked],
-                }
-            except (ConnectionError, RuntimeError) as e:
-                # An endpoint that does not answer is the keyword, with
-                # the reason named: the keyword reads the same notes
-                # and ranks them by what they hold, not nothing.
-                ranked = journals.rankByKeyword(notes, query, limit=limit)
-                return {
-                    'scope': scope or 'both', 'query': str(query).strip(),
-                    'total': total, 'returned': len(ranked),
-                    'method': 'keyword',
-                    'fallback_from': 'embeddings',
-                    'fallback_reason': str(e),
-                    'notes': [n.asSearchResult() for n in ranked],
-                }
+        # The index could not answer (or answered nothing): the keyword
+        # is named as the method, and the answer is the list the disk
+        # holds, ranked by what it holds.
         ranked = journals.rankByKeyword(notes, query, limit=limit)
         return {
-            'scope': scope or 'both', 'query': str(query).strip(),
-            'total': total, 'returned': len(ranked),
+            'scope': scope or 'both', 'query': query, 'total': total,
+            'returned': len(ranked),
             'method': 'keyword',
             'notes': [note.asSearchResult() for note in ranked],
         }
@@ -4429,11 +4352,11 @@ class McpGuiCore:
         return answer
 
     def delete_note(self, scope, note_id):
-        """One note of one journal, gone: the file and the cache entry
-        the run holds for it. Not in the journal is a named refusal,
-        naming the ids it does hold, and the cache is invalidated by
-        the same rule the write is: a note the run deleted is one the
-        next search does not rank, because its file is not there."""
+        """One note of one journal, gone: the file and the row the index
+        holds for it. Not in the journal is a named refusal, naming the
+        ids it does hold, and the same rule the write is: a note the run
+        deleted is one the next search does not rank, because its file
+        is not there."""
         from imasviz.VizAgent import journals
         answer = journals.JournalStore.delete_note(scope, note_id)
         # The eager index on the delete: the row leaves the journal's store

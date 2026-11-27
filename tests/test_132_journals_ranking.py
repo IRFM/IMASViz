@@ -11,34 +11,27 @@
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
 
-"""The embeddings ranking of the journal search, with its three states.
+"""The embeddings ranking of the journal search: the one index, and its states.
 
-The search ranks the notes two ways, in that order:
+The journals carry one index — the SQLite store of ``journals_index`` — and
+every search asks it of first: the BM25 over the notes' text fused with
+the cosine of the query against the one each row holds (the ``hybrid``
+method), the method named in the answer. The rules this file pins:
 
-1. by **embeddings** — the cosine between the query's vector and each
-   note's, when ``AgentEmbedEndpoint`` is named and the endpoint answers
-   (the vector is cached under the note's journal folder, keyed on the
-   note's body);
-
-2. by **keyword** — a light BM25, no dependency — when the endpoint is
-   not named, or when it does not answer.
-
-The answer says which one ran: ``method: 'embeddings'`` when the
-endpoint answered and ranked, ``method: 'keyword'`` with
-``fallback_from: 'embeddings'`` and the reason named when it was asked
-but did not answer, and ``method: 'keyword'`` with no fallback when it
-was not asked at all. A note the endpoint could not vector is dropped
-from the ranked list — the reader reads that as one the search did not
-rank, not an empty answer, and the ranking does not say the note does
-not exist either.
+* the note the query names ranks first — the one the endpoint vectors is
+  the one the answer leads with;
+* an endpoint that is named but does not answer — the query the index
+  cannot vector is the keyword, with ``fallback_from: 'embeddings'`` and
+  the reason named;
+* an endpoint that is not named — the plain keyword, no fallback named;
+* the vector the endpoint answers for a note is kept by the store — a
+  second search re-embeds the query, not the note.
 """
-
-import os
 
 import pytest
 
 from imasviz.VizAgent.core import McpGuiCore
-from imasviz.VizAgent.journals import JournalStore, rankByVector
+from imasviz.VizAgent.journals import JournalStore
 
 USER = 'writer'
 QUERY = 'plasma instability after 0.4 s'
@@ -67,41 +60,63 @@ def _write(home, body, machine='WEST', **fields):
         'personal', body, author=USER, machine=machine, **fields)
 
 
-class PermissiveEmbedder:
-    """The stand-in for the ``EmbeddingClient``: a fixed table of the
-    text to its vector. A text the table does not hold is a refusal —
-    the one the ``EmbeddingClient`` raises for a text it cannot
-    vectorise — and the ranking drops the note it could not vector,
-    the same rule the one in the field applies."""
+def _namedEndpoint(monkeypatch, endpoint='http://localhost:9999/v1',
+                    model='fake-embed'):
+    from imasviz.VizUtils import QVizPreferences
+    monkeypatch.setattr(QVizPreferences, 'AgentEmbedEndpoint', endpoint,
+                        raising=False)
+    monkeypatch.setattr(QVizPreferences, 'AgentEmbedModel', model,
+                        raising=False)
 
-    def __init__(self, table):
-        self.table = dict(table)
+
+class PermissiveEmbedder:
+    """The stand-in for the ``EmbeddingClient``: the one the index
+    answers for a text — the composed note text (the title, the filters,
+    the body), not the raw body — matched by substring, the way the
+    table in ``test_149`` matches them. A text the table does not hold
+    is a refusal — the one the ``EmbeddingClient`` raises for a text it
+    cannot vectorise — and the ranking drops the note it could not
+    vector, the same rule the one in the field applies."""
+
+    def __init__(self):
         self.calls = 0
 
     def __call__(self, text):
         self.calls += 1
-        if text in self.table:
-            return self.table[text]
+        low = text.lower()
+        if 'plasma' in low:
+            return [1.0, 0.0]
+        if 'calibration' in low or 'probe' in low:
+            return [0.0, 1.0]
         raise ConnectionError(
             'the endpoint does not answer a vector for %r' % (text,))
 
 
-def test_keyword_ranks_the_matching_note_first(home):
-    """The keyword is the ranking the answer holds while no endpoint is
-    named: the note the query names comes before the one it does not,
-    and a query that names no note answers the empty list, not a
-    refusal the reader reads like a crash."""
+def test_the_index_ranks_the_note_the_query_names_first(home, monkeypatch):
+    """The indexed answer leads with the note the query names: the
+    vector the endpoint answers for it is the one the fusion ranks,
+    and the answer says ``hybrid`` — not the keyword alone, and not a
+    fallback."""
+    _namedEndpoint(monkeypatch)
+    import imasviz.VizAgent.llm_client as llm
+    embedder = PermissiveEmbedder()
+    monkeypatch.setattr(llm, 'EmbeddingClient', lambda *a, **k: embedder,
+                        raising=False)
     note_a = _write(home, body='Plasma instability after 0.4 s.')
     _write(home, body='The probe calibration was off.')
-    notes = JournalStore.list_notes('personal')
-    ranked = rankByVector(notes, QUERY, PermissiveEmbedder(
-        {QUERY: [1.0, 0.0],
-         'Plasma instability after 0.4 s.': [0.9, 0.1],
-         'The probe calibration was off.': [0.0, 1.0]}),
-        cacheFolders={'personal': JournalStore.personalDirectory()})
-    assert ranked, 'a query that matches a note must not answer empty'
-    assert ranked[0].id == note_a['id'], \
-        'the note the query names comes first: %r' % [n.id for n in ranked]
+
+    core = _core()
+    result = McpGuiCore.search_journals(
+        core, scope='personal', query=QUERY)
+    assert result['indexed'] is True, \
+        'the search the index answered is the one named: %r' % result
+    assert result['method'] == 'hybrid', \
+        'the vectors and the text both ranked: %r' % result['method']
+    assert [n['id'] for n in result['notes']], \
+        'the note the query names is in the answer'
+    assert result['notes'][0]['id'] == note_a['id'], \
+        'the note the query names comes first: %r' \
+        % [n['id'] for n in result['notes']]
 
 
 def test_endpoint_named_but_not_answering_falls_back_named(home, monkeypatch):
@@ -109,17 +124,13 @@ def test_endpoint_named_but_not_answering_falls_back_named(home, monkeypatch):
     with the fallback named: the answer says ``method: 'keyword'`` and
     ``fallback_from: 'embeddings'``, and the note it still ranks is the
     one the keyword would have, not nothing."""
-    from imasviz.VizUtils import QVizPreferences
-    monkeypatch.setattr(QVizPreferences, 'AgentEmbedEndpoint',
-                        'http://localhost:9999/v1', raising=False)
-    monkeypatch.setattr(QVizPreferences, 'AgentEmbedModel', 'fake-embed',
-                        raising=False)
+    _namedEndpoint(monkeypatch)
 
     _write(home, body='Plasma instability after 0.4 s.')
 
     # The stand-in for the EmbeddingClient. The endpoint does not
     # answer, so the call raises ConnectionError — the shape the
-    # real client raises for a server that is not there. rankByVector
+    # real client raises for a server that is not there. The index
     # names that as a query it cannot vector, and the core's own
     # reader falls back to the keyword, with the reason named.
     class FailingEmbedder:
@@ -128,7 +139,7 @@ def test_endpoint_named_but_not_answering_falls_back_named(home, monkeypatch):
                 'the endpoint does not answer (the server is not there)')
     import imasviz.VizAgent.llm_client as llm
     monkeypatch.setattr(llm, 'EmbeddingClient',
-                        lambda *a, **k: FailingEmbedder())
+                        lambda *a, **k: FailingEmbedder(), raising=False)
 
     core = _core()
     result = McpGuiCore.search_journals(
@@ -162,53 +173,40 @@ def test_endpoint_not_named_is_a_plain_keyword(home, monkeypatch):
     assert result['notes']
 
 
-def test_the_cache_is_the_one_the_endpoint_would_own(home, monkeypatch):
-    """The vector the endpoint answers for a note is written under that
-    note's journal folder, keyed on its body. The next ranking of the
-    same note reads that entry back, and does not ask the endpoint for
-    it a second time — the same rule the note's cache is there for."""
-    from imasviz.VizUtils import QVizPreferences
-    monkeypatch.setattr(QVizPreferences, 'AgentEmbedEndpoint',
-                        'http://localhost:9999/v1', raising=False)
-    monkeypatch.setattr(QVizPreferences, 'AgentEmbedModel', 'fake-embed',
+def test_the_store_keeps_the_vector_the_endpoint_answers(home, monkeypatch):
+    """The one a second search does not re-embed: the vector the
+    endpoint answers for a note is kept by the store, and a second
+    search of the same note asks the endpoint for the query and not
+    for the note — the embedder's calls grow by one, not by two."""
+    _namedEndpoint(monkeypatch)
+    from imasviz.VizAgent import journals_index
+    import imasviz.VizAgent.llm_client as llm
+    embedder = PermissiveEmbedder()
+    monkeypatch.setattr(llm, 'EmbeddingClient', lambda *a, **k: embedder,
                         raising=False)
-
     note = _write(home, body='Plasma instability after 0.4 s.')
-    folder = JournalStore.personalDirectory()
-    table = {QUERY: [1.0, 0.0], 'Plasma instability after 0.4 s.': [1.0, 0.0]}
-    first = PermissiveEmbedder(table)
-    notes = JournalStore.list_notes('personal')
-    ranked = rankByVector(
-        notes, QUERY, first, cacheFolders={'personal': folder})
-    assert ranked and [n.id for n in ranked] == [note['id']]
 
-    # The cache wrote one entry under the personal folder, keyed on the
-    # note's body — a derived artifact in that folder, not one the run
-    # could not own.
-    cache_dir = os.path.join(folder, '.embed')
-    entries = [n for n in os.listdir(cache_dir) if n.endswith('.json')]
-    assert entries, \
-        'a cache the endpoint owns was not written: %r' % (
-            os.listdir(cache_dir) if os.path.isdir(cache_dir) else 'no .embed')
+    core = _core()
+    result = McpGuiCore.search_journals(
+        core, scope='personal', query=QUERY)
+    assert result['notes'][0]['id'] == note['id']
 
-    # A second ranking of the same note, through an embedder the note's
-    # text reaches only if the note's vector is not in the cache: the
-    # query is the one the endpoint still asks for (the read is not
-    # the cache, the rank is), and the note is the one that is.
-    class StrictEmbedder:
-        @staticmethod
-        def _fail(text):
-            raise AssertionError(
-                'the note %r came from the endpoint, not from the cache: '
-                'the first ranking wrote it, the second should read it'
-                % (text,))
+    # The store holds the row and its vector under the current
+    # embed_sig — the one the run is under — and the stats are the one
+    # read a reader asks of to see it kept.
+    store = journals_index.storeFor('personal')
+    try:
+        s = store.stats()
+        assert s['rows'] == 1 and s['vectors'] == 1, \
+            'the vector the endpoint answered is kept by the store: %r' % s
+    finally:
+        store.close()
 
-        def __call__(self, text):
-            if text == QUERY:
-                return [1.0, 0.0]
-            self._fail(text)
-
-    second = rankByVector(
-        notes, QUERY, StrictEmbedder(), cacheFolders={'personal': folder})
-    assert [n.id for n in second] == [note['id']], \
-        'a cached note is still ranked: %r' % [n.id for n in second]
+    calls = embedder.calls
+    result = McpGuiCore.search_journals(
+        core, scope='personal', query=QUERY)
+    assert [n['id'] for n in result['notes']] == [note['id']]
+    assert embedder.calls == calls + 1, \
+        'a second search asks the endpoint for the query, not the note: ' \
+        '%d calls after the first, %d after the second' \
+        % (calls, embedder.calls)

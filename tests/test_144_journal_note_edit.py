@@ -250,35 +250,41 @@ def test_the_loop_refuses_an_unknown_parameter_of_edit_note(home):
     assert 'instability' in read['text']
 
 
-def test_the_edit_invalidates_the_cache_of_the_body_the_note_held(home):
-    """A search after the edit ranks the line the reader reads after:
-    the cache of the body the note held is out with the body, and the
-    one the edit put in (when it had a vector) is out the same — the
-    old vector is not the answer the new body earned, and the next
-    search of the note asks for it or reads what the disk holds."""
+def test_the_search_reindexes_a_note_edited_outside_the_run(home, monkeypatch):
+    """A note the disk holds but the index does not answer — written or
+    edited outside the run (a direct ``JournalStore`` call) — is one the
+    search re-indexes before it ranks: the one-line staleness check
+    (the row's stored text hash is not the one the disk holds, or the
+    row is missing) costs one incremental ``reindex``, and the answer
+    follows the words the disk holds — not the ones the index was
+    written with."""
+    from imasviz.VizUtils import QVizPreferences
+    monkeypatch.setattr(QVizPreferences, 'AgentEmbedEndpoint', '',
+                        raising=False)
     note = _note(home, machine='WEST')
-    folder = JournalStore.personalDirectory()
-    old_digest = journals._hashBody(JournalStore.read_note(
-        'personal', note['id'])['text'])
-    new_body = 'a body the vectors no longer cover.'
-    new_digest = journals._hashBody(new_body)
+    core = McpGuiCore.__new__(McpGuiCore)
 
-    # A run that had searched the note holds a vector for both bodies
-    # the note will wear (the one it holds now and the one the edit
-    # asks for): both are the derived cache, and both are gone with
-    # the edit.
-    journals._writeCache(folder, old_digest, [0.1, 0.2])
-    journals._writeCache(folder, new_digest, [0.3, 0.4])
+    # The first search writes the index in step with the note (the
+    # staleness check pays one incremental reindex), and the note is
+    # found under the words it holds.
+    first = McpGuiCore.search_journals(
+        core, scope='personal', query='plasma instability')
+    assert note['id'] in [n['id'] for n in first['notes']]
 
+    # The edit, outside the run: the body moves, the index is behind,
+    # and the note's row holds the old text.
     JournalStore.edit_note(
-        'personal', note['id'], text=new_body)
+        'personal', note['id'],
+        text='the torquer was misaligned on the vacuum line.')
 
-    assert journals._readCache(folder, old_digest) is None, \
-        'the vector of the body the note held is a cache of that body: ' \
-        'the edit out its body'
-    assert journals._readCache(folder, new_digest) is None, \
-        'a vector the edit would read was the one the search of before ' \
-        'held: not the answer the edit earned'
+    # The next search heals the stale row and ranks the words the
+    # edit wrote — the index is not the answer, the disk is.
+    second = McpGuiCore.search_journals(
+        core, scope='personal', query='torquer misaligned')
+    assert second['indexed'] is True
+    assert note['id'] in [n['id'] for n in second['notes']], \
+        'the search re-indexed the edited note: %r' \
+        % [n['id'] for n in second['notes']]
 
 
 def test_the_search_after_the_edit_ranks_the_edited_line(home):

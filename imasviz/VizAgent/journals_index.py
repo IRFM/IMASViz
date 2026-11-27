@@ -18,18 +18,26 @@ This module owns **where** the two live and the small glue that spans them
 what it indexes: the composition of the title, the filters, and the body
 (one string the lexical list ranks on, the one the embedder vectors).
 
-The ``journals`` store itself is untouched: it is the file the writers hold
-and the lazy cache it invalidates on a write (the tests of that read it
-directly), and this index is the derived artifact the run adds to it — the
-eager one that ``add_note`` / ``edit_note`` / ``delete_note`` and
-``reindex_journals`` keep in step with it. A store the run cannot open (the
-shared one, no folder named) is a refusal by name, and a search that spans
-both keeps the one that answers.
+The ``journals`` store is untouched: it is the file the writers hold. This
+index is the one derived artifact the run adds to it, and it is the one the
+search ranks with — the eager one ``add_note`` / ``edit_note`` /
+``delete_note`` and ``reindex_journals`` keep in step with it. A store the
+run cannot open (the shared one, no folder named) is a refusal by name,
+and a search that spans both keeps the one that answers.
+
+A note written or edited outside the run (direct ``JournalStore`` calls)
+is not in step with this index: the search answers ``staleIds`` a one-
+line check (does the row's stored text hash answer the one the disk
+holds?), and a note it names costs one incremental ``reindex`` before the
+rank — a note the index holds moved costs one embed, a note the index
+does not hold costs the upsert of its text, and a row that holds a
+vector the endpoint no longer serves is re-vectorized on the next search
+under the same signature or kept.
 """
 
 import os
 
-from imasviz.VizAgent.rag_store import _fuseRRF
+from imasviz.VizAgent.rag_store import _fuseRRF, hashText
 
 
 def _personalPath():
@@ -112,6 +120,31 @@ def _scopes(scope):
     raise ValueError(
         '"scope=%r" is not a journal to index: its two are personal and '
         'shared (or both / left out for the two at once).' % scope)
+
+
+def staleIds(scope, notes):
+    """The ids of the notes (already filtered by the caller's
+    ``list_notes``) whose stored row is not in step with the disk:
+    missing from the index, or holding a text hash that is not the one
+    the note holds. One read per journal, no re-embed — the search
+    calls this before it ranks and pays one incremental ``reindex``
+    when it is not empty."""
+    out = []
+    for sc in _scopes(scope):
+        try:
+            store = storeFor(sc)
+        except ValueError:
+            continue
+        try:
+            rows = store.rowsDigests()
+            for note in notes:
+                if note.scope != sc:
+                    continue
+                if rows.get(note.id) != hashText(noteText(note)):
+                    out.append(note.id)
+        finally:
+            store.close()
+    return out
 
 
 def storeFor(scope):

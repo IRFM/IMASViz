@@ -29,28 +29,26 @@ The search is a two-step read:
 * the **structured filter** is applied first (AND of the fields the
   caller named); a note that does not name a required field is out of
   the answer, whatever the query says about it;
-* the **ranking** of what is left is either by embeddings (when the
-  endpoint ``AgentEmbedEndpoint`` is named in the preferences and
-  answers) or by keyword (a light BM25, 30 lines, no dependency) — the
-  method the search used and the refusal it earned are both in the
-  answer, so a run that fell back to the keyword does not present an
-  embeddings result as if it had one, and the other way round.
+* the **ranking** of what is left is the one the index answers (the
+  ``journals_index`` store: BM25 over the note's text fused with the
+  cosine of the query against the row's vector, the method and any
+  refusal named in the answer) — the core rebuilds the index on a
+  miss before it ranks, so the disk is always the truth the answer
+  reads; the keyword alone (a light BM25, no dependency) stands only
+  when the index cannot answer at all, and is the one this module
+  keeps.
 
-Embeddings are a cache the note does not own: the one the run computes
-is kept under :file:`$HOME/.imasviz/journals/.embed/` — or the same
-dot-folder under the shared journal's directory when the search is on
-the shared one — keyed by the hash of the note's body. So a note the
-run writes twice costs one file the first time and nothing the second.
-The cache is a **derived** artifact, not a shared state: two users of
-the same shared journal hold two cache entries (one per user, local to
-each), and a fresh clone of the shared journal has no cache until the
-first run through it computes it — the read answers the same note on
-the same body, so the two cache entries are content-identical (same
-text, same model), and the last writer is the one a later run reads.
+Embeddings are a cache the note does not own either: the one the run
+computes is kept in the one SQLite the journal carries (one store per
+journal, the ``journal-index.sqlite`` under :file:`$HOME/.imasviz` and
+the shared folder) — never in the notes folder, never re-computed per
+search. A note the core writes or edits is kept in step with it on the
+spot; a note written or edited outside the run is re-indexed by the
+search the next time it runs, incrementally (a row whose text has not
+moved is kept).
 """
 
 import hashlib
-import json
 import math
 import os
 import re
@@ -184,38 +182,6 @@ def _renderNote(author, machine, campaign, shot, date, title, body):
     return '\n'.join(lines) + '\n' + (body or '').rstrip() + '\n'
 
 
-def _hashBody(text):
-    """The key the cache reads under: the hash of the note's body
-    only — the title and the filters are one note's own, and the body
-    is the one the run ranks. A note's two writes (an original and an
-    overwrite) cost the same key, and the run's second answer is a
-    cache hit on the first's write."""
-    return hashlib.sha256((text or '').encode('utf-8')).hexdigest()[:32]
-
-
-def _cachePathFor(scopeFolder, digest):
-    """The one file the cache holds for one note: the digest, and a
-    ``.json`` extension — one the reader knows is not a note's own
-    ``.md``, and the one ``_invalidateCache`` on a write removes."""
-    folder = os.path.join(scopeFolder, '.embed')
-    os.makedirs(folder, exist_ok=True)
-    return os.path.join(folder, digest + '.json')
-
-
-def _invalidateCache(scopeFolder, digest):
-    """The entry the cache holds for one note, gone. A write of the
-    note is one the run makes, and a read of it answers the note the
-    run wrote, not the one the run read before writing: a note's two
-    writes (an original and an overwrite) cost the same digest, and
-    the second write invalidates the first's cache entry."""
-    path = _cachePathFor(scopeFolder, digest)
-    if os.path.isfile(path):
-        try:
-            os.unlink(path)
-        except OSError:
-            pass
-
-
 # ------------------------------------------------------------------- rank
 
 def _tokens(text):
@@ -224,19 +190,6 @@ def _tokens(text):
     is not the number of a shot."""
     return [t for t in re.findall(r'[a-z0-9]+', (text or '').lower())
             if len(t) >= 2]
-
-
-def _unit(vec):
-    """A vector to unit length: the cosine the search computes is the
-    dot product of two unit vectors, and a vector that is all zeros
-    answers ``None`` (a zero vector has no direction, and a cosine with
-    it is not a score)."""
-    if not vec:
-        return None
-    norm = math.sqrt(sum(float(x) * float(x) for x in vec))
-    if norm == 0.0:
-        return None
-    return [float(x) / norm for x in vec]
 
 
 def rankByKeyword(notes, query, limit=None):
@@ -286,105 +239,6 @@ def rankByKeyword(notes, query, limit=None):
     scored.sort(key=lambda p: (p[0], p[1]))
     ranked = [note for neg, _, note in scored if -neg > 0.0]
     return ranked if limit is None else ranked[:limit]
-
-
-def rankByVector(notes, query, embedder, cacheFolders=None, limit=None):
-    """The ranked list an embeddings search returns: the cosine between
-    the query's vector and the one each note's body carries.
-
-    ``embedder`` is a callable: ``text -> list[float]`` — the one the
-    caller built for this run (a stand-in in the test, the
-    ``EmbeddingClient`` in the field). The query's vector is asked
-    once, and the notes' are read through the local cache, keyed by
-    ``sha256(body)``. ``cacheFolders`` is a mapping ``scope -> folder``
-    (``{'personal': ..., 'shared': ...}``); the cache for a note is the
-    one keyed by that note's own ``scope``, so a search that spans both
-    journals reads each against its own cache folder, and a note whose
-    scope maps to no folder is vectorised and not cached (a cache it
-    could not own is not a cache it does not write). A note the
-    embedder could not vector (a refusal from the endpoint) is dropped
-    from the ranked list — the caller reads that as one the search did
-    not rank, not an empty answer. A zero or negative score is not in
-    the ranked list either: a vector with no direction or one opposite
-    the query is not one the query asks of.
-    """
-    if not notes:
-        return []
-    try:
-        qvec = _unit(embedder(query))
-    except Exception as e:
-        # A query the embedder refused is one the ranking cannot rank:
-        # the refusal is the caller's to name, and an empty ranked list
-        # is not the answer a rankByVector that could not rank should
-        # give — the caller names it, not hides it.
-        raise ValueError('the query could not be vectorised: %s' % e) from e
-    if qvec is None:
-        raise ValueError(
-            'the query vectorised to an empty vector: the embedder does '
-            'not answer a direction for this query.')
-    cacheFolders = cacheFolders or {}
-    scored = []
-    for note in notes:
-        digest = _hashBody(note.text)
-        folder = cacheFolders.get(note.scope)
-        vec = None
-        if folder is not None:
-            vec = _readCache(folder, digest)
-        if vec is None:
-            try:
-                vec = _unit(embedder(note.text))
-            except Exception:
-                continue
-            if vec is not None and folder is not None:
-                _writeCache(folder, digest, vec)
-        if vec is None:
-            continue
-        cos = float(sum(a * b for a, b in zip(qvec, vec)))
-        if cos >= 0.0:
-            scored.append((cos, -note.mtime, note))
-    scored.sort(key=lambda p: (-p[0], p[1]))
-    result = [note for _, _, note in scored]
-    return result if limit is None else result[:limit]
-
-
-# ------------------------------------------------------------------ cache
-
-def _readCache(folder, digest):
-    """The vector the cache holds for one note, or ``None`` when it
-    does not — the cache is a derived artifact, and the run that does
-    not hold one for a note is the one that computes it (the search
-    reads, not the cache). A cache entry the run cannot read is a
-    missing one, not an empty vector, and the search recomputes it."""
-    path = _cachePathFor(folder, digest)
-    if not os.path.isfile(path):
-        return None
-    try:
-        with open(path) as f:
-            data = json.load(f)
-        if data and data.get('vector'):
-            return [float(x) for x in data['vector']]
-    except (OSError, ValueError):
-        pass
-    return None
-
-
-def _writeCache(folder, digest, vec):
-    """The one the cache holds for a note, written: a file with the
-    vector and the hash of the text it was computed on — so a cache
-    entry the endpoint's model change does not invalidate is the one
-    the run recomputes on its next search. A cache write that fails is
-    a search that still answers: the vector is there, the file is not —
-    the next search recomputes, and the search's answer is the same,
-    not one short of it."""
-    path = _cachePathFor(folder, digest)
-    try:
-        with open(path, 'w') as f:
-            json.dump({'vector': [float(x) for x in vec]}, f)
-    except OSError as e:
-        import logging
-        logging.getLogger('logPanel').info(
-            "the journal's cache could not be written to %s: %s"
-            % (path, e))
 
 
 # ------------------------------------------------------------------- note
@@ -678,7 +532,6 @@ class JournalStore:
                                title, body)
         with open(path, 'w') as f:
             f.write(rendered)
-        _invalidateCache(folder, _hashBody(body))
         return {
             'id': note_id, 'path': path, 'author': author,
             'machine': machine, 'campaign': campaign, 'shot': shot,
@@ -702,10 +555,10 @@ class JournalStore:
         two a note does not go without: the author (a note with no
         author is not a note of this journal, the same refusal the
         ``add_note`` does not take) and the body (a body the edit names
-        and that is empty is the same refusal). The cache of the body
-        the note held is invalidated, so a search after the edit does
-        not rank the line the reader read before it; the cache of the
-        new body is the same, when the body changed.
+        and that is empty is the same refusal). The search reads the
+        one the index holds, rebuilt by the search when the note has
+        moved — a note this edit rewrites is one the next search
+        re-indexes.
         """
         folder = cls.folderFor(scope)
         current = cls.read_note(scope, note_id)
@@ -747,9 +600,6 @@ class JournalStore:
                                title_v, body)
         with open(path, 'w') as f:
             f.write(rendered)
-        for digest in dict.fromkeys((_hashBody(current['text']),
-                                    _hashBody(body))):
-            _invalidateCache(folder, digest)
         return {
             'id': note_id, 'scope': scope, 'path': path, 'author': author,
             'machine': machine_v, 'campaign': campaign_v, 'shot': shot_v,
@@ -758,12 +608,10 @@ class JournalStore:
 
     @classmethod
     def delete_note(cls, scope, note_id):
-        """One note of one journal, gone: the file is removed, and the
-        entry the cache holds for it drops out of the search. The note
-        is one the folder holds — a note it does not hold is refused by
-        name, naming the ones it does — and the cache is invalidated
-        on a write too: the run's next search does not rank a note the
-        run deleted, because the note's file is not there."""
+        """One note of one journal, gone: the file is removed and the
+        search stops ranking it — a note the run deleted is not one the
+        next search holds. The note is one the folder holds — a note it
+        does not hold is refused by name, naming the ones it does."""
         folder = cls.folderFor(scope)
         path = cls._notePath(folder, note_id)
         if not os.path.isfile(path):
@@ -773,8 +621,6 @@ class JournalStore:
                 'No note "%s" in the %s journal to delete: it holds %s.'
                 % (note_id, scope, ', '.join(held) or 'none at all'))
         note = _loadNote(scope, note_id, path)
-        if note is not None:
-            _invalidateCache(folder, _hashBody(note.text))
         os.unlink(path)
         return {'id': note_id, 'deleted': True,
                 'author': (note and note.author) or '?'}

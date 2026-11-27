@@ -54,6 +54,15 @@ import os
 import sqlite3
 import time
 
+def hashText(text):
+    """The one key a row is saved under: the hash of its text, 32 chars.
+
+    Shared by the store (whose rows carry it in ``body_hash``) and by
+    the journal's staleness rule (a row whose stored text hash does not
+    answer the one the disk holds is one the search must re-index)."""
+    return hashlib.sha256((text or '').encode('utf-8')).hexdigest()[:32]
+
+
 # The damping of the rank fusion. The textbook k=60 is tuned for fusing
 # dozens of web result lists; with two lists over the notes of a journal it
 # flattens the rank so much that a note merely in both lists outranks the
@@ -268,6 +277,12 @@ class Store:
 
     # ------------------------------------------------------------------ read
 
+    def rowsDigests(self):
+        """The one read the staleness rule makes: ``id -> body_hash``
+        for every row the store holds."""
+        return {r[0]: r[1] for r in self.conn.execute(
+            'SELECT id, body_hash FROM rows')}
+
     def count(self):
         """The rows the store holds — one line a stats answer names, and
         the one ``search`` reports as ``total``."""
@@ -337,7 +352,7 @@ class Store:
         if not text:
             raise ValueError(
                 'a row with no text does not index: name one.')
-        h = hashlib.sha256(text.encode('utf-8')).hexdigest()[:32]
+        h = hashText(text)
         sig = _embedSig() if embedder is not None else ''
 
         existing = self.conn.execute(
