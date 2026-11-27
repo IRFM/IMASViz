@@ -203,6 +203,16 @@ all of them front-ends over it and over the same `Viz_API` session. A web turn g
 `The GUI thread did not answer in 300 s` when the thread never comes back — which is why
 nothing on that path may open a dialog (see the plugin guard under *Pitfalls*). A turn's
 transcript and its captures live under `~/.imasviz/gateway/homes/<user>/.imasviz/web/shots/NNN_<date>/`.
+The assistant's own words (`LLM: …`) are the only lines a surface reads as markup, and the
+reading is one: `VizAgent/rich.py` maps it onto the tags the panel's `QTextBrowser`
+transcript paints (bold, italic, code, links — http/https/mailto only), carries the math
+the way the page carries it (the page's `MATH_TOKENS`/`convertMath`, ported: tokens to
+unicode, `\frac`/`\sqrt` to their readable shapes, the unknown kept), and the console
+(`viz_cli`, the one-shot) carries the same words with ANSI bold when stdout is a terminal
+and no codes off one. The engine this Qt paints by composes no math at all — measured:
+`$...$` stays spelled in the document, `setHtml` and `insertHtml` alike — which is why
+the page's reading stands where a composition would; and the `transcript.txt` that is
+audited stays plain text whatever the console paints.
 
 Core concepts, in the vocabulary used by the code and docs:
 

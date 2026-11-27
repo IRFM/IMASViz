@@ -42,6 +42,7 @@ import os
 import threading
 import time
 
+from imasviz.VizAgent import rich
 from imasviz.VizAgent.agent import AgentLoop
 from imasviz.VizAgent.dispatcher import GuiDispatcher
 from imasviz.VizAgent.QVizPromptHistory import QVizPromptHistory
@@ -142,7 +143,11 @@ class CliSession:
         outcome = [None]
 
         def onLive(line):
-            print(line, flush=True)
+            # The console is a reader that composes nothing: the
+            # assistant's own words are carried the way the page carries
+            # them (the bold and the math), every other line verbatim;
+            # the transcript file below keeps the plain render.
+            print(rich.toTerminal(line), flush=True)
 
         def onFull(line):
             lines.append(line)

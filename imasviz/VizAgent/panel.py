@@ -39,7 +39,7 @@ box is what is asked, through the same *Run* as any other prompt.
 
 import threading
 
-from PySide6.QtCore import Qt
+from PySide6.QtGui import QTextCursor
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -48,10 +48,12 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QPlainTextEdit,
     QPushButton,
+    QTextBrowser,
     QVBoxLayout,
     QWidget,
 )
 
+from imasviz.VizAgent import rich
 from imasviz.VizAgent.QVizPromptCatalog import NO_PROMPT, QVizPromptManager
 from imasviz.VizAgent.QVizPromptHistory import QVizPromptHistory
 
@@ -60,7 +62,7 @@ from imasviz.VizUtils import FigureTypes, QVizGlobalValues
 
 # The width the panel's WINDOW must not exceed (pixels).
 #
-# The transcript is a ``QPlainTextEdit`` in ``NoWrap``, and a long single
+# The transcript is a ``QTextBrowser`` in ``NoWrap``, and a long single
 # line -- a REFUSAL sentence, a ``verbose`` tool line, an answer that
 # arrives without newlines -- carries the width it asks to its top level:
 # on a running display the panel widens to the widest line it has shown
@@ -108,11 +110,16 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
         # of the window, with the button row after the input.
         layout = QVBoxLayout(self)
 
-        # Transcript
-        self.transcript = QPlainTextEdit()
+        # Transcript: a rich document, because the assistant's own words
+        # carry markup the reader is meant to see -- bold the idea,
+        # italic a node, code a path, and the math the model spells,
+        # carried the way the page carries it (the engine this document
+        # is painted by composes none of it, measured). A line that is
+        # not the assistant's (a tool call, a refusal) lands verbatim.
+        self.transcript = QTextBrowser()
         self.transcript.setReadOnly(True)
         self.transcript.setPlaceholderText('The transcript appears here.')
-        self.transcript.setLineWrapMode(QPlainTextEdit.NoWrap)
+        self.transcript.setLineWrapMode(QTextBrowser.LineWrapMode.NoWrap)
         layout.addWidget(self.transcript)
 
         # Prompt history: a dropdown of the prompts the run has typed,
@@ -472,8 +479,23 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
             self.agent.tools_mode = 'hide' if checked else 'off'
 
     def _appendTranscript(self, line):
-        """One line from the agent loop, appended to the transcript."""
-        self.transcript.appendPlainText(line)
+        """One line from the agent loop, appended to the transcript.
+
+        The assistant's own words (``LLM: …``) are read as the words
+        they are -- the markup the model spelled is painted, and the
+        math it wrote is carried the way the page carries it; every
+        other line -- a tool call, an answer, a refusal -- is the shape
+        the loop names, kept verbatim. The page reads its lines the
+        same way, and neither reading touches the transcript file the
+        client writes, which stays plain.
+        """
+        cursor = self.transcript.textCursor()
+        cursor.movePosition(QTextCursor.MoveOperation.End)
+        if rich.isAssistantLine(line):
+            cursor.insertHtml(rich.toHtml(line))
+        else:
+            cursor.insertText(line)
+        cursor.insertText('\n')
         # Scroll to the bottom
         sb = self.transcript.verticalScrollBar()
         sb.setValue(sb.maximum())

@@ -169,7 +169,7 @@ def test_effacer_clears_the_box_not_the_history(qapp):
     QVizPromptHistory.append('an older prompt')
     panel = _build(agent=None)
     panel.setPrompt('typed now')
-    panel.transcript.appendPlainText('a line of the transcript')
+    panel._appendTranscript('a line of the transcript')
     panel._recordPrompt('typed now')  # what a run does before driving
     panel._onClear()
     # the input box and the transcript are cleared ...

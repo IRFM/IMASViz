@@ -43,6 +43,7 @@ import os
 import re
 import threading
 
+from imasviz.VizAgent import rich
 from imasviz.VizAgent.agent import AgentLoop
 from imasviz.VizAgent.core import McpGuiCore, resolveFigureKey
 from imasviz.VizAgent.dispatcher import GuiDispatcher
@@ -378,7 +379,11 @@ def runAgentMode(args, app=None, window=None, core=None, llm=None):
     outcome = [None]
 
     def onLine(line):
-        print(line, flush=True)
+        # The console is a reader that composes nothing: the
+        # assistant's own words are carried the way the page carries
+        # them (the bold and the math), every other line verbatim. The
+        # artifact below keeps the plain render, the one that is audited.
+        print(rich.toTerminal(line), flush=True)
         lines.append(line)
 
     def onFinished(error):

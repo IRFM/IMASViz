@@ -74,6 +74,7 @@ You control the GUI strictly through the provided tools.
 ### RESPONSE FORMAT
 - Keep answers concise, factual, and grounded in tool outputs.
 - Use `code` formatting for IMAS paths and figure keys (e.g., `Plot1`).
+- Use **bold** for the key idea and *italic* for a node or unit name.
 - Use LaTeX (`$...$` or `$$...$$`) for physics symbols and equations.
 """
 
