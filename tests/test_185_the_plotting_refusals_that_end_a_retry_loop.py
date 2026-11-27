@@ -31,10 +31,15 @@ ask into a cascade of raw Python errors and then a table it invented.
   and `plot_one(mode="single")` always accepted both through the alias.
   `plot_slice` re-parsed the raw string and refused the display spelling as
   "not a leaf of an IDS" -- a spelling miss mistaken for a missing leaf.
+* a leaf that holds no values earns a refusal that says so and names the
+  filled siblings under the same structure -- not "no values along the
+  plotted axis" (a widget phrase the model reads as a wrong axis and retries,
+  and then, when it stops, as a table it put together from the filled
+  coordinate and invented values).
 
 All pinned on the reference case (WEST 54924 run 0, `equilibrium`
 occurrence 0), where `profiles_1d` holds both filled and empty direct
-leaves -- so these do not depend on a specific shot.
+leaves -- so the empty-leaf half does not depend on a specific shot.
 """
 
 import pytest
@@ -116,3 +121,64 @@ def test_the_display_path_is_the_same_leaf(core):
     assert answer['drawn'] > 0, \
         'the display path of a filled leaf must draw: %r' % answer
     assert answer['figure'] in core.api.figureframes
+
+
+def _empty_curve_leaf_with_filled_siblings(core):
+    """One empty 1D-profile leaf of `profiles_1d` that has filled siblings,
+    or None when the case does not hold that shape."""
+    view = core._viewForUri(CASE_URI)
+    for node in view.signalsList:
+        dataName = node.getDataName() or ''
+        if '.profiles_1d.' not in dataName:
+            continue
+        if '.' in dataName.rsplit('.profiles_1d.', 1)[1]:
+            continue  # a structure further down, not a direct profile
+        try:
+            if node.hasAvailableData():
+                continue
+        except Exception:
+            continue
+        if core._leafKind(node) != 'curve':
+            continue
+        if core._filledSiblings(view, node):
+            return node
+    return None
+
+
+def test_an_empty_leaf_names_the_filled_siblings(core):
+    """A leaf that holds no values earns a refusal that says so and names the
+    filled siblings under the same structure -- not "no values along the
+    plotted axis", the phrase that sent the model to read directly and then
+    invent the table."""
+    node = _empty_curve_leaf_with_filled_siblings(core)
+    if node is None:
+        pytest.skip('no empty profiles_1d leaf with filled siblings')
+    view = core._viewForUri(CASE_URI)
+    path = node.getDataName()
+    filled = core._filledSiblings(view, node)
+
+    with pytest.raises(ValueError) as exc:
+        core.plot_one(CASE_URI, path)
+    message = str(exc.value)
+    assert 'no values' in message, message
+    assert 'not a leaf' not in message, \
+        'a spelling or missing-leaf refusal, not the emptiness: %s' % message
+    assert any('"%s"' % name in message for name in filled), \
+        'the refusal must name a filled sibling: %s' % message
+
+
+def test_an_empty_read_says_empty_and_names_the_siblings(core):
+    """The read twin of the same leaf must say it is empty and name the
+    filled siblings too -- this is the path a "read it directly" reaches, and
+    it is where the invented table was assembled from the filled coordinate."""
+    node = _empty_curve_leaf_with_filled_siblings(core)
+    if node is None:
+        pytest.skip('no empty profiles_1d leaf with filled siblings')
+    view = core._viewForUri(CASE_URI)
+    filled = core._filledSiblings(view, node)
+    answer = core.get_signal(CASE_URI, node.getDataName())
+    assert answer.get('kind') == 'curve' and answer.get('samples') == 0, answer
+    note = answer.get('note', '')
+    assert 'no values' in note, 'the empty read must say it is empty: %r' % answer
+    assert any('"%s"' % name in note for name in filled), \
+        'the note must name a filled sibling: %r' % answer

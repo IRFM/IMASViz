@@ -933,6 +933,62 @@ class McpGuiCore:
                 % what)
         return float(time)
 
+    def _filledSiblings(self, view, node, cap=8):
+        """The filled siblings of a leaf, under the same structure, by name.
+
+        Read off the tree's own available-data flag -- the one the tree
+        settles by **reading** each leaf at build time, so a 0-length array
+        is already known to be empty -- not off `list_filled_paths`, which
+        names a 0-length array as filled (measured: it lists `j_tor` while
+        `j_tor` reads 0), the exact shape of the empty leaf this points at.
+        """
+        dataName = node.getDataName() or ''
+        if '.' not in dataName:
+            return []
+        prefix = dataName.rsplit('.', 1)[0] + '.'
+        clean, band = [], []
+        for other in view.signalsList:
+            name = other.getDataName() or ''
+            if not name.startswith(prefix) or '.' in name[len(prefix):]:
+                continue
+            short = name[len(prefix):]
+            if name == dataName:
+                continue
+            try:
+                if not other.hasAvailableData():
+                    continue
+            except Exception:
+                continue
+            # The `_error_` bounds are a band on another profile, not the
+            # profile the ask named: list the clean profiles first, so the
+            # pointer lands on pressure / q / elongation, not on a band.
+            (band if '_error_' in short else clean).append(short)
+        return (sorted(clean) + sorted(band))[:cap]
+
+    def _emptyExplanation(self, view, node, path):
+        """A leaf that holds no values earns a refusal that says so, and
+        points at what the case DOES hold under the same structure.
+
+        "No values along the plotted axis" is a widget phrase the model reads
+        as a wrong axis and retries, and then -- when it stops -- as a table
+        it put together from the filled coordinate and invented values. These
+        words name the emptiness as the case's own and the siblings that are
+        filled, so the answer ends the loop instead of steering it into a
+        fabrication.
+        """
+        message = ('%s holds no values in this case (the leaf is empty), so '
+                   'there is nothing to draw and no index or instant to pin '
+                   'it at' % path)
+        filled = self._filledSiblings(view, node)
+        if filled:
+            message += ('. Under the same structure the case DOES hold: %s.'
+                        % ', '.join('"%s"' % name for name in filled))
+        else:
+            message += ('. Nothing under the same structure holds values '
+                        'either; search_nodes names the leaves the case '
+                        'fills.')
+        return message
+
     def plot_one(self, uri, path, along_time=None, into_figure_key=None,
                  time=None, time_interp=False, along=None, indices=None):
         """One quantity, drawn by `QVizPlotOneNode` into the frame its axes call for.
@@ -1020,6 +1076,12 @@ class McpGuiCore:
                                   alongTime=along_time)
         frame = command.execute()
         if frame is None:
+            if not node.hasAvailableData():
+                # The leaf is empty in this case (the tree settled that by
+                # reading it): say so and name the filled siblings, instead
+                # of the widget phrase that steers the model into a retry
+                # loop and then a fabricated table.
+                raise ValueError(self._emptyExplanation(view, node, path))
             raise ValueError(
                 '"%s" could not be drawn: %s'
                 % (path, self.lastLogLine(view) or 'see the log panel'))
@@ -1084,6 +1146,12 @@ class McpGuiCore:
                                   namedIndices=named_indices or None)
         frame = command.execute()
         if frame is None:
+            if not node.hasAvailableData():
+                # The leaf is empty in this case (the tree settled that by
+                # reading it): say so and name the filled siblings, instead
+                # of the widget phrase that steers the model into a retry
+                # loop and then a fabricated table.
+                raise ValueError(self._emptyExplanation(view, node, path))
             raise ValueError(
                 '"%s" could not be drawn: %s'
                 % (path, self.lastLogLine(view) or 'see the log panel'))
@@ -1225,6 +1293,11 @@ class McpGuiCore:
         # get_slice answers it as a flat array, and both must be non-empty.
         y = np.asarray(y_raw, dtype=float).ravel()
         if y.size == 0:
+            if not node.hasAvailableData():
+                # The leaf is empty in this case: say so and name the filled
+                # siblings, instead of the branch-is-empty phrase that leaves
+                # the model to read "directly" and invent.
+                raise ValueError(self._emptyExplanation(view, node, leafPath))
             raise ValueError(
                 'plot_slice: %r holds no value at this instant in the case: '
                 'the branch is empty, so there is nothing to draw.' % leafPath)
@@ -1655,6 +1728,13 @@ class McpGuiCore:
         payload = self._jsonable(result)
         if isinstance(payload, dict) and payload.get('kind') == 'curve':
             payload['samples'] = len(payload.get('y') or [])
+            if payload['samples'] == 0 and not node.hasAvailableData():
+                # The read is empty because the leaf holds no values in this
+                # case, not because of a wrong axis or index: say so and name
+                # the filled siblings, so a "read it directly" does not come
+                # back as a table assembled from the filled coordinate and
+                # invented values.
+                payload['note'] = self._emptyExplanation(view, node, path)
         return payload
 
     # -------------------------------- curves: work on the data the figure holds
