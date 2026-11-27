@@ -64,7 +64,7 @@ def sliceLabel(axis):
     return 'dimension %d' % axis.level
 
 
-def elementLabel(node, axes=(), indices=None):
+def elementLabel(node, axes=(), indices=None, fixed=None):
     """Which element of which array one drawn trace came from, spelled out.
 
     The parametrized path names the arrays with their loop letters
@@ -77,18 +77,38 @@ def elementLabel(node, axes=(), indices=None):
     array a curve runs along would label a whole time axis with one index.
     `indices` is where a tensor exploration's sliders stand; left out, the
     indices the tree carries are used, which is the element the node is.
+
+    `fixed` is the axes the trace pins **by itself** -- an index the caller
+    named, an array the tree stands on, a curve frozen under someone else's
+    sliders -- and one of those that is a coordinate of the leaf is appended
+    after the path, `... (psi=30)`. The rule is that the label spells what
+    nothing else on the figure says: an array index goes into the path because
+    an element never has a control for it, a coordinate under a control does
+    not, because the control's own row carries its index, and a coordinate the
+    caller pinned has no control at all -- so four pressure profiles asked at
+    psi 0, 30, 60 and 100 are four identical labels unless the label says which
+    is which.
     """
     path = node.getParametrizedDataPath()
     if not path:
         return node.getName()
     indices = indices or {}
+    fixed = fixed or {}
+    spelled = []
     for axis in axes:
-        if axis.origin != axis.AOS or not axis.placeholder:
+        if axis.origin != axis.AOS:
+            index = fixed.get(axis.key())
+            if index is not None:
+                spelled.append('%s=%d' % (sliceLabel(axis), int(index)))
+            continue
+        if not axis.placeholder:
             continue
         index = indices.get(axis.key(), axis.index)
         if index is None:
             continue
         path = path.replace('[' + axis.placeholder + ']', '[%d]' % int(index))
+    if spelled:
+        path += ' (' + ', '.join(spelled) + ')'
     return path
 
 

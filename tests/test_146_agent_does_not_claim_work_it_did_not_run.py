@@ -345,6 +345,9 @@ def test_a_plugin_entry_grounds_nothing_on_a_window_it_did_not_draw(qapp):
     core = Core()
     core._open = {'Plot1'}
     claim = 'J\'ai tracé la pression sur Plot1.'
+    # The ask names the plugin, or the run is refused by the plugin gate
+    # before it reaches the core and this tests the gate instead of what
+    # `drawn` grounds -- see test_184.
     out = runTurn(core, [
         LLMResponse(tool_calls=[
             {'name': 'plugin',
@@ -353,7 +356,8 @@ def test_a_plugin_entry_grounds_nothing_on_a_window_it_did_not_draw(qapp):
             content=''),
         LLMResponse(content=claim, tool_calls=None, finish_reason='stop'),
         LLMResponse(content=claim, tool_calls=None, finish_reason='stop'),
-    ], 'trace la pression sur Plot1')
+    ], 'appelle le plugin equilibriumsurfaces, la pression est-elle sur '
+       'Plot1 ?')
     assert out['finished'][0] is not None
     assert 'Plot1' in out['finished'][0], 'the refusal names the figure'
 

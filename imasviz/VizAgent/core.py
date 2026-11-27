@@ -1012,14 +1012,16 @@ class McpGuiCore:
         the extent the tree names, an axis it already runs along) is refused
         in words before the figure is opened.
 
-        Only the axes the caller fixed through `indices` need a control on
-        the frame: the members the path itself picked carry no band by
+        Only a family member the caller fixed through `indices` needs a control
+        on the frame: the members the path itself picked carry no band by
         design, and drawing the member along its OWN coordinate (`along`
         named by the leaf's axis) is the read the twin `get_signal` already
-        answers, not a contradiction. When a named index has no control to
-        hold it, the refusal closes the figure the attempt opened before it
-        is raised: a refusal costs no window, and the number that key has
-        gone back to the bookkeeping.
+        answers, not a contradiction. A coordinate of the leaf itself that the
+        caller named needs no control either -- the frame pins that row at the
+        index named, because the index is the ask. When a named member has no
+        control to hold it, the refusal closes the figure the attempt opened
+        before it is raised: a refusal costs no window, and the number that key
+        has gone back to the bookkeeping.
         """
         from imasviz.VizDataAccess.QVizAxesSpec import QVizAxesSpec, QVizAxis
         from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotOneNode \
@@ -1033,9 +1035,10 @@ class McpGuiCore:
         _abscissa, as_function_of_time, slices = axesAddressing(
             axesSpec, along=along, indices=indices)
         # The axes the caller fixed, by key and the value it fixed them at:
-        # what a named element is frozen at when it is a different element of
-        # the leaf the figure already holds -- several psi slices of one profile
-        # stay their own elements instead of all riding the shared control.
+        # what the row is pinned at, whichever of the figure's rows it is. The
+        # reported bug was the first of several psi slices of one pressure
+        # keeping the figure's shared psi control while the later ones were
+        # frozen: the control then moved exactly the curve the ask had pinned.
         named = set()
         for word in (indices or {}):
             w = str(word).strip().lower()
@@ -1044,19 +1047,6 @@ class McpGuiCore:
                     named.add(axis.key())
         named_indices = {key: index for key, index in (slices or {}).items()
                          if key in named}
-        # Does the figure this element joins already hold a curve of this leaf?
-        # Then it is a sibling: frozen at its named index, and the control of
-        # the element it joins is left where it sits -- moving that control to
-        # this index would drag that element here, and every stacked element to
-        # the last one named (the reported "several psi slices show the same
-        # curve" bug). A curve of a DIFFERENT leaf is not a sibling: its control
-        # stays shared, the comparable case this must not freeze.
-        sibling = False
-        if into_figure_key is not None:
-            existing = self.api.figureframes.get(into_figure_key)
-            if existing is not None:
-                sibling = bool(getattr(existing, 'hasCurveOf', None)
-                               and existing.hasCurveOf(node))
         command = QVizPlotOneNode(view, node, intoFigureKey=into_figure_key,
                                   alongTime=as_function_of_time,
                                   namedIndices=named_indices or None)
@@ -1075,15 +1065,11 @@ class McpGuiCore:
             if key not in named:
                 continue
             word = wordByKey.get(key, str(key))
-            # A NAMED leaf axis the figure already holds a curve of (a sibling:
-            # a different element of the same array) is frozen at its index by
-            # the frame, and the control of the element it joins must not be
-            # moved -- moving it here would drag that element to this index, and
-            # every stacked element to the last one named. A NAMED family member
-            # (an array of structures) is a different element, but it is not a
-            # leaf's coordinate: it is fixed by the path, and the refusal is the
-            # answer, so it still goes through `setIndex`, which fails.
-            if (sibling and originByKey.get(key) == QVizAxis.LEAF):
+            # A coordinate of the leaf the caller named is pinned at that index
+            # by the frame itself (`QVizCurvePlot._pinning`), so it is answered
+            # without asking the band for it: the index is the ask, and a slider
+            # that could move it afterwards would undo the ask.
+            if originByKey.get(key) == QVizAxis.LEAF:
                 openedAt[word] = index
             elif controls is not None and controls.setIndex(key, index):
                 openedAt[word] = index

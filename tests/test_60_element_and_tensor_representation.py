@@ -233,8 +233,13 @@ def test_keeping_a_curve_freezes_it_while_a_new_one_carries_on(figure):
     # The kept trace stays at the indices it was frozen at; the live one moves.
     assert plotted(figure, 0)[1] == [1., 4.]
     assert plotted(figure, 1)[1] == [10., 40.]
-    assert legendOf(figure) == ['foo.profiles_1d[itime].ion[0].z_ion',
-                                'foo.profiles_1d[itime].ion[1].z_ion']
+    # The kept curve's legend says the whole index set it stands on, including
+    # the coordinate its own sliders no longer reach: after a keep nothing else
+    # on the figure answers where that row was frozen, while the live curve --
+    # whose control carries that index on screen -- is named by its path alone.
+    assert legendOf(figure) == [
+        'foo.profiles_1d[itime].ion[0].z_ion (dimension 1=0)',
+        'foo.profiles_1d[itime].ion[1].z_ion']
 
 
 @pytest.mark.ui

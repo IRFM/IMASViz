@@ -282,8 +282,8 @@ class QVizCurvePlot(QWidget):
         `tensor` is the other representation of the same quantity: the arrays the
         tree already picked become sliders the user moves, instead of staying at
         the element the tree is standing on. The default -- an element -- puts a
-        slider on the leaf's own coordinates only and writes the arrays in the
-        legend.
+        slider on the leaf's own coordinates only while nobody has named them
+        (see `named_indices`), and writes the arrays in the legend.
 
         `time_index` pins the element of the dynamic time array a profile is
         read at: a caller that asks "the profile at the 42nd slice" resolves
@@ -301,13 +301,13 @@ class QVizCurvePlot(QWidget):
         `psi` (101 points) and the second, `.psi`, ran against its index (101
         points) and rewrote the figure's single bottom label.
 
-        `named_indices` is the axes the caller fixed to specific indices, by key:
-        a named axis the figure already holds a curve of (a named element drawn
-        on top of this leaf) is a different element of the array, and is frozen
-        at its own index rather than riding the leaf's shared control -- which
-        reads it everywhere the control sits, the "psi slices of one profile all
-        collapse to the last one named" bug. The figure's one element of a leaf
-        keeps the control, so it still carries its slider.
+        `named_indices` is the axes the caller fixed to specific indices, by key.
+        A named axis is pinned for that trace and earns no control: the index is
+        the ask, so nothing on the figure may move it afterwards. Measured
+        before, the FIRST element of a leaf kept the shared control and the later
+        ones were frozen, so a figure asked for psi at 0, 30, 60 and 100 carried
+        one psi slider -- and that slider moved exactly the one curve the ask had
+        fixed first.
 
         Returns the number of rows drawn.
         """
@@ -332,15 +332,13 @@ class QVizCurvePlot(QWidget):
         pinned = [axis for position, axis in enumerate(axesSpec.axes)
                   if position not in plotted]
         named = dict(named_indices or {})
-        # A named axis the figure already holds a curve of (a named element on
-        # top of this leaf) is a different element of that array: frozen at its
-        # own index, not a view of the one on the shared control (which reads it
-        # everywhere the control sits -- psi slices of one profile all reading
-        # the last index named). The figure's one element of a leaf keeps the
-        # control, so it still carries its slider.
-        sibling = bool(named) and self.hasCurveOf(treeNode)
+        # An axis the caller named by index is fixed by the ask, whoever made
+        # it: the row is read at that index and gets no control of its own,
+        # because a slider under a value the user pinned invites moving a value
+        # that was just fixed (the four psi slices of one pressure, whose first
+        # curve rode the psi slider the ask had just pinned).
         fixed, movable = self._pinning(pinned, tensor, self.walkingArrays,
-                                       named=named, sibling=sibling)
+                                       named=named)
         slices = self._readSlices(fixed, movable)
         # A pinned time slice is the caller's explicit choice, and it must
         # actually move the read: the read's own rule is that a slice for the
@@ -369,7 +367,7 @@ class QVizCurvePlot(QWidget):
         # pyqtgraph has no cycle of its own to fall back on: a curve drawn without
         # a pen is `(200, 200, 200)`, measured, twice over on one figure.
         self.exploresTensor = self.exploresTensor or tensor
-        label = elementLabel(treeNode, pinned, slices)
+        label = elementLabel(treeNode, pinned, slices, fixed)
         for row in range(y.shape[0]):
             # Several rows of one quantity are several traces, and the path alone
             # would name them identically in the legend the figure draws.
@@ -557,26 +555,6 @@ class QVizCurvePlot(QWidget):
     def traces(self):
         return list(self._curves)
 
-    def hasCurveOf(self, treeNode):
-        """True when this figure already holds a curve of this leaf.
-
-        The leaf is the quantity, so a curve of this node at another index is
-        already here: adding a named element of the same node is then a different
-        element of that array (frozen at its index), not another view of the one
-        on the shared control, which reads it at the first element's index. A
-        curve of a *different* leaf is not a sibling -- its leaves share a control
-        and the figure sweeps both, the comparable case this must not freeze.
-        """
-        from imasviz.VizDataAccess.QVizNodePlotting import QVizNodePlotting
-        try:
-            path = QVizNodePlotting(treeNode).path()
-        except Exception:
-            return any(trace.treeNode is treeNode for trace in self._curves)
-        for trace in self._curves:
-            if QVizNodePlotting(trace.treeNode).path() == path:
-                return True
-        return False
-
     def errorQuantities(self):
         """Which drawn curve came from which node, as [(node, curve)].
 
@@ -724,7 +702,7 @@ class QVizCurvePlot(QWidget):
                 | arraysLeftOut(axesSpec, abscissa)
 
     @staticmethod
-    def _pinning(pinned, tensor, walkingArrays, named=None, sibling=False):
+    def _pinning(pinned, tensor, walkingArrays, named=None):
         """Split the axes a trace leaves out into its own and the figure's.
 
         An array of structures the tree is standing on belongs to the identity of
@@ -739,15 +717,15 @@ class QVizCurvePlot(QWidget):
         An element asked into a figure that *is* walking arrays is the exception:
         there the sliders answer the tensor, and the curve the user asked for as
         one element must not move under them -- it is frozen on every axis it
-        leaves out, its own coordinate included, and its legend spells the whole
-        index set.
+        leaves out, and its legend spells the index set.
 
-        `named` is the axes the caller fixed to specific indices and `sibling`
-        whether the figure already holds a curve of this leaf: a NAMED element on
-        top of a curve of the same leaf is one of the different elements above,
-        and is frozen at its named index (a shared control would read it at the
-        first one's -- the bug); the figure's one element of a leaf stays on the
-        control, so a figure of a single element still carries its slider.
+        `named` is the axes the caller fixed to specific indices, and a NAMED
+        axis is pinned on the trace whatever else the figure holds: the index is
+        the ask. It used to take the control when the figure held no other curve
+        of that leaf -- so one psi slider sat under a figure whose psi was fixed
+        by the ask, and moving it rewrote one of four curves the user had just
+        pinned. A sweep over a coordinate is a different ask: the tree's element
+        with no index named, which keeps its slider, or *Explore this tensor*.
         """
         named = dict(named or {})
         fixed = {}
@@ -756,17 +734,14 @@ class QVizCurvePlot(QWidget):
         for axis in pinned:
             if tensor:
                 movable.append(axis)
-            elif axis.origin == QVizAxis.LEAF and not frozen:
-                # A leaf's own coordinate: a control of the figure. If the
-                # caller NAMED it and the figure already holds a curve of this
-                # leaf (a sibling: a different element of the same array), this
-                # element is frozen at its named index -- a shared control would
-                # read it at the first element's index, the "psi slices of one
-                # profile collapse to the last one named" bug. The sole element
-                # of the leaf keeps the control (a slider to sweep), and a leaf
-                # no index named still sweeps from the tree's element.
-                if (axis.key() in named) and sibling:
+            elif axis.origin == QVizAxis.LEAF:
+                # A coordinate of the leaf: named by the caller, it is pinned;
+                # left unnamed, it is a control of the figure, which the tree's
+                # element sweeps from the element it stands on.
+                if axis.key() in named:
                     fixed[axis.key()] = named[axis.key()]
+                elif frozen:
+                    fixed[axis.key()] = axis.index
                 else:
                     movable.append(axis)
             else:
@@ -823,7 +798,19 @@ class QVizCurvePlot(QWidget):
         return [sl for sl in slices if sl.key in movableKeys]
 
     def labelOf(self, trace, slices):
-        return elementLabel(trace.treeNode, trace.pinned, slices) + trace.suffix
+        """The legend text of one trace: the path, its array indices, and the
+        coordinates it pins by itself.
+
+        `slices` is where the read took its indices, so an array a tensor walks
+        is spelled where its slider stands now -- the label of a curve whose
+        slider moved has to name the element it is now, not the one the figure
+        opened on. What comes from `trace.fixed` instead is a coordinate this
+        trace pins on its own: the row the caller named, or a curve frozen under
+        another's sliders. An index the figure itself carries on a control is
+        not spelled here, because the control's row says it.
+        """
+        return elementLabel(trace.treeNode, trace.pinned, slices,
+                            trace.fixed) + trace.suffix
 
     def legendLabelFor(self, name):
         """The legend label pyqtgraph just made for one curve, or None.

@@ -297,7 +297,15 @@ the same descriptions. The tools, in the order the faces group them:
        two windows is asking an entry *and* the tool that entry answers with,
        since ``equilibriumsurfaces`` entry 0 *is*
        ``equilibrium(action="surfaces")`` and entry 1 *is*
-       ``equilibrium(action="at_time")``.
+       ``equilibrium(action="at_time")``. And ``run`` is **asked for, not
+       taken**: loading an IDS opens no plugin window, and a request that
+       names none is refused rather than answered with a window laid beside
+       what was drawn. The ask that runs it names the plugin -- the word
+       *plugin* or *extension*, or the name as ``list`` spelled it -- while a
+       generic word for what such a window shows is left out, that being what
+       ``plot`` and ``equilibrium(action="surfaces")`` already answer. The
+       read owes no such word: ``list`` opens nothing, and it is how the
+       refusal asks the user which entry they meant.
    * - sessions and configurations
      - ``manage_session``
      - the run kept and read back, and ``action`` says which of the eight is
@@ -560,10 +568,14 @@ Two figures, two ways (and two ways only):
 - **Stacking on the figure already open.** The first drawing opens the
   figure and **is** what its key is (``Plot1``); the next ones pass that key
   and are drawn on it. N indices of **the same leaf** is N curves on **one**
-  figure: each curve is pinned to the index it carried, and the slider the
-  figure holds is not touched when stacking -- which is what the four identical
-  curves of the old bug would have been, all of them answering the last value
-  the slider was set to.
+  figure, each pinned to the index it carries. An index the ask names **is**
+  the ask: the figure lays no slider under it, because nothing on the screen
+  may move a value the user has just fixed, and each curve's legend ends on the
+  index it was pinned at -- ``...profiles_1d.pressure (psi=30)``. The old bug
+  left the first of those curves riding the figure's own slice slider while the
+  others were frozen, so dragging that slider moved the one curve that was not
+  meant to move -- and the four identical curves of the older bug answered the
+  last value the slider was set to.
 - **Select first, draw after.** :code:`manage_selection` asked with
   ``action`` ``select`` and the paths, then :code:`plot(mode="selection",
   uri)`: one selection, one figure per figure kind the selection calls for.

@@ -141,6 +141,12 @@ How to work with it:
    equilibriumsurfaces entry IS equilibrium(action='surfaces') -- so ask
    one, not both. And a screenshot is a picture you cannot read: say what
    a figure shows from the arrays get_signal answers, never from the PNG.
+10. the calls that set the field up are never an ask --
+    manage_case(action='open'), manage_idss(action='filled'),
+    manage_idss(action='load'), plugin(action='list') -- run one whenever
+    the work needs it. A plugin window is: never call plugin(action='run')
+    unless the user's own request asks for a plugin or names that plugin;
+    loading an IDS never asks for a window.
 
 The state of a figure is what the calls of this session made, and a read
 this session answered -- not what was said of it. A curve you say was

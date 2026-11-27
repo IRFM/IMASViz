@@ -447,7 +447,13 @@ same picture:
   the figure offers to move those indices, because moving one would answer a
   different quantity than the one asked for. What the tree does *not* fix is the
   leaf's own coordinate -- the index inside **flux.data** -- and that keeps a
-  control of its own.
+  control of its own. An index the caller **names** for that coordinate, as the
+  ``indices`` of an agentic ask does (:ref:`agentics`), is fixed the same way as
+  the arrays: no control, because a slider under a value the ask has just fixed
+  only invites moving it, and the value ends the legend instead --
+  ``...profiles_1d.pressure (psi=30)``. One rule covers both spellings: the
+  label says the index that nothing on the figure carries on a control of its
+  own.
 * the **tensor** — :guilabel:`Explore this tensor along <axis>`, in the pop-up
   menu itself, just under the two entries that draw a single curve
   (:guilabel:`Plot as function of time`, and :guilabel:`Plot as function of psi`
