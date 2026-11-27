@@ -63,6 +63,12 @@ Released 11/12/2026
   ``psi[0]`` read ``psi[50]``: its peak going 50 317 -> 13 196 Pa). A coordinate
   nobody named keeps its slider: that is what the tree's element and
   :guilabel:`Explore this tensor` ask for.
+  And the legend of a pinned curve says what it is pinned at -- those four
+  profiles were four identical legend entries, and now each ends on its own
+  value, ``...profiles_1d.pressure (psi=30)``. The rule behind the two halves is
+  one: the label spells the index that nothing on the figure carries on a
+  control, which is why a coordinate under a slider is not repeated there and a
+  curve frozen under someone else's sliders spells its whole index set.
 - The refusals of the runs are named, and cost nothing: a refusal opens no
   empty figure, takes no figure number, and says its reason where the face
   that asked for it reads it. A **plugin entry** refused is now heard by the

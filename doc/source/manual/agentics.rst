@@ -562,11 +562,12 @@ Two figures, two ways (and two ways only):
   and are drawn on it. N indices of **the same leaf** is N curves on **one**
   figure, each pinned to the index it carries. An index the ask names **is**
   the ask: the figure lays no slider under it, because nothing on the screen
-  may move a value the user has just fixed. The old bug left the first of
-  those curves riding the figure's own slice slider while the others were
-  frozen, so dragging that slider moved the one curve that was not meant to
-  move -- and the four identical curves of the older bug answered the last
-  value the slider was set to.
+  may move a value the user has just fixed, and each curve's legend ends on the
+  index it was pinned at -- ``...profiles_1d.pressure (psi=30)``. The old bug
+  left the first of those curves riding the figure's own slice slider while the
+  others were frozen, so dragging that slider moved the one curve that was not
+  meant to move -- and the four identical curves of the older bug answered the
+  last value the slider was set to.
 - **Select first, draw after.** :code:`manage_selection` asked with
   ``action`` ``select`` and the paths, then :code:`plot(mode="selection",
   uri)`: one selection, one figure per figure kind the selection calls for.

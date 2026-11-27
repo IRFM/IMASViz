@@ -367,7 +367,7 @@ class QVizCurvePlot(QWidget):
         # pyqtgraph has no cycle of its own to fall back on: a curve drawn without
         # a pen is `(200, 200, 200)`, measured, twice over on one figure.
         self.exploresTensor = self.exploresTensor or tensor
-        label = elementLabel(treeNode, pinned, slices)
+        label = elementLabel(treeNode, pinned, slices, fixed)
         for row in range(y.shape[0]):
             # Several rows of one quantity are several traces, and the path alone
             # would name them identically in the legend the figure draws.
@@ -798,7 +798,19 @@ class QVizCurvePlot(QWidget):
         return [sl for sl in slices if sl.key in movableKeys]
 
     def labelOf(self, trace, slices):
-        return elementLabel(trace.treeNode, trace.pinned, slices) + trace.suffix
+        """The legend text of one trace: the path, its array indices, and the
+        coordinates it pins by itself.
+
+        `slices` is where the read took its indices, so an array a tensor walks
+        is spelled where its slider stands now -- the label of a curve whose
+        slider moved has to name the element it is now, not the one the figure
+        opened on. What comes from `trace.fixed` instead is a coordinate this
+        trace pins on its own: the row the caller named, or a curve frozen under
+        another's sliders. An index the figure itself carries on a control is
+        not spelled here, because the control's row says it.
+        """
+        return elementLabel(trace.treeNode, trace.pinned, slices,
+                            trace.fixed) + trace.suffix
 
     def legendLabelFor(self, name):
         """The legend label pyqtgraph just made for one curve, or None.
