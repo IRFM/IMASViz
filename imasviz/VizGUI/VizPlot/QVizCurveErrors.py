@@ -41,6 +41,14 @@ before this was written:
 * slicing draws every Nth sample: over 17 344 samples at N = **3** that is
   **5782** bars. The copy asked `x[0:len(x)-1:N]`, which answers **5781** -- it
   drops the last sample, and with it the end of the curve.
+
+A bar is drawn from two readings, and they have to be brought to one scale: the
+height it hangs from comes off the curve (`curve.getData()`, so it follows whatever
+the figure holds for that trace) and its two sides come off the node, which is what
+the Access Layer answered -- the raw uncertainty. Read that second one raw and a
+hand asking for a factor moves the curve and leaves its bars where they were, which
+is what `atCurveScale` exists to prevent; the band is worse, since its borders are
+built by hand from both readings at once. See `tests/test_180_*`.
 """
 
 import logging
@@ -227,6 +235,9 @@ class QVizCurveErrors:
         unfilled -- measured on `magnetics/flux_loop(0)/flux/data`, whose upper
         holds 17 344 values and whose lower holds nothing. One side known and the
         other not draws symmetrically: that is what the known side bounds.
+
+        What is answered here is at the scale the curve is drawn at, not the raw
+        one: see `atCurveScale`.
         """
         top = node.get_data_error_upper(curve)
         bottom = node.get_data_error_lower(curve)
@@ -237,7 +248,36 @@ class QVizCurveErrors:
             top = bottom
         if bottom is None:
             bottom = top
-        return top, bottom
+        return self.atCurveScale(top, bottom, curve)
+
+    def atCurveScale(self, top, bottom, curve):
+        """The two sides at the scale the figure draws that curve at.
+
+        An error is an **extent**, not a value: the curve stands at
+        `raw * factor + offset` and the top of its bar at `raw + err` transformed
+        the same way, which is `displayed + factor * err` -- the offset cancels,
+        so only the factor is asked. It is asked of the figure's own record
+        (`transformOf`), the same one `refresh` puts back under the values a
+        re-read answers, so a bar, a band and their curve cannot answer three
+        different readings of one quantity.
+
+        Measured before this, on that same flux multiplied by 10: the curve stood
+        at **0,0619...** with a bar of **+-0,00999999977...** over it -- the raw
+        uncertainty, a tenth of what the case says at that scale -- and the band
+        borders stayed at **0,0161967...** where the scaled curve needed
+        **0,1619676...**, its fill being neither the error nor a scaled error but
+        the sum of a displayed value and a raw uncertainty.
+
+        A factor under zero moves which raw side lands above the curve.
+        `ErrorBarItem` takes its two arguments as extents above and below the
+        point, so a negative one would have crossed to the other side of its
+        curve: both come back positive.
+        """
+        factor = self._owner().transformOf(curve)[0]
+        if factor == 1.0:
+            return top, bottom
+        magnitude = abs(factor)
+        return (np.asarray(top) * magnitude, np.asarray(bottom) * magnitude)
 
     def refuse(self, node):
         """Say which quantity has no error data, in the log of its own case."""

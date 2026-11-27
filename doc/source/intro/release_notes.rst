@@ -106,6 +106,10 @@ Released 11/12/2026
   divided by the reference that was asked for -- not re-scaled to its own peak.
   ``reset`` takes the transform off the values the window holds *now*, which is
   the element the row stands on, not the one the hand started on.
+  The error bars and the confidence band of that curve go with it: they are
+  extents *over* the curve, so a factor reaches them as it reaches the values, an
+  offset reaches their two sides not at all, and ``reset`` puts them back at the
+  error the case holds.
 - **A window that draws is a window that holds its own height.** The
   equilibrium window of :ref:`IMASViz_plugins` drew its thirteen curves and
   answered a picture 91% empty body: an invisible spacer had left its row of

@@ -651,6 +651,11 @@ class QVizCurvePlot(QWidget):
             if trace.curve is curve:
                 trace.transform.set(factor, offset)
                 trace.transform.drawInto(trace.curve)
+                # The bars and the band hang from those values: a hand changing the
+                # affine changes what they are an extent over, so they are drawn
+                # again -- the same redraw `refresh` already asks when a slider
+                # re-reads the curve under them.
+                self.errors.refresh()
                 return True
         return False
 
@@ -668,6 +673,7 @@ class QVizCurvePlot(QWidget):
                 was = trace.transform.isTouched()
                 trace.transform.clear()
                 trace.transform.drawInto(trace.curve)
+                self.errors.refresh()
                 return was
         return False
 
