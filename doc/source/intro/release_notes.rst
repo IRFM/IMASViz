@@ -81,6 +81,21 @@ Released 11/12/2026
   closed as it appears and refused by its title, because the loop a dialog runs
   belongs to the GUI thread, and on the web surface it holds everything until the
   caller gives up (measured: 300 s, and the retries looked like a loop).
+- **A plugin window is asked for, not taken.** Loading an IDS opens no plugin
+  window, and neither does an ask that names none: the agent now refuses a
+  ``plugin(action="run")`` whose request names no plugin, and answers with the
+  entries ``plugin(action="list")`` gave instead of laying a window beside the
+  curves that were asked for (the report: « charge l'équilibre, trace la
+  pression pour psi=0, 30 60 et 100 » came back with an *Equilibriumcharts*
+  overview nobody had asked for). The gate is keyed on the **run**, never on
+  the read -- listing what a case offers opens nothing, and it is how a refusal
+  asks which entry was meant. The ask that runs it names the plugin: the word
+  *plugin* or *extension*, or the name as ``list`` spelled it. A generic word
+  for what such a window shows -- a graph, a profile, a surface -- is kept out
+  on purpose, because that is what ``plot`` and
+  ``equilibrium(action="surfaces")`` already answer. The same rule is said in
+  the instructions both faces send, and the gate is the one a close and a
+  shared-journal write already wear (:ref:`agentics`).
 - **A plugin says where it sits.** The contract is declarative: a plugin
   declares ``SCOPE`` -- one of five places, an IDS root, a quantity, a case,
   the application, or a window of curves -- and ``ACTIONS``, one entry per

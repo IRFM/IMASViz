@@ -137,6 +137,65 @@ def _userAskedForAPublish(user_prompt):
     text = (user_prompt or '').lower()
     return any(word in text for word in _PUBLISH_WORDS)
 
+# The one gesture that draws a window nobody asked for: a plugin entry,
+# which opens a window of its own -- an equilibrium chart, a profiles
+# panel, a flux-surface figure -- over whatever the ask was drawing. The
+# field report: « charge l'équilibre, trace la pression pour psi=0, 30 60
+# et 100 sur une nouvelle figure » came back with an Equilibriumcharts
+# window beside the four curves. Nothing in the application opens one on
+# a load -- ``manage_idss(action="load")`` runs ``QVizLoadOccurrence`` and
+# no plugin -- so that window was the model reaching for the entry.
+#
+# The gate is keyed on the RUN, not on the group: reading what a case
+# offers (``plugin(action="list")``) costs no window and is asked before
+# the ask is settled, so it is never refused. The ask word is narrower
+# than the closure list on purpose -- see ``_userAskedForAPluginWindow``.
+PLUGIN_WINDOW_GESTURES = ('run_plugin',)
+
+# The words a plugin window is asked under, in either language. The name of
+# the plugin itself opens the gate too, matched in ``_userAskedForAPluginWindow``
+# on what the CALL names. What is kept out of both is the generic noun for
+# what such a window shows: a "graphique", a "profil", a "courbe" or a
+# "surface" is what ``plot`` and ``equilibrium(action="surfaces")`` already
+# answer, and a gate that opened on those words would let the reported ask
+# through -- which is what the report was.
+_PLUGIN_ASK_WORDS = ('plugin', 'extension')
+
+
+def _askKey(text):
+    """A user's wording or a plugin name, in the one spelling the gates
+    compare: lowercase, letters and digits only. So a plugin named
+    ``VizProfiles_plugin`` answers an ask that spells it with a space, and
+    an ask does not have to keep the punctuation a name carries."""
+    return ''.join(ch for ch in (text or '').lower() if ch.isalnum())
+
+
+def _userAskedForAPluginWindow(user_prompt, plugin=''):
+    """Whether the user's own request asks for the window of the plugin the
+    call addresses.
+
+    Asked is carried by the user's words, as ``_userAskedForAClosure``
+    reads it: the ``plugin(action="run")`` a model reaches for on « charge
+    l'équilibre, trace la pression » is not the ask for the window that
+    entry draws. Two spellings open the gate:
+
+      * the word a plugin window is asked under, in either language -- "le
+        plugin", "l'extension", "the plugin";
+      * the exact name of the plugin **the call itself** addresses, with its
+        separators off ("ouvre VizProfiles plugin" answers
+        ``VizProfiles_plugin``).
+
+    The called name and not any registered one: an ask that names
+    ``VizSpectral`` does not license a run of ``equilibriumcharts`` -- and a
+    registered list is not something a gate could read without importing
+    what it names, the shipped set being where matplotlib comes in.
+    """
+    text = _askKey(user_prompt)
+    if any(word in text for word in _PLUGIN_ASK_WORDS):
+        return True
+    name = _askKey(plugin)
+    return bool(name) and name in text
+
 
 # The loop's own surface: the tool names the model quotes to point the user
 # at a gesture (restore_session in `restore_session(name="from_web")`)
@@ -1053,6 +1112,36 @@ class AgentLoop(QObject):
             '"cahier de manip"), and answer from what that call '
             'returns.' % (offerHead(name), taken, user_prompt))
 
+    def _pluginWindowRefusal(self, name, plugin, user_prompt):
+        """The named refusal a plugin entry receives on a request that asks
+        for no plugin window.
+
+        The shape the other two gates' refusals wear: the call as the tool
+        set offers it (``plugin(action="run")``, not the ``run_plugin``
+        gesture behind it), what the call would have opened (a window of its
+        own, over what the ask was drawing), that the refusal drew nothing,
+        and the one word that unblocks it -- the plugin named in the user's
+        own ask, in either language.
+
+        It says what the ask did ask for, because the honest reading of the
+        report is that a plugin window was believed to come with loading an
+        IDS: it does not, and the report is the proof. When the user wanted
+        that window in words that name no plugin, the answer is to name the
+        entries ``plugin(action="list")`` gave and ask which one they mean
+        -- not to take the window.
+        """
+        return (
+            'the %s gesture draws the window of the plugin "%s" -- a window '
+            'of its own, over what this request was drawing, and nothing '
+            'here asked for it: "%s" names no plugin and no plugin window. '
+            'Loading an IDS never opens one. Nothing was drawn by this '
+            'call: the figures that stand still stand. Run it once the user '
+            'asks in their own words ("lance le plugin %s", "ouvre '
+            'l\'extension %s", or the plugin named as plugin(action="list") '
+            'spelled it). If they asked for that window another way, name '
+            'the entries that list answered and ask which one they mean.'
+            % (offerHead(name), plugin, user_prompt, plugin, plugin))
+
     def _dispatch(self, name, args, requested_by='model', user_prompt=''):
         """Run one tool by name on the calling thread (the GUI thread,
         when reached through ``GuiDispatcher``).
@@ -1078,6 +1167,11 @@ class AgentLoop(QObject):
         the case and the session it names still stand after a refused
         turn -- and it names the gesture and the rule, in the shape the
         rest of this file's refusals wear.
+
+        The same asking covers the two other gestures that leave something
+        on the screen the user never reached for: a write to the journal the
+        writers all read (``SHARED_JOURNAL_GESTURES``) and the window a
+        plugin entry draws (``PLUGIN_WINDOW_GESTURES``).
         """
         name, args = resolveCall(name, args or {})
         method = getattr(self.core, name, None)
@@ -1108,6 +1202,25 @@ class AgentLoop(QObject):
                 and requested_by == 'model'
                 and not _userAskedForAPublish(user_prompt)):
             raise ValueError(self._sharedJournalRefusal(name, user_prompt))
+        # The third gate, on the same shape and a narrower word list: a
+        # plugin entry draws a window of its own, and the report it answers
+        # is a « charge l'equilibre, trace la pression » that came back with
+        # an Equilibriumcharts window nobody asked for. Nothing else in the
+        # application opens one -- a load runs ``QVizLoadOccurrence`` and no
+        # plugin -- so the window was this call. The READ of what a case
+        # offers is not asked about: ``plugin(action="list")`` opens nothing
+        # and is asked before the ask is settled, which is why the gate is
+        # keyed on the run and not on the group. Here the ask is not a
+        # generic noun for what the window shows -- a "graphique" or a
+        # "profil" is what ``plot`` already answers -- but the plugin named
+        # as the call names it, or the word a plugin is asked under.
+        if (name in PLUGIN_WINDOW_GESTURES
+                and requested_by == 'model'
+                and not _userAskedForAPluginWindow(user_prompt,
+                                                   args.get('plugin', ''))):
+            raise ValueError(
+                self._pluginWindowRefusal(name, args.get('plugin', ''),
+                                          user_prompt))
         # The last step of the seam, and the only one that leaves the
         # offered vocabulary: a merged group is offered one spelling for an
         # idea its gestures were written under another (`plot` asks every

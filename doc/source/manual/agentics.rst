@@ -297,7 +297,15 @@ the same descriptions. The tools, in the order the faces group them:
        two windows is asking an entry *and* the tool that entry answers with,
        since ``equilibriumsurfaces`` entry 0 *is*
        ``equilibrium(action="surfaces")`` and entry 1 *is*
-       ``equilibrium(action="at_time")``.
+       ``equilibrium(action="at_time")``. And ``run`` is **asked for, not
+       taken**: loading an IDS opens no plugin window, and a request that
+       names none is refused rather than answered with a window laid beside
+       what was drawn. The ask that runs it names the plugin -- the word
+       *plugin* or *extension*, or the name as ``list`` spelled it -- while a
+       generic word for what such a window shows is left out, that being what
+       ``plot`` and ``equilibrium(action="surfaces")`` already answer. The
+       read owes no such word: ``list`` opens nothing, and it is how the
+       refusal asks the user which entry they meant.
    * - sessions and configurations
      - ``manage_session``
      - the run kept and read back, and ``action`` says which of the eight is
