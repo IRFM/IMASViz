@@ -21,13 +21,78 @@ Refusals are named (the style of this repository):
 * ``finish_reason == 'length'`` → ``ValueError`` (response truncated);
 * empty ``content`` with no ``tool_calls`` → ``ValueError`` (empty answer);
 * non-2xx → ``RuntimeError`` with the status and body.
+
+The round trip is shared by both clients: one ``_request`` helper, one
+retry policy. A connection failure -- the server is absent or slow -- is
+retried once, with a short backoff; a non-2xx answer is never retried,
+because the server said something and a second try would only repeat it.
 """
 
 import json
-import logging
+import time
 import urllib.error
 import urllib.request
-import urllib.parse
+
+
+class HTTPStatusError(RuntimeError):
+    """A non-2xx answer from the endpoint, carrying the status and the body.
+
+    It is a ``RuntimeError`` so the callers -- which refuse by name -- see
+    the same shape as any other named refusal; the status is kept so a
+    caller can tell a ``501`` (no embedding table) apart from any other
+    failure without re-parsing the message.
+    """
+
+    def __init__(self, label, status, body):
+        super().__init__(
+            'the %s endpoint answered HTTP %d: %s' % (label, status, body[:200]))
+        self.status = status
+        self.body = body
+
+
+def _request(method, url, payload, api_key, timeout, *, label,
+             hint='', attempts=2, backoff=0.5):
+    """One round trip to the endpoint, with the retry policy of the module.
+
+    Returns the raw 2xx body. A connection failure is retried once with
+    ``backoff`` seconds between the two tries; a non-2xx is never retried.
+    Raises ``HTTPStatusError`` (a ``RuntimeError``) for a non-2xx answer and
+    ``ConnectionError`` for an unreachable endpoint -- the two named refusals
+    the callers raise. ``hint`` is appended to the connection message so a
+    caller can name what to do about it (``_resolveModel`` names the
+    server and the preference to point at).
+    """
+    for attempt in range(attempts):
+        try:
+            return _round_trip(method, url, payload, api_key, timeout,
+                               label=label, hint=hint)
+        except ConnectionError:
+            if attempt + 1 >= attempts:
+                raise
+            time.sleep(backoff)
+    raise ConnectionError('unreachable')
+
+
+def _round_trip(method, url, payload, api_key, timeout, *, label, hint=''):
+    body = json.dumps(payload).encode() if payload is not None else None
+    req = urllib.request.Request(url, data=body, method=method,
+                                 headers={'Content-Type': 'application/json'})
+    if api_key:
+        req.add_header('Authorization', 'Bearer ' + api_key)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.read().decode()
+    except urllib.error.HTTPError as e:
+        text = e.read().decode() if e.fp else ''
+        raise HTTPStatusError(label, e.code, text)
+    except urllib.error.URLError as e:
+        raise ConnectionError(
+            'Cannot reach the %s endpoint at %s: %s.%s'
+            % (label, url, e.reason, hint))
+    except (TimeoutError, OSError) as e:
+        raise ConnectionError(
+            'Cannot reach the %s endpoint at %s: %s.%s'
+            % (label, url, e, hint))
 
 
 def _messagesForRequest(messages):
@@ -90,27 +155,24 @@ class LLMClient:
         """If the model name is empty, read the first entry from /v1/models."""
         if self._model_resolved or self.model:
             return self.model
+        raw = _request(
+            'GET', self.endpoint + '/models', None, self.api_key,
+            self.timeout, label='LLM',
+            hint=' Start the server (e.g. llama-server --port 8080) or '
+                 'set AgentLLMEndpoint in the preferences file.')
         try:
-            req = urllib.request.Request(self.endpoint + '/models',
-                                         method='GET')
-            if self.api_key:
-                req.add_header('Authorization', 'Bearer ' + self.api_key)
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-                data = json.loads(resp.read().decode())
-            items = data.get('data', [])
-            if items:
-                self.model = items[0].get('id', '')
-            else:
-                raise ValueError(
-                    'LLM /v1/models returned no entries; set AgentLLMModel '
-                    'in the preferences file or the AgentLLMModel '
-                    'environment to name one.')
-        except urllib.error.URLError as e:
-            raise ConnectionError(
-                'Cannot reach the LLM endpoint at %s: %s. '
-                'Start the server (e.g. llama-server --port 8080) or set '
-                'AgentLLMEndpoint in the preferences file.'
-                % (self.endpoint, e.reason))
+            data = json.loads(raw)
+        except json.JSONDecodeError as e:
+            raise RuntimeError(
+                'LLM returned invalid JSON (%s): %s' % (e, raw[:200]))
+        items = data.get('data', [])
+        if items:
+            self.model = items[0].get('id', '')
+        else:
+            raise ValueError(
+                'LLM /v1/models returned no entries; set AgentLLMModel '
+                'in the preferences file or the AgentLLMModel '
+                'environment to name one.')
         self._model_resolved = True
         return self.model
 
@@ -138,28 +200,8 @@ class LLMClient:
             payload['tools'] = tools
             payload['tool_choice'] = 'auto'
 
-        body = json.dumps(payload).encode()
-        req = urllib.request.Request(
-            self.endpoint + '/chat/completions',
-            data=body,
-            method='POST',
-            headers={'Content-Type': 'application/json'},
-        )
-        if self.api_key:
-            req.add_header('Authorization', 'Bearer ' + self.api_key)
-
-        try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-                status = resp.status
-                raw = resp.read().decode()
-        except urllib.error.HTTPError as e:
-            body = e.read().decode() if e.fp else ''
-            raise RuntimeError(
-                'LLM returned HTTP %d: %s' % (e.code, body[:200]))
-        except urllib.error.URLError as e:
-            raise ConnectionError(
-                'Cannot reach the LLM endpoint at %s: %s.'
-                % (self.endpoint, e.reason))
+        raw = _request('POST', self.endpoint + '/chat/completions', payload,
+                       self.api_key, self.timeout, label='LLM')
 
         try:
             data = json.loads(raw)
@@ -253,37 +295,18 @@ class EmbeddingClient:
         payload = {'input': ['probe']}
         if self.model:
             payload['model'] = self.model
-        body = json.dumps(payload).encode()
-        request = urllib.request.Request(
-            self.endpoint + '/embeddings',
-            data=body, method='POST',
-            headers={'Content-Type': 'application/json'})
-        if self.api_key:
-            request.add_header('Authorization', 'Bearer ' + self.api_key)
         try:
-            with urllib.request.urlopen(request, timeout=self.timeout) \
-                    as resp:
-                raw = resp.read().decode()
-        except urllib.error.HTTPError as e:
-            if e.code == 501:
+            raw = _request('POST', self.endpoint + '/embeddings', payload,
+                           self.api_key, self.timeout, label='embeddings')
+        except HTTPStatusError as e:
+            if e.status == 501:
                 raise RuntimeError(
                     'the endpoint %s answers 501 for /embeddings: it was '
                     'not started with an embedding table (e.g. '
                     'llama-server --embeddings). Start it, or point '
                     'AgentEmbedEndpoint at an endpoint that carries one.'
                     % (self.endpoint or '(none named)'))
-            text = e.read().decode() if e.fp else ''
-            raise RuntimeError(
-                'the embeddings endpoint answered HTTP %d on the probe: '
-                '%s' % (e.code, text[:200]))
-        except urllib.error.URLError as e:
-            raise ConnectionError(
-                'the embeddings endpoint %s does not answer the probe: '
-                '%s' % (self.endpoint or '(none named)', e.reason))
-        except (TimeoutError, OSError) as e:
-            raise ConnectionError(
-                'the embeddings endpoint %s did not answer the probe: '
-                '%s' % (self.endpoint or '(none named)', e))
+            raise
         items = json.loads(raw).get('data')
         if not isinstance(items, list) or not items \
                 or not isinstance(items[0], dict) \
@@ -323,16 +346,11 @@ class EmbeddingClient:
             payload['model'] = self.model
         if input_type is not None:
             payload['input_type'] = input_type
-        body = json.dumps(payload).encode()
-        request = urllib.request.Request(
-            self.endpoint + '/embeddings',
-            data=body, method='POST',
-            headers={'Content-Type': 'application/json'})
-        if self.api_key:
-            request.add_header('Authorization', 'Bearer ' + self.api_key)
         context = 'one text: %r' % (text[:40] if len(text) > 40 else text)
-        return self._embedResponse(self._send(request, body),
-                                   context=context)
+        return self._embedResponse(_request(
+            'POST', self.endpoint + '/embeddings', payload,
+            self.api_key, self.timeout, label='embeddings'),
+            context=context)
 
     def embed_batch(self, texts, input_type=None):
         """Several texts to their vectors, in the order they were
@@ -363,40 +381,11 @@ class EmbeddingClient:
             payload['model'] = self.model
         if input_type is not None:
             payload['input_type'] = input_type
-        body = json.dumps(payload).encode()
-        request = urllib.request.Request(
-            self.endpoint + '/embeddings',
-            data=body, method='POST',
-            headers={'Content-Type': 'application/json'})
-        if self.api_key:
-            request.add_header('Authorization', 'Bearer ' + self.api_key)
-        return self._embedResponse(self._send(request, body),
-                                   context='%d text(s)' % len(texts),
-                                   batch=True)
-
-    def _send(self, request, body):
-        """One HTTP round trip: the 2xx body, or a named error. The
-        ``ConnectionError`` and the ``HTTPError`` are the two the
-        ``LLMClient`` has for its own call, the same shape, and the
-        caller falls back to the keyword instead of reading them."""
-        try:
-            with urllib.request.urlopen(request, timeout=self.timeout) as resp:
-                return resp.read().decode()
-        except urllib.error.HTTPError as e:
-            text = e.read().decode() if e.fp else ''
-            raise RuntimeError(
-                'the embeddings endpoint answered HTTP %d: %s'
-                % (e.code, text[:200]))
-        except urllib.error.URLError as e:
-            raise ConnectionError(
-                'the embeddings endpoint %s does not answer (within %d s): '
-                '%s — start the server, or set AgentEmbedEndpoint in the '
-                'preferences to point at one that does.'
-                % (self.endpoint or '(none named)', self.timeout, e.reason))
-        except (TimeoutError, OSError) as e:
-            raise ConnectionError(
-                'the embeddings endpoint %s did not answer: %s'
-                % (self.endpoint or '(none named)', e))
+        return self._embedResponse(_request(
+            'POST', self.endpoint + '/embeddings', payload,
+            self.api_key, self.timeout, label='embeddings'),
+            context='%d text(s)' % len(texts),
+            batch=True)
 
     @staticmethod
     def _embedResponse(raw, context='', batch=False):
