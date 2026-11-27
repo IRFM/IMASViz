@@ -111,6 +111,117 @@ _PUBLISH_WORDS = (
 )
 
 
+# --- Bounded history ────────────────────────────────────────────────────────
+#
+# The history the loop carries is read back at the start of every ask, so
+# an unbounded one grows with the session: every turn is re-sent whole to
+# the model. The keep window is a count of turns -- a single turn can carry
+# a big tool result, so bytes are not the unit -- with a byte budget on
+# top of it: an ask that folds away old turns still keeps its own last
+# turns exactly as they were, tool traffic and all.
+MAX_HISTORY_TURNS = 6
+MAX_HISTORY_CHARS = 64 * 1024
+_SUMMARY_MARK = '[Earlier turns:'
+_SUMMARY_DIGEST_RE = re.compile(r'(\d+) turns? folded')
+
+
+def _turnsOf(messages):
+    """The flat history, split into turns: a user message starts one, and
+    the turn holds everything up to the next user message (or the end) --
+    the ask, the assistant's tool calls with their step text, the tool
+    results, the final answer. That is the unit the loop appends in one
+    block, and the unit the fold works on."""
+    turns = []
+    current = []
+    for m in messages:
+        if m.get('role') == 'user' and current:
+            turns.append(current)
+            current = []
+        current.append(m)
+    if current:
+        turns.append(current)
+    return turns
+
+
+def _isSummaryTurn(turn):
+    """A folded summary is one bracketed user message, and is never folded
+    again itself -- it carries its own count, and a new fold re-derives the
+    line from the turns themselves, not from the old gists."""
+    return (len(turn) == 1 and turn[0].get('role') == 'user'
+            and (turn[0].get('content') or '')
+            .lstrip().startswith(_SUMMARY_MARK))
+
+
+def _summaryCount(text):
+    match = _SUMMARY_DIGEST_RE.search(text or '')
+    return int(match.group(1)) if match else 0
+
+
+def _shorten(text, limit):
+    text = ' '.join((text or '').split())
+    return text if len(text) <= limit else text[:limit].rstrip() + '…'
+
+
+def _gist(turn):
+    """The ask and the final answer of one turn, truncated: the gist a
+    folded turn keeps. The tool traffic of the turn is what the fold drops."""
+    ask = final = None
+    for m in turn:
+        if m.get('role') == 'user' and m.get('content'):
+            ask = m['content']
+        if (m.get('role') == 'assistant' and not m.get('tool_calls')
+                and m.get('content')):
+            final = m['content']
+    if not ask and not final:
+        return '(empty turn)'
+    return '%s -> %s' % (_shorten(ask, 120), _shorten(final, 160))
+
+
+def _flatten(turns):
+    """The kept turns as the flat message list the next ask appends."""
+    return [m for t in turns for m in t]
+
+
+def _compactHistory(messages):
+    """Fold the oldest turns past the window into one summary line.
+
+    The kept turns stay whole -- the next ask reads the last turns
+    exactly as they were. What stands behind them is one bracketed user
+    message: how many turns this session has folded (a count, never a
+    re-nesting of gists), and the asks and final answers of the newest
+    three of the turns it stands for.
+    """
+    turns = _turnsOf(messages)
+    if len(turns) <= MAX_HISTORY_TURNS:
+        return messages
+    summary_msg = None
+    if _isSummaryTurn(turns[0]):
+        summary_msg = turns.pop(0)[0]
+    folded = _summaryCount(summary_msg.get('content')) if summary_msg else 0
+    if len(turns) <= MAX_HISTORY_TURNS:
+        return [summary_msg] + _flatten(turns) if summary_msg else messages
+    old, kept = turns[:-MAX_HISTORY_TURNS], turns[-MAX_HISTORY_TURNS:]
+    gists = [_gist(t) for t in old]
+    folded += len(old)
+    # The byte budget is the hard cap on the kept window: fold the oldest
+    # kept turn in until the window fits. The final turn is never folded
+    # away -- it is the one the next ask reads back.
+    while len(kept) > 1 and _chars(_flatten(kept)) + 200 * len(gists[-3:]) + 400 \
+            > MAX_HISTORY_CHARS:
+        gists.append(_gist(kept.pop(0)))
+        folded += 1
+    summary = '%s %d turn%s folded this session, the oldest first (%s). ' \
+        'The last turns are kept whole.]' % (
+            _SUMMARY_MARK, folded,
+            's' if folded != 1 else '',
+            ' | '.join(gists[-3:]) if gists else 'none')
+    return [{'role': 'user', 'content': summary}] + _flatten(kept)
+
+
+def _chars(messages):
+    return sum(len(json.dumps(m)) for m in messages)
+
+
 def _userAskedForAClosure(user_prompt):
     """Whether the user's own request asks for a close or a reset.
 
@@ -280,6 +391,18 @@ class AgentLoop(QObject):
         # test) sets it to one of ``QVizPreferences.AGENT_TOOLS_MODES`` to pin
         # the shape for every turn without re-reading the file in between.
         self.tools_mode = None
+        # The token accounting of the ask in flight: the server reports a
+        # per-call usage, and the loop sums it so the transcript and the
+        # surfaces read the same one number. The counters are reset by the
+        # start of every `ask` and reported once, at its end, by
+        # `_reportUsage` -- a stand-in LLM that answers no usage is
+        # unmeasured, never zero.
+        self.last_usage = None
+        self._usage_prompt = 0
+        self._usage_completion = 0
+        self._usage_total = 0
+        self._turns_used = 0
+        self._usage_measured = False
 
     def _emit(self, line, live=True):
         """Every transcript line passes through here: the full render goes to
@@ -330,6 +453,50 @@ class AgentLoop(QObject):
         self._stop_requested = True
 
     def _run(self, user_prompt, max_turns, tools_mode):
+        """Run the loop and report the tokens it spent, whatever happens.
+
+        The counters are reset at every ask -- a run reads them to say what
+        it costs, and a session that lives through several asks never reads
+        one ask's total as another's. The report is emitted in the same
+        place every exit lands (the `finally`), so an ask finished on a
+        refused turn reports its tokens too; a loop that dies on an
+        unexpected exception still says what it measured.
+        """
+        self._usage_prompt = 0
+        self._usage_completion = 0
+        self._usage_total = 0
+        self._usage_measured = False
+        self._turns_used = 0
+        self.last_usage = None
+        try:
+            self._loop(user_prompt, max_turns, tools_mode)
+        finally:
+            self._reportUsage(live=tools_mode == 'verbose')
+
+    def _reportUsage(self, live):
+        """The tokens this ask spent, on the transcript and on the loop.
+
+        The line is the one the callers can say out loud -- ``last_usage``
+        is the number they want from the call itself, the line is what
+        the surface shows. A stand-in LLM that answers no usage is
+        unmeasured, never zero: nothing is said either way.
+        """
+        if not self._usage_measured:
+            self.last_usage = None
+            return
+        self.last_usage = {
+            'prompt': self._usage_prompt,
+            'completion': self._usage_completion,
+            'total': self._usage_total,
+            'turns': self._turns_used,
+        }
+        self._emit(
+            'Tokens: prompt %d / completion %d (total %d) over %d turn%s'
+            % (self._usage_prompt, self._usage_completion, self._usage_total,
+               self._turns_used, 's' if self._turns_used != 1 else ''),
+            live=live)
+
+    def _loop(self, user_prompt, max_turns, tools_mode):
         """The actual loop. Runs in whatever thread called ``ask``.
 
         ``tools_mode`` is the shape this run wears. ``off`` sends
@@ -416,6 +583,23 @@ class AgentLoop(QObject):
                     'REFUSAL: LLM call failed — %s' % e)
                 self.askFinished.emit(str(e))
                 return
+
+            # The tokens this call spent, summed over the whole ask: the
+            # server reports them per call, the loop turns them into the
+            # one number the transcript and ``last_usage`` read. A stand-in
+            # LLM that answers no usage is unmeasured, never zero.
+            usage = response.usage
+            if isinstance(usage, Mapping):
+                prompt = usage.get('prompt_tokens') or 0
+                completion = usage.get('completion_tokens') or 0
+                total = usage.get('total_tokens')
+                if total is None:
+                    total = prompt + completion
+                self._usage_prompt += prompt
+                self._usage_completion += completion
+                self._usage_total += total
+                self._usage_measured = True
+            self._turns_used += 1
 
             # Named refusals, checked here so a stand-in LLM that returns
             # the LLMResponse directly (without raising) is caught too:
@@ -705,6 +889,11 @@ class AgentLoop(QObject):
             self.history.append({
                 'role': 'assistant', 'content': response.content,
             })
+            # The history is read back whole at the start of the next ask,
+            # so it is folded: the last turns stand exactly as they were, the
+            # older ones become one bounded summary line rather than an
+            # ever-growing re-send.
+            self.history = _compactHistory(self.history)
             # The accepted answer, as it stands: a refused or re-anchored
             # answer never reaches this line -- the path above returns or
             # continues instead. A show of a figure is not one of the
