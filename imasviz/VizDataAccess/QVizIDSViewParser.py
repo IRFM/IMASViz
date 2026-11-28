@@ -152,21 +152,31 @@ def coordinateSegments(coordinate):
 
     The same coordinate reaches this helper spelled two ways. The shadow tree
     keeps the dictionary's slashes; the tree node carries the form
-    buildNamedDataElement wrote after replacing every '/' with a '.', where the
-    steps after a closing parenthesis are no longer separated -- cutting
-    'time_slice(itime).grid.dim1' on slashes alone yields an 'itime)' step and
-    drops the rest of the path.
+    buildNamedDataElement wrote after replacing every '/' with a '.'. Both
+    spellings are split the same way: on '/', then on '.', every token carrying
+    at most one parenthesised step. A token whose placeholder is not in the
+    first position -- 'antenna(i1).module(i2).power_launched.time' -- would
+    otherwise reach the getattr as 'module(i2)' and be refused by the IDS.
     """
-    segments = []
-    for step in str(coordinate).split('/'):
-        name, _, rest = step.partition('(')
-        segments.extend(part for part in name.split('.') if part)
+
+    def addToken(token, segments):
+        head, _, rest = token.partition('(')
+        if head:
+            segments.append(head)
         if not rest:
-            continue
+            return
         inside, _, tail = rest.partition(')')
         if inside and not re.fullmatch(r'i(time|[0-9]+)', inside):
             segments.extend(part for part in inside.split('.') if part)
-        segments.extend(part for part in tail.lstrip('.').split('.') if part)
+        for piece in tail.lstrip('.').split('.'):
+            if piece:
+                addToken(piece, segments)
+
+    segments = []
+    for step in str(coordinate).split('/'):
+        for piece in step.split('.'):
+            if piece:
+                addToken(piece, segments)
     return segments
 
 
