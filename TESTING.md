@@ -139,7 +139,6 @@ in **13,94 s**, which says nothing about what the whole session leaves alive.
 | `test_02_data_source.py` | `VizDataSource` | AL major version, URI/DBEntry lifecycle |
 | `test_03_case_integration.py` | real WEST case | occurrences, filled paths, cross-DD-version reading |
 | `test_04_view_parser.py` | `VizDataAccess` view parser | dictionary reflection; pins the shadow-tree node counts measured on the parsers it replaced |
-| `test_11_table_of_IDDs.py` | the database browser's table model | locks the Qt6 migration (`QVariant` is gone); the three tests that laid out the legacy layout widget went with it (T22c) |
 | `test_12_plot_labels.py` | legends, axis labels, units, title | case label instead of the URI; labels set per curve |
 | `test_14_coordinate_units.py` | coordinate units → X axis label | the unit of the coordinate an array is indexed by |
 | `test_15_node_coordinates.py` | `QVizTreeNode` coordinates | which coordinate a node records when asked to change one |
