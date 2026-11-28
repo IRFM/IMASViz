@@ -15,8 +15,6 @@ import os
 import getpass
 import glob
 import logging
-import threading
-from threading import Thread, Condition
 from functools import partial
 
 

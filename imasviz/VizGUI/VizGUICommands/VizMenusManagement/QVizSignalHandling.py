@@ -8,11 +8,11 @@
 # ****************************************************
 
 from functools import partial
-import re, logging
+import logging
 from PySide6.QtCore import QObject, Slot
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QMenu, QApplication
-from imasviz.VizUtils import GlobalIcons, QVizPreferences
+from imasviz.VizUtils import GlobalIcons
 
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsSlices import QVizPlotAsSlices
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsStacked import QVizPlotAsStacked

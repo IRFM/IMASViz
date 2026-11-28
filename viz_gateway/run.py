@@ -26,7 +26,6 @@ its own $HOME.
 import argparse
 import signal
 import threading
-import time
 
 
 def parseArguments(argv=None):

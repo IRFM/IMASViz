@@ -14,7 +14,6 @@ from packaging.version import Version
 from PySide6.QtWidgets import QProgressBar
 from imasviz.VizDataAccess.QVizIDSViewParser import QVizIDSViewParser
 from imasviz.VizDataSource.QVizDBEntryRegistry import QVizDBEntryRegistry
-from imasviz.VizUtils import QVizGlobalValues, QVizPreferences
 
 
 def caseLabel(uri):

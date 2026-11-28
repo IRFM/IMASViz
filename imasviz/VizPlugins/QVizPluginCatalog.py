@@ -37,8 +37,6 @@ import importlib
 import logging
 import re
 
-import shiboken6
-
 # The base class of `_NoDialogGuard` is asked at import time, so only this name
 # comes in here; the rest of Qt this module needs stays inside the methods that
 # ask it, as it has always been.

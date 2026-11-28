@@ -9,7 +9,6 @@
 
 import os
 import logging
-import sys
 import weakref
 import numpy as np
 import shiboken6

@@ -9,7 +9,6 @@
 
 import logging
 import re
-from threading import Thread, Condition
 from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
 from imasviz.VizUtils import QVizGlobalValues, QVizPreferences
 from imasviz.VizDataAccess.QVizNodePlotting import QVizNodePlotting

@@ -9,9 +9,9 @@
 
 import logging
 from functools import partial
-from PySide6.QtWidgets import QApplication, QMenu, QInputDialog
+from PySide6.QtWidgets import QMenu, QInputDialog
 from PySide6.QtGui import QAction
-from imasviz.VizUtils import GlobalIcons, QVizGlobalOperations
+from imasviz.VizUtils import QVizGlobalOperations
 from imasviz.VizGUI.VizConfigurations.QVizSessionFile import QVizSessionFile
 from imasviz.VizGUI.VizGUICommands.VizOpenViews.QVizOpenShotView import QVizOpenShotView
 from imasviz.VizGUI.VizGUICommands.VizSession.QVizSaveSession import QVizSaveSession
@@ -168,7 +168,6 @@ class QVizMainMenuController:
 
     def menuAddPublicDB(self, menu, listenerWidget):
         action_addPublicDB = QAction('Add public databases', listenerWidget)
-        #action_addPublicDB.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'publicdbs'))
         action_addPublicDB.triggered.connect(self.addPublicDB)
         # Add to menu
         menu.addAction(action_addPublicDB)

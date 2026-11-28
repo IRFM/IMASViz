@@ -10,14 +10,12 @@
 import os
 import sys, getopt
 import logging
-from functools import partial
 from PySide6.QtWidgets import (QTabWidget, QWidget, QFormLayout, QApplication,
                              QMenu, QMainWindow, QDockWidget,
                              QLineEdit, QPushButton, QVBoxLayout, QComboBox,
                              QPlainTextEdit, QGridLayout, QSplitter, QMdiArea,
-                             QTableView, QLabel, QHBoxLayout)
+                             QLabel, QHBoxLayout)
 from PySide6.QtCore import Qt
-from pathlib import Path
 
 
 # Append imasviz source path
@@ -346,7 +344,6 @@ class GUIFrame(QTabWidget):
         self.IMASdbBrowserWidget.setActiveUsername(self.userName.text())
 
     def OpenDataSourceFromTab2(self, evt):
-        import imas
         try:
             try:
                 self.CheckInputsFromTab2()

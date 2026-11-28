@@ -14,7 +14,6 @@
 import os
 import sys
 
-import numpy as np
 from PySide6.QtWidgets import QMessageBox, QInputDialog, QLineEdit
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 

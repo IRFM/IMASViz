@@ -7,10 +7,8 @@
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
 
-import os
 import logging
 from imasviz.Viz_API import Viz_API
-from imasviz.VizUtils import QVizGlobalValues
 
 
 class QVizOpenShotView:
@@ -20,7 +18,6 @@ class QVizOpenShotView:
     def Open(self, evt, uri):
 
         from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
-        from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
 
         try:
             dataSource = QVizDataSourceFactory().create(uri)

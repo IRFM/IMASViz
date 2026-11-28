@@ -48,7 +48,7 @@ from imasviz.VizDataAccess.VizTimeSlices import (ALL_SLICES, ONE_IN_TEN,
 from imasviz.VizGUI.VizConfigurations.QVizConfigurationFile import (
     QVizConfigurationFile, QVizQuantity, PLOT)
 from imasviz.VizGUI.VizConfigurations.QVizSessionFile import (
-    QVizSessionFile, CURVE, TABLE, STACKED, ALL, ONE_IN_TEN as ONE_IN_TEN_WORD,
+    QVizSessionFile, TABLE, STACKED, ALL, ONE_IN_TEN as ONE_IN_TEN_WORD,
     FIRST, INDEX_PREFIX, cursorKeyText)
 from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadOccurrence import \
     QVizLoadOccurrence

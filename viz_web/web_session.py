@@ -629,7 +629,6 @@ class WebSession:
         """What /llm reports, as the one command answers it: the endpoint,
         the model, whether the key is set, and the three running
         parameters the loop sends."""
-        from imasviz.VizAgent.llm_client import LLMClient
         return {
             'endpoint': self.client.endpoint,
             'model': self.client.model

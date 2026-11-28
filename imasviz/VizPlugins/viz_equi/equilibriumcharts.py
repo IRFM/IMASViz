@@ -36,8 +36,7 @@ import numpy as np
 import logging
 import weakref
 from PySide6.QtGui import QAction
-from PySide6.QtWidgets import QDockWidget, QMenuBar, QApplication, QMainWindow, QTreeWidget, \
-    QTreeWidgetItem, QWidget, QGridLayout, QVBoxLayout, QLineEdit, QSlider, QPushButton, QHBoxLayout,  \
+from PySide6.QtWidgets import QMenuBar, QMainWindow, QWidget, QVBoxLayout, QLineEdit, QSlider, QPushButton, QHBoxLayout, \
     QLabel, QMessageBox, QStatusBar, QCheckBox
 from PySide6 import QtCore
 

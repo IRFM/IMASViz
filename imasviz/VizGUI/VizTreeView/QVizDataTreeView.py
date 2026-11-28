@@ -7,9 +7,8 @@
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
 
-import os, logging
+import logging
 import imas
-import numpy as np
 from functools import partial
 from PySide6.QtCore import Qt, Slot, QMetaObject
 from PySide6.QtGui import QAction
@@ -17,7 +16,7 @@ from PySide6.QtWidgets import QDockWidget, QMenuBar, QMenu
 from PySide6.QtWidgets import QMainWindow, QTreeWidget, QTreeWidgetItem, \
     QWidget, QGridLayout, QPlainTextEdit
 from PySide6.QtWidgets import QApplication
-from imasviz.VizUtils import QVizLogger, QVizGlobalValues, QVizPreferences, GlobalIDs,getWindowSize
+from imasviz.VizUtils import QVizLogger, QVizPreferences, GlobalIDs
 from imasviz.VizDataSource.QVizCaseOccurrences import QVizCaseOccurrences
 from imasviz.VizDataAccess.VizTimeSlices import FIRST_SLICE
 from imasviz.VizGUI.VizConfigurations.QVizApplyConfigurations \
@@ -950,9 +949,6 @@ class QVizDataTreeViewFrame(QMainWindow):
         """
 
         # Get reference parameters
-        # - DTV frame width and height
-        # ref_width, ref_height = getWindowSize(self)
-
         # PREVIEW PLOT WIDGET (PPW)
         # - Set the widget. It says what it holds once a node is clicked, so
         #   there is nothing to draw before the first click -- the empty plot()
