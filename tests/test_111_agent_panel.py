@@ -256,3 +256,47 @@ def test_panel_figureKey_is_agenttype(qapp):
         key = panel.figureKey
         if key in api.figureframes:
             del api.figureframes[key]
+
+
+def test_panel_transcript_is_capped_to_the_last_lines(qapp, monkeypatch):
+    """Appending beyond the cap drops the oldest lines, keeping the newest.
+
+    The transcript keeps its last ``TRANSCRIPT_MAX_LINES`` visible lines:
+    a long session is a page the reader scrolls, not a window that grows
+    for ever. What is pinned is the boundary, not the number -- the cap
+    is patched to a small one -- so the test runs in any order and does
+    not care what the window would hold.
+    """
+    import imasviz.VizAgent.panel as panel_module
+    from imasviz.VizAgent.panel import QVizAgentPanel
+
+    monkeypatch.setattr(panel_module, 'TRANSCRIPT_MAX_LINES', 3)
+    llm = FakeLLMClient([
+        LLMResponse(content='ok', tool_calls=None, finish_reason='stop')
+    ])
+    agent = AgentLoop(
+        core=FakeCore(), llm=llm, dispatcher=FakeDispatcher())
+    api = make_api(qapp)
+    panel = QVizAgentPanel(main_window=None, api=api, agent=agent)
+    try:
+        for i in range(6):
+            panel._appendTranscript('line%d' % i)
+        text = panel.transcriptText()
+        lines = text.splitlines()
+        assert len(lines) == 3
+        assert 'line3' in lines and 'line4' in lines and 'line5' in lines
+        assert 'line0' not in lines and 'line1' not in lines
+        assert 'line2' not in lines
+
+        # The boundary falls inside an assistant line that carries several
+        # visible lines: the tail of that line is kept, its lead-in dropped.
+        monkeypatch.setattr(panel_module, 'TRANSCRIPT_MAX_LINES', 2)
+        panel._appendTranscript('LLM: a\nb\nc')
+        text = panel.transcriptText()
+        lines = text.splitlines()
+        assert len(lines) == 2
+        assert lines == ['b', 'c']
+    finally:
+        key = panel.figureKey
+        if key in api.figureframes:
+            del api.figureframes[key]

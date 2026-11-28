@@ -72,6 +72,14 @@ from imasviz.VizUtils import FigureTypes, QVizGlobalValues
 # instead of wrapping a tool output the user wanted to compare.
 MAX_WIDTH = 1000
 
+# The transcript is kept to this many visible lines: the oldest lines leave
+# the window, the newest the reader is looking at stay. The transcript the
+# client writes to disk is not touched by this cap -- it stays the whole
+# record of the run; only the window scrolls through what the user
+# actually reads, and the window does not grow with the session past this
+# ceiling.
+TRANSCRIPT_MAX_LINES = 500
+
 
 class QVizAgentPanel(QVizClosableWindow, QWidget):
     """One agent window: the transcript on top, and below it the prompt
@@ -496,9 +504,55 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
         else:
             cursor.insertText(line)
         cursor.insertText('\n')
-        # Scroll to the bottom
+        # Drop the oldest lines past the cap, then scroll to the bottom
+        self._trimTranscript()
         sb = self.transcript.verticalScrollBar()
         sb.setValue(sb.maximum())
+
+    def _trimTranscript(self):
+        """Keep the last ``TRANSCRIPT_MAX_LINES`` visible lines.
+
+        The visible lines are what the reader sees, not what the loop
+        handed out: an assistant line can carry several of them (the
+        ``<br>`` of a line break it wrote is one block with several
+        lines; a ``<pre>`` is several blocks). The trim runs at the
+        line level -- an appended line is kept together except where
+        the boundary falls inside it, which keeps the tail of that line
+        and drops the ``<b>LLM:</b>`` lead-in with the rest of it.
+        """
+        cap = TRANSCRIPT_MAX_LINES
+        doc = self.transcript.document()
+        lines = doc.toPlainText().splitlines()
+        overflow = len(lines) - cap
+        if overflow <= 0:
+            return
+        sublines_before = 0
+        keep_pos = None
+        block = doc.begin()
+        while block.isValid():
+            text = block.text()
+            n = (1 + text.count('\u2028')) if text else 0
+            if sublines_before + n > overflow:
+                if text:
+                    idx = overflow - sublines_before
+                    if idx == 0:
+                        keep_pos = block.position()
+                    else:
+                        offset = 0
+                        for _ in range(idx):
+                            offset = text.index('\u2028', offset) + 1
+                        keep_pos = block.position() + offset
+                break
+            sublines_before += n
+            block = block.next()
+        if keep_pos is None:
+            # The whole document as one empty block: nothing to delete.
+            return
+        sel = QTextCursor(doc)
+        sel.setPosition(keep_pos)
+        sel.movePosition(QTextCursor.MoveOperation.Start,
+                         QTextCursor.MoveMode.KeepAnchor)
+        sel.removeSelectedText()
 
     def _onFinished(self, error):
         """The agent loop is done: re-enable the buttons."""
