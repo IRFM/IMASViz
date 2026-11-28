@@ -525,7 +525,16 @@ class PlotOps:
             command = QVizPlotOneNode(view, node)
             frame = command.newFigure(FigureTypes.CURVEPLOTTYPE, QVizCurvePlot)
 
-        frame.pgPlotWidget.plot(x, y, name=leaf)
+        # A slice draws like any other trace: one colour per trace from
+        # the house palette, continuing the cycle where the figure left
+        # it, or the ground is black for every trace and the slices of
+        # one profile are indistinguishable. The count is taken off the
+        # widget, not the frame's own bookkeeping, because the traces a
+        # slice draws are not QVizTrace -- they are static reads, not
+        # curves a slider can follow -- and are not in frame.curves().
+        from imasviz.VizGUI.VizPlot.QVizCurveColors import penFor
+        existing = len(frame.pgPlotWidget.getPlotItem().listDataItems())
+        frame.pgPlotWidget.plot(x, y, name=leaf, pen=penFor(existing))
         frame.pgPlotWidget.setLabel('bottom', 'coordinate')
         frame.pgPlotWidget.setLabel('left', leaf)
         frame.pgPlotWidget.setTitle(
@@ -672,11 +681,22 @@ class PlotOps:
             frame = command.newFigure(FigureTypes.CURVEPLOTTYPE, QVizCurvePlot)
 
         try:
-            for entry in drawn:
+            # One colour per trace, continuing the cycle where the figure
+            # left it (a figure the slice drew into holds the counts of its
+            # own curves and the traces earlier slices laid down -- both
+            # are on the widget, so the widget is the count that sees
+            # both). Traces drawn here are static reads, not curves a
+            # slider follows: they are not QVizTrace and are not in
+            # frame.curves(), which is why the count is taken off the
+            # widget.
+            from imasviz.VizGUI.VizPlot.QVizCurveColors import penFor
+            existing = len(frame.pgPlotWidget.getPlotItem().listDataItems())
+            for i, entry in enumerate(drawn):
                 entry['trace'] = '%s @ t=%g s' % (leaf_short,
                                                   entry['time_slice_time'])
                 frame.pgPlotWidget.plot(entry['x'], entry['y'],
-                                        name=entry['trace'])
+                                        name=entry['trace'],
+                                        pen=penFor(existing + i))
             frame.pgPlotWidget.setLabel('bottom', 'coordinate')
             frame.pgPlotWidget.setLabel('left', leaf_short)
             if not into_figure_key:

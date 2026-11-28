@@ -206,3 +206,53 @@ def test_an_empty_leaf_earns_one_aggregate_refusal(core):
     # answer, not a cascade.
     assert message.count('plot_slices') == 1, \
         'one refusal, not a cascade: %s' % message
+
+
+def _rgbOf(curve):
+    """The colour a trace is drawn with, whether its pen is a QPen or a tuple."""
+    pen = curve.opts['pen']
+    return pen if isinstance(pen, tuple) else pen.color().getRgb()[:3]
+
+
+def test_slices_traces_are_drawn_with_different_pens(core):
+    """One profile at several instants draws one colour per slice, the
+    same house palette the frame itself uses -- the ground is the black
+    every figure paints, so a default grey trace is a trace nobody can
+    tell from its neighbours."""
+    node = _filled_node(core)
+    if node is None:
+        pytest.skip('the filled leaf is not in the tree: %r' % FILLED)
+    view = core._viewForUri(CASE_URI)
+    tbase = core._timeBase(view, node)
+    if tbase is None or tbase.size < 3:
+        pytest.skip('no time base on the filled leaf')
+    instants = [float(tbase[0]), float(tbase[tbase.size // 2]),
+                float(tbase[-1])]
+    answer = core.plot_slices(CASE_URI, FILLED, instants)
+    frame = core.api.figureframes[answer['figure']]
+    items = frame.pgPlotWidget.getPlotItem().listDataItems()
+    assert len(items) == 3, items
+    pens = [_rgbOf(item) for item in items]
+    assert len(set(pens)) == 3, \
+        'one colour per slice: %r' % pens
+    assert all(pen != (200, 200, 200) for pen in pens), \
+        'a slice must not wear the default grey: %r' % pens
+
+
+def test_a_slice_drawn_on_its_own_figure_wears_a_house_pen(core):
+    """The singular mode draws one trace, and that trace wears the palette's
+    first colour on a fresh figure -- not the default grey a pen-less plot
+    falls back to."""
+    node = _filled_node(core)
+    if node is None:
+        pytest.skip('the filled leaf is not in the tree: %r' % FILLED)
+    view = core._viewForUri(CASE_URI)
+    tbase = core._timeBase(view, node)
+    if tbase is None or tbase.size == 0:
+        pytest.skip('no time base on the filled leaf')
+    answer = core.plot_slice(CASE_URI, FILLED, float(tbase[0]))
+    frame = core.api.figureframes[answer['figure']]
+    items = frame.pgPlotWidget.getPlotItem().listDataItems()
+    assert len(items) == 1, items
+    pen = _rgbOf(items[0])
+    assert pen != (200, 200, 200), 'a slice trace wears the house palette: %r' % (pen,)
