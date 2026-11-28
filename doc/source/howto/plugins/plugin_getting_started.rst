@@ -4,7 +4,7 @@
    CEA and LECAD authorize the use of the METIS software under the CeCILL-C open source license https://cecill.info/licences/Licence_CeCILL-C_V1-en.html
    The terms and conditions of the CeCILL-C license are deemed to be accepted upon downloading the software and/or exercising any of the rights granted under the CeCILL-C license.
 
-.. _plugin_simple_plot_example:
+.. _plugin_getting_started:
 
 Developing a simple plugin for plotting data from IDSs
 ======================================================
@@ -37,9 +37,9 @@ The main basic steps which will be covered in this tutorial are as follows:
 4. Registering plugin in IMASViz
 
 .. note::
-    Complete code of the simple plugin (named as **simplePlotPluginExample**) is
-    available in IMASViz code source in
-    :file:`$VIZ_HOME/imasviz/VizPlugins/viz_simple_plot_example`.
+    The complete code of the plugin this tutorial writes is inline, in the
+    :ref:`Full Python code <plugin_getting_started_full_code>` section --
+    nothing is read out of the sources.
 
 Adding IMASViz sources to $PYTHONPATH
 -------------------------------------
@@ -55,7 +55,7 @@ the next command in the terminal:
     # tcsh
     setenv PYTHONPATH ${VIZ_HOME}:${PYTHONPATH}
 
-.. _plugin_simple_plot_example_setting_dir:
+.. _plugin_getting_started_setting_dir:
 
 Setting plugin source structure
 -------------------------------
@@ -84,7 +84,7 @@ Python code
 
 This subsection will cover the contents of the plugin main Python script file
 :file:`$VIZ_HOME/imasviz/VizPlugins/viz_my_plugin/myPlugin.py` (previously
-created in :ref:`plugin_simple_plot_example_setting_dir`).
+created in :ref:`plugin_getting_started_setting_dir`).
 
 Required import statements
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -482,6 +482,8 @@ Three things belong to this place and to no other:
    :ref:`IMASViz_plugins <IMASViz_plugins>` for what a plugin of your own does
    reach.
 
+.. _plugin_getting_started_full_code:
+
 Full Python code
 ^^^^^^^^^^^^^^^^
 
@@ -533,7 +535,7 @@ Below is the full :file:`myPlugin.py` for this tutorial:
         def __init__(self):
             self.SCOPE = QVizPluginScope(IDS, ids=(self.IDS,))
             self.ACTIONS = (
-                QVizPluginAction(0, 'Magnetics overview (simple plot plugin example)...',
+                QVizPluginAction(0, 'Magnetics overview...',
                                  run=self._run,
                                  description='Draws bpol_probe curves from the magnetics IDS'),
             )
@@ -564,14 +566,11 @@ panel of the opened case under its own name, and the other plugins keep their
 menu entries.
 
 .. code-block:: python
-    :emphasize-lines: 12
+    :emphasize-lines: 7
 
     RegisteredPlugins = {'equilibriumcharts': 'viz_equi.equilibriumcharts',
-                         # 'ToFuPlugin': 'viz_tofu.viz_tofu_plugin',
-                         # 'viz_example_plugin': 'viz_example_plugin.viz_example_plugin',
-                         # 'viz_spectrometer_plugin': 'viz_spectrometer.viz_spectrometer_plugin',
+                         'equilibriumsurfaces': 'viz_equi.equilibriumsurfaces',
                          'VizProfiles_plugin': 'viz_Profiles.VizProfiles_plugin',
-                         # 'simplePlotPluginExample': 'viz_simple_plot_example.simplePlotPluginExample',
                          # 'ETSpluginIMASViz': 'viz_ETS.ETSpluginIMASViz',
                          # a plugin drawn in Qt Designer registers the window it
                          # is drawn from instead of a module path: {'UiFile':

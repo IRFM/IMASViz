@@ -679,17 +679,15 @@ painted`) and killed the process in a **later** paint event, in another window, 
 nothing in the traceback naming the file at fault — so `paintLineNumbers` ends its painter
 in a `finally`.
 
-`imasviz/VizPlugins/test_imas_viz_plugin.py` and `imasviz/VizExamples/test_plugin.py` are
-**not** a pattern to copy: both speak the abrogated contract —
-`pluginEquiPlot.execute(app, dictDataSource)` and `plugin_instance.execute(api,
-pluginEntry=2)` — and the first imports `imas_viz_plugins.equilibriumcharts`, a package
-name this repository has not had for a long while, so neither runs any more. To exercise a
-plugin without the full GUI, drive the framework instead: `tests/test_43_plugins_in_the_menu.py`
+The two demo scripts that spoke the abrogated contract --
+`imasviz/VizPlugins/test_imas_viz_plugin.py` and `imasviz/VizExamples/test_plugin.py` --
+were deleted with the plugins they called. To exercise a plugin without the full GUI,
+drive the framework instead: `tests/test_43_plugins_in_the_menu.py`
 registers stub plugins through a fake module in `sys.modules` and asks the catalog, and
 `tests/test_54_equilibrium_surfaces_on_a_real_case.py` runs a shipped entry against the
 reference case through `catalog.run(entry, answers=...)`.
 
-**Seven** plugins are registered (`VizPlugin.py:230-239`), and the case-running ones are
+**Seven** plugins are registered (`VizPlugin.py:236-253`), and the case-running ones are
 run end to end on the reference case by `tests/test_51_*` and `tests/test_85_*` (Profiles),
 `tests/test_69_*` (what a session does with a Profiles window), `tests/test_53_*`
 (the Equilibrium chart) and `tests/test_54_equilibrium_surfaces_*` (the flux-surface
@@ -903,10 +901,10 @@ auto-loads `UDA/2.9.0` and `IMAS-AL-Core/5.5.1`, which conflict with the
 
 ### The legacy scripts in VizExamples are demos, not tests
 
-- `imasviz/VizExamples/example{1,2,2b,3,4}.py`, `test.py`, `test_plugin.py`, plus per-plugin
-  `test_*.py` / `run_plugin_ui_standalone.py` — scripted usage of the `Viz_API` without the
-  GUI. (`test_QVizPlotLayoutWidget.py` was one of them until T22(c) deleted the widget it
-  drove.)
+- `imasviz/VizExamples/example{1,2,2b,3,4}.py`, `test.py` — scripted usage of the
+  `Viz_API` without the GUI. (`test_QVizPlotLayoutWidget.py` was one of them until T22(c)
+  deleted the widget it drove; `test_plugin.py` and its counterpart `test_imas_viz_plugin.py`
+  were deleted with the plugins they called.)
 - They instantiate a `QApplication`, build a hardcoded datasource dict, and call the class
   directly. To "test" a change, add such a script and run it — but note it needs the IMAS HLI
   and a real case to be meaningful, which is unavailable in most checkouts.

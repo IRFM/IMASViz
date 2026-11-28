@@ -175,3 +175,45 @@ def test_a_plugin_with_actions_offers_them():
     assert offers[0].key == 0
     assert offers[0].label == 'say something'
     assert callable(offers[0].run)
+
+
+def test_the_dead_example_plugins_are_out_of_the_package():
+    # The example plugins that spoke the abrogated contract -- tofu, the example
+    # plugin, the spectrometer, the simple plot example and the empty gkdb package --
+    # were deleted with the contract they used. An active registration would now
+    # answer ModuleNotFoundError.
+    for spec in ('imasviz.VizPlugins.viz_tofu',
+                 'imasviz.VizPlugins.viz_example_plugin',
+                 'imasviz.VizPlugins.viz_simple_plot_example',
+                 'imasviz.VizPlugins.viz_gkdb'):
+        assert importlib.util.find_spec(spec) is None
+    for name in ('ToFuPlugin', 'viz_example_plugin', 'viz_spectrometer_plugin',
+                 'simplePlotPluginExample'):
+        assert name not in RegisteredPlugins
+    assert not any('tofu' in str(name + where).lower()
+                   or 'spectrometer' in str(name + where).lower()
+                   or 'simpleplot' in str(name + where).lower()
+                   or 'gkdb' in str(name + where).lower()
+                   for name, where in RegisteredPlugins.items())
+
+
+def test_the_demo_plugin_scripts_are_out_of_the_package():
+    # test_imas_viz_plugin.py spoke a package name that never existed;
+    # test_plugin.py called the example plugin through the abrogated contract.
+    for spec in ('imasviz.VizPlugins.test_imas_viz_plugin',
+                 'imasviz.VizExamples.test_plugin'):
+        assert importlib.util.find_spec(spec) is None
+
+
+# Asking for a module inside a package that is gone answers
+# ModuleNotFoundError, like the SolPS test pins it.
+@pytest.mark.parametrize('modulePath',
+                         ('imasviz.VizPlugins.viz_tofu.viz_tofu_plugin',
+                          'imasviz.VizPlugins.viz_example_plugin.viz_example_plugin',
+                          'imasviz.VizPlugins.viz_simple_plot_example.simplePlotPluginExample'))
+def test_a_dead_example_plugin_module_is_gone(modulePath):
+    with pytest.raises(ModuleNotFoundError) as missing:
+        importlib.import_module(modulePath)
+    assert any(name in str(missing.value)
+               for name in ('viz_tofu', 'viz_example_plugin',
+                            'viz_simple_plot_example'))

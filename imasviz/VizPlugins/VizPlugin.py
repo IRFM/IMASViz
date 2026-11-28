@@ -235,24 +235,19 @@ QVizPluginAnswers = namedtuple('QVizPluginAnswers',
 
 RegisteredPlugins = {'equilibriumcharts': 'viz_equi.equilibriumcharts',
                      'equilibriumsurfaces': 'viz_equi.equilibriumsurfaces',
-                     # 'ToFuPlugin': 'viz_tofu.viz_tofu_plugin',
-                     # 'viz_example_plugin': 'viz_example_plugin.viz_example_plugin',
-                     # 'viz_spectrometer_plugin': 'viz_spectrometer.viz_spectrometer_plugin',
                      'VizProfiles_plugin': 'viz_Profiles.VizProfiles_plugin',
                      'VizEventDetection': 'viz_event_detection.VizEventDetection',
                      'VizSpectral': 'viz_spectral.VizSpectral',
                      'VizDerivedQuantities': 'viz_derived_quantities.VizDerivedQuantities',
                      'VizCampaignTrend': 'viz_campaign_trend.VizCampaignTrend',
-                     # 'simplePlotPluginExample': 'viz_simple_plot_example.simplePlotPluginExample',
                      # 'ETSpluginIMASViz': 'viz_ETS.ETSpluginIMASViz',
                      # A plugin drawn in Qt Designer registers the window it is
                      # drawn from instead of a module path. Kept as the shape,
-                     # not as an offer: this one is refused at the menu, because
-                     # the .ui is drawn around an exampleWidget class this Qt
-                     # cannot build -- see QVizPluginCatalog.
+                     # not as an offer: a .ui drawn around a widget class of
+                     # its own comes out as a bare QWidget with the connections
+                     # to that class dropped -- see QVizPluginCatalog.
                      # 'example_UiPlugin': {'UiFile': 'examplePlugin.ui',
-                     #                      'dir': os.environ['VIZ_HOME'] +
-                     #                             '/imasviz/VizPlugins/viz_example/',
+                     #                      'dir': '<the directory holding the .ui>',
                      #                      'targetIDSroot': 'magnetics',
                      #                      'targetOccurrence': 0},
                      }

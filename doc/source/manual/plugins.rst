@@ -194,7 +194,7 @@ a single line of the plugin has been changed.
    A plugin is Python, and it runs at the same trust level as IMASViz itself.
    What is in your own plugin folder is imported without being checked over; it
    is your folder, and it is your responsibility. To write one, see
-   :ref:`plugin_simple_plot_example`.
+   :ref:`plugin_getting_started`.
 
 Equilibrium overview plugin
 ---------------------------
