@@ -1335,9 +1335,10 @@ and the foss variants no longer load here — see *Project overview*):
   `QVariant` and `pyqtProperty` do **not**. `QWidget`/`QGridLayout`/`QMainWindow` are in
   `QtWidgets`; `QIntValidator` is in `QtGui`.
 - With `VIZ_PRODUCTION=1 VIZ_HOME=$PWD IMAS_VIZ_VERSION=… UDA_DISABLED=1` exported, the whole
-  launch chain imports headless (`sys.argv = [..., '-platform', 'offscreen']` **before** the
-  import — `QtVIZ_GUI` builds a `QApplication` at module level). A plain run stops only at
-  `qt.qpa.plugin: Could not load the Qt platform plugin "xcb"`, i.e. no X display.
+  launch chain imports headless: `QtVIZ_GUI` builds its `QApplication` inside `main()`
+  (`if __name__ == '__main__'`), so importing the module constructs nothing and needs no
+  `-platform` argv. A plain run stops only at `qt.qpa.plugin: Could not load the Qt platform
+  plugin "xcb"`, i.e. no X display.
 - What the suite **does** reach: the reference case is opened by `tests/conftest.py`
   (`imas:hdf5?path=…/west/3/54924/0`, pinned at data dictionary `3.35.0` while the
   harness dictionary is `4.0.0`), its shadow trees are walked, and since T12 a real
