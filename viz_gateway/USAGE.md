@@ -65,11 +65,16 @@ Options (défaut dans la parenthèse) :
 | `--users-dir` | `~/.imasviz/gateway` | dossier qui tient `users.json` et les `homes/` des users locaux |
 | `--max-users` | `20` | nombre d'instances vivantes au maximum |
 | `--max-turns` | `12` | limite de tours de la boucle agent, **transmise** à chaque instance locale qu'elle lance (défaut identique à `viz_web`) |
+| `--llm-url` | *(aucune)* | URL de base de l'endpoint LLM (`http://host:port/v1`), **transmise** à chaque instance locale qu'elle lance ; absente, l'instance lit son propre `AgentLLMEndpoint` de préférences |
 | `--idle-timeout` | `1800` (s) | temps d'inactivité avant que le pool tue une instance |
 
 Note : `--max-turns` pose la limite à la **création** d'une instance. Pour la
 changer sur une instance déjà ouverte, `POST /api/llm` avec
-`{"field": "max_turns", "value": N}` la met à jour à chaud, sans relance.
+`{"field": "max_turns", "value": N}` la met à jour à chaud, sans relance. Le
+même endpoint porte `endpoint` : `{"field": "endpoint", "value": "http://host:port/v1"}`
+change l'URL sur une instance déjà ouverte, à chaud et persistée dans ses
+préférences — ce qui n'est possible avec la ligne de commande que pour ce qui
+**naît** avec elle.
 
 Le **reap** court en arrière-plan toutes les 30 s : le pool demande de lui les
 users inactifs plus de `--idle-timeout`, les stoppe, libère le port. Un user qui

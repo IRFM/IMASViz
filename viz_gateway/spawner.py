@@ -89,16 +89,21 @@ def spawnEnv(entry):
     return env
 
 
-def spawnVizWeb(user, entry, port, env, max_turns=12):
+def spawnVizWeb(user, entry, port, env, max_turns=12, llm_url=None):
     """One live `viz_web` on its port, in `env`. Returns the process handle.
 
-    --max-turns is forwarded to the child: the child's default (12) is the
-    same as here, so an operator who does not set either gets the same loop
-    limit whether or not there is a gateway.
+    --max-turns and --llm-url are forwarded to the child: the child's
+    defaults (12, none) are the same as here, so an operator who does not
+    set either gets the same loop limit and the same endpoint whether or
+    not there is a gateway. A URL named here is what the instance boots on;
+    a running instance can still be moved with `POST /api/llm` (field
+    `endpoint`), which persists it into its preferences.
     """
     command = ['python3', '-m', 'viz_web',
                '--host', '127.0.0.1', '--port', str(port), '--offscreen',
                '--max-turns', str(max_turns)]
+    if llm_url:
+        command += ['--llm-url', llm_url]
     return subprocess.Popen(command, env=env)
 
 
@@ -151,11 +156,12 @@ class Pool:
 
     def __init__(self, spawn=None, health=None, idleTimeout=1800,
                  maxUsers=20, host='127.0.0.1', maxTurns=12,
-                 clock=time.monotonic):
+                 llmUrl=None, clock=time.monotonic):
         if maxUsers < 1:
             raise ValueError('a pool holds at least one user; its max is %d.'
                              % maxUsers)
         self._maxTurns = maxTurns
+        self._llmUrl = llmUrl
         self._spawn = spawn or spawnVizWeb
         self._health = health if health is not None else pollHealth
         self._idleTimeout = idleTimeout
@@ -190,7 +196,7 @@ class Pool:
             port = freePort(self._host)
             url = 'http://%s:%d' % (self._host, port)
             handle = self._spawn(user, entry, port, spawnEnv(entry),
-                                 self._maxTurns)
+                                 self._maxTurns, self._llmUrl)
             self._health(url, handle)
             self._instances[user] = Instance(user, entry, port, url, handle,
                                              now)

@@ -41,10 +41,10 @@ def localEntry(home):
 
 
 def makeSpawn(registry):
-    def spawn(user, entry, port, env, max_turns=12):
+    def spawn(user, entry, port, env, max_turns=12, llm_url=None):
         handle = FakeHandle()
         registry[user] = {'port': port, 'env': env, 'handle': handle,
-                          'max_turns': max_turns}
+                          'max_turns': max_turns, 'llm_url': llm_url}
         return handle
     return spawn
 
@@ -169,3 +169,49 @@ def test_max_turns_defaults_like_the_child_when_unset(tmp_path):
     # loop limit with or without a gateway in front.
     assert registry['alice']['max_turns'] == 12
     pool.close()
+
+
+def test_the_pool_forwards_llm_url_to_the_spawn(tmp_path):
+    """The operator's --llm-url reaches the child, not just the pool."""
+    registry = {}
+    pool = Pool(spawn=makeSpawn(registry), health=lambda url, h: None,
+                maxUsers=3, llmUrl='http://127.0.0.1:8080/v1')
+    pool.ensure('alice', localEntry(str(tmp_path / 'a')))
+    assert registry['alice']['llm_url'] == 'http://127.0.0.1:8080/v1'
+    pool.close()
+
+
+def test_llm_url_defaults_to_none_like_the_child_when_unset(tmp_path):
+    registry = {}
+    pool = Pool(spawn=makeSpawn(registry), health=lambda url, h: None,
+                maxUsers=3)
+    pool.ensure('alice', localEntry(str(tmp_path / 'a')))
+    # None: the child is then left to its own preferences (and to the
+    # POST /api/llm that moves a live one).
+    assert registry['alice']['llm_url'] is None
+    pool.close()
+
+
+def test_spawn_viz_web_appends_the_llm_url_to_the_command(monkeypatch,
+                                                         tmp_path):
+    """The builder's command line: the URL named, or no flag at all."""
+    import viz_gateway.spawner as spawner
+
+    captured = []
+
+    def fakePopen(command, env=None):
+        captured.append(list(command))
+
+    monkeypatch.setattr(spawner.subprocess, 'Popen', fakePopen)
+    spawner.spawnVizWeb('alice', localEntry(str(tmp_path / 'a')), 4321,
+                        {'HOME': str(tmp_path / 'a')}, 14,
+                        'http://127.0.0.1:8080/v1')
+    spawner.spawnVizWeb('alice', localEntry(str(tmp_path / 'a')), 4322,
+                        {'HOME': str(tmp_path / 'a')}, 14)
+    with_url, without_url = captured
+    assert with_url[-2:] == ['--llm-url', 'http://127.0.0.1:8080/v1']
+    # and the command line carries the rest of the launch, unchanged
+    assert without_url[:2] == ['python3', '-m']
+    assert without_url[:4] == with_url[:4]
+    assert without_url[-2:] == ['--max-turns', '14']
+    assert '--llm-url' not in without_url

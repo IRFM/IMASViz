@@ -375,7 +375,7 @@ Start it from a shell that already loaded the HLI stack (the *Gateway*
 block of [Setting the environment](#setting-the-environment) above, or the
 site's launcher minus the launch itself), then:
 
-    python3 -m viz_gateway --port 8760 --max-users 20 --max-turns 12 --idle-timeout 1800
+    python3 -m viz_gateway --port 8760 --max-users 20 --max-turns 12 --llm-url http://127.0.0.1:8080/v1 --idle-timeout 1800
 
 The users sit in `~/.imasviz/gateway/users.json` (token → user → backend),
 written by hand or scripted through `viz_gateway.userstore.UserStore`. A
@@ -392,8 +392,9 @@ the answer to "how many users on this node?"), and an instance idle for
 session (cases, figures, selection) does not, and the user's next request
 restarts one behind its token without the caller noticing. The real limit
 is memory, one Qt process per user (≈ 150–300 Mo), long before the port
-space runs out. `--max-turns` (default 12) is forwarded to every local
-instance it spawns, and stays changeable on a live one with
+space runs out. `--max-turns` (default 12) and `--llm-url` (default none — each local
+instance then reads its own preferences' `AgentLLMEndpoint`) are forwarded
+to every local instance it spawns, and stay changeable on a live one with
 `POST /api/llm`.
 
 The refusals are named the way the application names them: a `401` naming

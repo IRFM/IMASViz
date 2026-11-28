@@ -54,6 +54,11 @@ def parseArguments(argv=None):
                         help='the agent loop turn limit forwarded to every '
                              'local instance it spawns (default: 12, the '
                              'viz_web default)')
+    parser.add_argument('--llm-url', dest='llm_url', default=None,
+                        help='base URL of the LLM endpoint (http://host:port/v1) '
+                             'forwarded to every local instance it spawns '
+                             '(default: none — each instance reads its own '
+                             'preferences\' AgentLLMEndpoint)')
     return parser.parse_args(argv)
 
 
@@ -68,7 +73,7 @@ def main(argv=None):
 
     store = UserStore(args.users_dir)
     pool = Pool(idleTimeout=args.idle_timeout, maxUsers=args.max_users,
-                maxTurns=args.max_turns)
+                maxTurns=args.max_turns, llmUrl=args.llm_url)
     app = buildApp(store, pool)
 
     config = uvicorn.Config(app, host=args.host, port=args.port,
