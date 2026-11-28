@@ -98,11 +98,13 @@ FAMILIES = (
             ('clear', 'unselect_all'),
             ('list', 'list_selection'))),
     )),
-    ('the drawing', ('plot_one', 'plot_slice', 'plot_selection',
-                     'plot_table', 'plot_stacked', 'get_signal'), (
+    ('the drawing', ('plot_one', 'plot_slice', 'plot_slices',
+                     'plot_selection', 'plot_table', 'plot_stacked',
+                     'get_signal'), (
         ('plot', 'mode', (
             ('single', 'plot_one'),
             ('slice', 'plot_slice'),
+            ('slices', 'plot_slices'),
             ('selection', 'plot_selection'),
             ('table', 'plot_table'),
             ('stacked', 'plot_stacked'))),
@@ -362,6 +364,22 @@ ACTION_PARAMETERS = {
                           'default': 'linear'},
         'into_figure_key': {'type': ['string', 'null']},
     }, ('uri', 'path', 'time')),
+    # The multi-instant read of one profile: `times` is required and is
+    # the list of instants the model asks for -- one trace per instant on
+    # one figure. `occurrence` and `interpolation` are the same two words
+    # `slice` takes, because `slices` is the same read with a list instead
+    # of one instant. `plot_slices` takes `path` in Python, so no rename
+    # is needed.
+    'plot_slices': ({
+        'uri': {'type': 'string'},
+        'path': {'type': 'string'},
+        'times': {'type': 'array', 'items': {'type': 'number'}},
+        'occurrence': {'type': 'integer', 'default': 0},
+        'interpolation': {'type': 'string',
+                          'enum': ['linear', 'closest', 'previous'],
+                          'default': 'linear'},
+        'into_figure_key': {'type': ['string', 'null']},
+    }, ('uri', 'path', 'times')),
     'plot_selection': ({
         'uri': {'type': 'string'},
     }, ('uri',)),

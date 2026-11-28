@@ -90,8 +90,9 @@ How to work with it:
    plot and get_signal take are any of those spellings;
 5. plot draws, and its `mode` says which drawing: 'single' one quantity
    into the figure its axes call for, 'slice' one value at an instant,
-   'selection' what the case holds selected, 'table' one panel per
-   quantity, 'stacked' the stacked view. get_screenshot answers a PNG of
+   'slices' one profile at several instants -- one trace per instant on
+   one figure -- 'selection' what the case holds selected, 'table' one
+   panel per quantity, 'stacked' the stacked view. get_screenshot answers a PNG of
    the window; the equilibrium has its
    own entry asked with an action -- equilibrium(action='surfaces') puts
    the flux surfaces of the instants you name side by side, and

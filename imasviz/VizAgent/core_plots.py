@@ -48,18 +48,20 @@ class PlotOps:
         """`time` is one instant: a number, in seconds on the case clock.
 
         A list of them is the ask the model reaches for on "j_tor(psi) at
-        200, 400, 600, 800s" -- the working shape is one instant at a time,
-        into the same figure. Refuse the list by naming that, not as the
-        `float() ... not 'list'` the loop reads as a wrong value and retries
-        into the budget.
+        100, 400, 700s" -- the working shape is `mode="slices"` with
+        `times`, one trace per instant on one figure. Refuse the list by
+        naming that, not as the `float() ... not 'list'` the loop reads as
+        a wrong value and retries into the budget. A bare index of the
+        time array belongs in `indices`, not in `time`.
         """
         if isinstance(time, bool) or not isinstance(time, (int, float)):
             raise ValueError(
                 '%s: `time` is one instant, a number in seconds on the case '
                 'clock. For several instants of the same profile on one '
-                'figure, draw one per instant and put them in the same '
-                'figure with into_figure_key -- a bare index of the time '
-                'array belongs in `indices`, not in `time`.' % what)
+                'figure, use mode="slices" with `times` -- e.g. times=[100, '
+                '400, 700] -- which draws one trace per instant into one '
+                'figure; a bare index of the time array belongs in `indices`, '
+                'not in `time`.' % what)
         return float(time)
 
     def _filledSiblings(self, view, node, cap=8):
@@ -376,44 +378,55 @@ class PlotOps:
                 obj = getattr(obj, part)
         return obj
 
-    def _leafDataAtTime(self, view, leafPath, T, interp, occurrence):
+    def _profileAtTime(self, view, node, T, interp, occurrence,
+                       what='plot_slice', time_index=None):
         """The (x, y(T)) pair of one 1D-profile leaf read through `DBEntry.get_slice`.
 
         `x` is the coordinate (time-independent, the same reader `plot_one`
-        uses to draw a curve); `y(T)` comes from the HLI's own
-        `get_slice(ids, T, interp, occurrence)` call. This is the ONE
-        path both `plot_slice` and `plot_one(time=…)` use, so the two
-        surfaces share one implementation of "the profile at a time"
-        rather than carrying two.
+        uses to draw a curve, read at `time_index` -- the slice the case
+        answered with, so a profile whose grid moves with the slice cannot
+        be drawn on the grid of the first one); `y(T)` comes from the HLI's
+        own `get_slice(ids, T, interp, occurrence)` call. This is the ONE
+        path `plot_slice` and `plot_slices` use, so the two surfaces share
+        one implementation of "the profile at a time" rather than
+        carrying two.
 
         Refuses by name when the leaf is not a 1D profile (a scalar, a
         tensor, or a leaf whose x and y sizes disagree).
         """
         import numpy as np
-        node = self._nodeForPath(view, leafPath)
-        leafPath = node.getDataName() or leafPath
+        leafPath = node.getDataName() or ''
         ids, dot, rel = leafPath.partition('.')
         if not dot or not rel:
             raise ValueError(
-                'plot_slice/plot_one(time=…): %r is not a leaf of an IDS: '
+                '%s: %r is not a leaf of an IDS: '
                 'the path must name an IDS root and a leaf, e.g. '
-                '`equilibrium.time_slice[0].f`.' % leafPath)
+                '`equilibrium.time_slice[0].f`.' % (what, leafPath))
         entry = view.dataSource.db_entry
         try:
             slice_ids = entry.get_slice(ids, float(T), int(interp), int(occurrence))
         except Exception as e:
             raise ValueError(
-                'plot_slice: `get_slice(%r, %g, interp=%d, occ=%d)` refused '
+                '%s: `get_slice(%r, %g, interp=%d, occ=%d)` refused '
                 'by the Access Layer: %s'
-                % (ids, float(T), int(interp), int(occurrence),
+                % (what, ids, float(T), int(interp), int(occurrence),
                    str(e).split('\n', 1)[0])[:300])
         slice_time = float(getattr(slice_ids, 'time', [T])[0])
+        if time_index is None:
+            # The coordinate is read at the slice the case answered with,
+            # not at the first one: a profile whose grid moves with the
+            # time would be drawn on the wrong grid otherwise.
+            tbase = self._timeBase(view, node)
+            if tbase is not None and tbase.size > 0:
+                time_index = int(np.argmin(np.abs(tbase - slice_time)))
+            else:
+                time_index = 0
         try:
             y_raw = self._sliceWalk(slice_ids, rel)
         except Exception as e:
             raise ValueError(
-                'plot_slice: %r is not a 1D profile of %r in the case: %s'
-                % (leafPath, ids, str(e).split('\n', 1)[0])[:300])
+                '%s: %r is not a 1D profile of %r in the case: %s'
+                % (what, leafPath, ids, str(e).split('\n', 1)[0])[:300])
         # A 1D profile leaf reads one coordinate and one value per point;
         # get_slice answers it as a flat array, and both must be non-empty.
         y = np.asarray(y_raw, dtype=float).ravel()
@@ -424,28 +437,29 @@ class PlotOps:
                 # the model to read "directly" and invent.
                 raise ValueError(self._emptyExplanation(view, node, leafPath))
             raise ValueError(
-                'plot_slice: %r holds no value at this instant in the case: '
-                'the branch is empty, so there is nothing to draw.' % leafPath)
+                '%s: %r holds no value at this instant in the case: '
+                'the branch is empty, so there is nothing to draw.'
+                % (what, leafPath))
         from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
         try:
             x_raw, _ = QVizTensorDataAccess(view.dataSource).GetSignal(
                 treeNode=node, plotWidget=None,
-                as_function_of_time=False, time_index=0)
+                as_function_of_time=False, time_index=time_index)
         except Exception as e:
             raise ValueError(
-                'plot_slice: %r is not read as a curve by the reader: %s'
-                % (leafPath, str(e).split('\n', 1)[0])[:300])
+                '%s: %r is not read as a curve by the reader: %s'
+                % (what, leafPath, str(e).split('\n', 1)[0])[:300])
         # The reader's own convention for a curve figure is a (rows, N) pair,
         # one row per trace; ravel to (N,) so the check and the draw treat
         # both as one coordinate and one value per point.
         x = np.asarray(x_raw, dtype=float).ravel()
         if x.size != y.size:
             raise ValueError(
-                'plot_slice: %r reads %d coordinates and %d values — not a '
+                '%s: %r reads %d coordinates and %d values — not a '
                 '1D profile leaf (one coordinate and one value per point). '
                 'A 2D leaf is drawn as a picture, a 0D scalar as a point; '
                 'neither is what this entry takes.'
-                % (leafPath, x.size, y.size))
+                % (what, leafPath, x.size, y.size))
         return x, y, slice_time
 
     def plot_slice(self, uri, leaf, time, occurrence=0, interpolation='linear',
@@ -489,7 +503,8 @@ class PlotOps:
         tbase = self._timeBase(view, node)
         if tbase is not None and tbase.size > 0:
             T = float(min(max(T, float(tbase[0])), float(tbase[-1])))
-        x, y, slice_t = self._leafDataAtTime(view, leaf, T, interp, occurrence)
+        x, y, slice_t = self._profileAtTime(view, node, T, interp, occurrence,
+                                            'plot_slice')
 
         # Draw into a `Plot:` figure (the same kind `plot_one` uses) so
         # the *Windows* menu, sessions, and `saveShots` all reach it.
@@ -527,6 +542,165 @@ class PlotOps:
                 'time_slice_time': slice_t,
                 'interpolation': interpolation,
                 'kind': type(frame).__name__}
+
+    def plot_slices(self, uri, path, times, occurrence=0, interpolation='linear',
+                     into_figure_key=None):
+        """One 1D-profile leaf of one IDS, drawn at several instants on ONE figure.
+
+        The one shape the ask "j_tor(psi) at t=100, 400, 700 on the same
+        figure" needs: one call, one window of curves, one trace per
+        instant, named for the slice it shows. Each instant resolves to
+        the case's own slice nearest to it (clamped to the case's range),
+        read through the same `DBEntry.get_slice` as `plot_slice` -- the
+        values are what the Access Layer answers, not a manual lerp, and
+        the coordinate is read at the slice the case answered with.
+
+        A leaf that holds no values answers ONE refusal, before any window
+        is opened, naming the instants asked and the filled siblings under
+        the same structure. An instant the case refuses is named in the
+        answer (one reason per instant, never a retry that eats the turn
+        budget); the call succeeds as long as one of them drew. The caller
+        is the one that says what the failure means, never this gesture.
+        """
+        import numpy as np
+        if isinstance(times, bool) or not isinstance(times, (list, tuple)):
+            if isinstance(times, (int, float)):
+                times = [times]
+            else:
+                raise ValueError(
+                    'plot_slices: `times` is the list of instants (seconds '
+                    'on the case clock), e.g. times=[100, 400, 700], was %r.'
+                    % (times,))
+        if len(times) == 0:
+            raise ValueError(
+                'plot_slices: `times` must name at least one instant, '
+                'got an empty list.')
+        for entry in times:
+            if isinstance(entry, bool) or not isinstance(entry, (int, float)):
+                raise ValueError(
+                    'plot_slices: every instant in `times` must be a number '
+                    '(seconds on the case clock), was %r.' % (times,))
+        times = [float(t) for t in times]
+        if interpolation not in self._INTERPOLATIONS:
+            raise ValueError(
+                'plot_slices: interpolation must be one of %s, got %r.'
+                % (', '.join(sorted(self._INTERPOLATIONS)), interpolation))
+        import imas.ids_defs as _id
+        interp = getattr(_id, self._INTERPOLATIONS[interpolation])
+
+        view = self._viewForUri(uri)
+        node = self._nodeForPath(view, path)
+        leaf = node.getDataName() or path
+        ids = leaf.split('.', 1)[0]
+        if not self.api.IDSDataAlreadyFetched(view, ids, occurrence):
+            self.load_ids(uri, ids, occurrence)
+
+        kind = self._leafKind(node)
+        if kind == 'scalar':
+            raise ValueError(self._scalarRefusal(path))
+        if kind == 'image':
+            raise ValueError(
+                'plot_slices: %r is a two-dimension leaf, not a 1D profile: '
+                'draw it with plot(mode="single") -- a profile at several '
+                'instants is a curve, not a picture.' % path)
+        # The one refusal the ask asks for: a leaf that holds nothing in
+        # this case is named once, with the instants asked and the filled
+        # siblings, before any window is opened.
+        if not node.hasAvailableData():
+            instants = ', '.join('t=%g s' % t for t in times)
+            raise ValueError(
+                'plot_slices: %s (asked for: %s).'
+                % (self._emptyExplanation(view, node, leaf).rstrip('.'),
+                   instants))
+
+        tbase = self._timeBase(view, node)
+        entries = []
+        for requested in times:
+            clamped = bool(tbase is not None and tbase.size > 0 and
+                           (requested < float(tbase[0]) or
+                            requested > float(tbase[-1])))
+            T = requested
+            if tbase is not None and tbase.size > 0:
+                T = float(min(max(requested, float(tbase[0])), float(tbase[-1])))
+            try:
+                x, y, slice_t = self._profileAtTime(view, node, T, interp,
+                                                    occurrence, 'plot_slices')
+            except ValueError as e:
+                entries.append({'time_requested': requested,
+                                'clamped': clamped,
+                                'error': str(e)})
+                continue
+            k = 0
+            if tbase is not None and tbase.size > 0:
+                k = int(np.argmin(np.abs(tbase - slice_t)))
+            entries.append({'time_requested': requested,
+                            'time_slice_time': slice_t,
+                            'clamped': clamped,
+                            'slice_index': k,
+                            'drawn': int(len(x)),
+                            'samples': int(len(y)),
+                            'x': x, 'y': y})
+
+        drawn = [entry for entry in entries if 'error' not in entry]
+        if not drawn:
+            reasons = '; '.join('t=%g s: %s' % (entry['time_requested'],
+                                                entry['error'])
+                                for entry in entries)
+            raise ValueError(
+                'plot_slices: none of the %d instants asked gave a profile '
+                'for %r: %s' % (len(entries), leaf, reasons))
+
+        leaf_short = leaf.split('.', 1)[1] if '.' in leaf else leaf
+        import re
+        leaf_short = re.sub(r'\[[^\]]*\]', '', leaf_short)
+        instants_text = ', '.join('t=%g s' % t for t in times)
+
+        from imasviz.VizUtils import FigureTypes
+        from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotOneNode \
+            import QVizPlotOneNode
+        from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
+        if into_figure_key is not None:
+            command = QVizPlotOneNode(view, node, intoFigureKey=into_figure_key)
+            frame = command.frameFor()
+            if not hasattr(frame, 'pgPlotWidget'):
+                command.discardIfEmpty(frame)
+                raise ValueError(
+                    'plot_slices: %r is not a `Plot` figure: name a curve '
+                    'figure (see list_windows), e.g. Plot1.' % into_figure_key)
+        else:
+            command = QVizPlotOneNode(view, node)
+            frame = command.newFigure(FigureTypes.CURVEPLOTTYPE, QVizCurvePlot)
+
+        try:
+            for entry in drawn:
+                entry['trace'] = '%s @ t=%g s' % (leaf_short,
+                                                  entry['time_slice_time'])
+                frame.pgPlotWidget.plot(entry['x'], entry['y'],
+                                        name=entry['trace'])
+            frame.pgPlotWidget.setLabel('bottom', 'coordinate')
+            frame.pgPlotWidget.setLabel('left', leaf_short)
+            if not into_figure_key:
+                frame.pgPlotWidget.setTitle(
+                    'profile of %s at %s' % (leaf_short, instants_text))
+        except Exception as e:
+            command.discardIfEmpty(frame)
+            raise ValueError(
+                'plot_slices: could not draw %s onto the figure: %s'
+                % (leaf, str(e).split('\n', 1)[0])[:300])
+
+        self._embedIfNew(command, frame)
+        self.api.AddNodeToFigure(
+            frame.figureKey,
+            view.dataSource.dataKey(node),
+            (view.dataSource.uri, node))
+        return {'figure': frame.figureKey,
+                'kind': type(frame).__name__,
+                'interpolation': interpolation,
+                'occurrence': occurrence,
+                'drawn': sum(entry['drawn'] for entry in drawn),
+                'traces': [{key: value for key, value in entry.items()
+                            if key not in ('x', 'y')}
+                           for entry in entries]}
 
     def _equilibriumRead(self, uri, occurrence):
         """The `(view, reader)` of the `equilibrium` IDS of one open case.

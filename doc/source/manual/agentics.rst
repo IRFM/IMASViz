@@ -174,11 +174,13 @@ the same descriptions. The tools, in the order the faces group them:
      - one tool, and ``mode`` says which drawing is meant: ``single`` puts one
        quantity into the figure its axes call for (a curve for one axis, a
        picture for two), ``slice`` answers a 1D-profile at a single instant,
-       ``selection`` draws what the case selection holds, ``table`` one panel
-       per quantity in a Table Plot View, ``stacked`` the stacked view. The
-       **values** of a leaf, as JSON, are the other tool: the same read the
-       plots use, so the figure a viewer sees and the numbers a read reports
-       are the same element of the same array.
+       ``slices`` the same profile at several instants -- one trace per
+       instant, on one figure, named for the slice it shows -- ``selection``
+       draws what the case selection holds, ``table`` one panel per quantity
+       in a Table Plot View, ``stacked`` the stacked view. The **values** of a
+       leaf, as JSON, are the other tool: the same read the plots use, so the
+       figure a viewer sees and the numbers a read reports are the same
+       element of the same array.
    * - the equilibrium
      - ``equilibrium``
      - one tool for the two readings of the *Equilibrium* plugin, and
@@ -539,7 +541,7 @@ before this release spoke it: ``along_time`` (a curve), and
 ``as_function_of_time`` / ``coordinate_index`` / ``time_index`` (a read).
 They answer as before; the pair above is the one the loop is taught first.
 
-Three ways to ask for one quantity, on the reference case (WEST 54924, run 0)
+Four ways to ask for one quantity, on the reference case (WEST 54924, run 0)
 for the pressure profile of ``equilibrium``:
 
 1. **Along the time.** The profile is held by the dynamic array, so it runs
@@ -563,6 +565,20 @@ for the pressure profile of ``equilibrium``:
    the answer names the time asked and the slice time **apart**, not a value
    that resembles one. ``time`` and the ``along``/``indices`` pair are
    refused together: they are two opposite ways of reading the array.
+4. **The same profile at several instants.** *"the pressure of the slices
+   closest to 35, 100 and 300 s, on one figure"* is
+   :code:`plot(mode="slices", uri, leaf, times=[35, 100, 300])` -- one call,
+   one window of curves, one trace per instant, named for the slice it
+   shows (``pressure @ t=35 s``). Every instant is clamped to the case's
+   range and answered through the same accessor as the slice: the trace is
+   drawn at the slice the case answered, not at the value asked at. The
+   answer names one record per instant -- the instant asked, the slice
+   time, the slice index, the sample count, or the reason the instant was
+   refused -- so a partial answer (one instant the case could not read) is
+   named, never a retry, and a call that drew nothing raises with the
+   per-instant reasons in one refusal. A leaf that holds no values at all
+   raises one aggregate refusal before any window is opened, naming the
+   instants asked and the filled siblings under the same structure.
 
 Two figures, two ways (and two ways only):
 
@@ -620,6 +636,9 @@ A dictionary of ready phrases, with what they answer on the reference case:
    * - a slice at an instant
      - "the pressure of the slice at 35 s"
      - :code:`plot(mode="slice", ..., time=35)`
+   * - the profile at several instants
+     - "the pressure at 35, 100 and 300 s on one figure"
+     - :code:`plot(mode="slices", ..., times=[35, 100, 300])`
    * - the value at one psi
      - "read the pressure at psi = 50"
      - :code:`get_signal(..., indices={"psi": 50})`

@@ -33,8 +33,9 @@ You control the GUI strictly through the provided tools.
 4. `inspect_tree(action="search")` or `inspect_tree(action="quantities")` -> Find exact leaf paths.
 5. `plot(mode=...)` or `get_signal(...)` -> Draw curves or read numerical values.
    `mode` is the shape of the drawing: "single" one quantity, "slice" one
-   profile at one instant, "selection" what was selected, "table" one panel
-   per path, "stacked" the paths stacked in one window.
+   profile at one instant, "slices" one profile at several instants on one
+   figure, "selection" what was selected, "table" one panel per path,
+   "stacked" the paths stacked in one window.
 
 ### ADDRESSING -- one word, one question, said here and not by a tool
 - `uri`: the case, spelled as `manage_case(action="list")` named it.
@@ -335,26 +336,26 @@ TOOLS = [
                                         'selection before the paths go in'},
         }, 'required': ['action', 'uri'], 'additionalProperties': False},
     ),
-    # One name for the five ways a quantity is drawn, because the question
+    # One name for the ways a quantity is drawn, because the question
     # the model is answering is « under what shape do I draw this », not
-    # « which of these five functions is it ». `mode` answers it, and the
+    # « which of these functions is it ». `mode` answers it, and the
     # parameters each mode takes are checked per action
     # (`ACTION_PARAMETERS`): a `plot(mode="slice")` without a `time` is
     # refused by naming the missing parameter, never as a Python error.
-    # The prose of the old five schemas is not recopied here five times --
+    # The prose of the old schemas is not recopied here once per shape --
     # what is per mode is written on the parameter that carries it.
     #
-    # What the sentence no longer has room for: the answer's `curves` is
-    # read off the window itself after the draw, so a claim that a curve
-    # stands on a figure stands on that list and not on a memory of the
-    # call (test_137 reads the joined figure back the same way); a mode
-    # asked without what it takes is refused by naming the parameter, and
-    # `time` beside `along` is refused as the two opposite readings they
-    # are. "slice" outside the case's range answers the nearest slice.
+    # What the sentence no longer has room for: a claim that a curve
+    # stands on a figure stands on the window that was just drawn, not on
+    # a memory of the call (test_137 reads the joined figure back the
+    # same way); a mode asked without what it takes is refused by naming
+    # the parameter, and `time` beside `along` is refused as the two
+    # opposite readings they are. "slice" and "slices" outside the case's
+    # range answer the nearest slice.
     #
     # What the parameter notes no longer say, and what the code answers
     # anyway: `mode` carries no note, because the sentence above and the
-    # ADDRESSING block of the instruction spell the five shapes. The clock
+    # ADDRESSING block of the instruction spell the shapes. The clock
     # is answered by "time", "temps" and "t" alike, and an `along` left out
     # is the clock when the leaf holds one. `indices` takes one entry per
     # array of structures (`time_slice`, `profiles_1d`, `ion`) as well as
@@ -364,28 +365,35 @@ TOOLS = [
     # apart -- the value asked at and the slice that answered it. An
     # `into_figure_key` left out opens a window of its own, which is what
     # an ask naming two families wants: two windows, not one of four.
+    # "slices" is the multi-instant read of the same profile: `times` is
+    # the list of instants and the answer names one trace per instant.
     _tool(
         'plot',
         'What shape to draw in, and `mode` picks it. "single": one '
         '`path` into the figure its own axes call for -- a curve for one '
         'axis to draw, a picture window for two. "slice": one `path` read '
-        'at one `time`. "selection": what the case selection holds. '
-        '"table": one panel per `paths` in a Table Plot View. "stacked": '
-        '`paths` stacked, one panel each, in one window. The answer names '
-        'the figure key and `curves`, the curves on it after the call.',
+        'at one `time`. "slices": one `path` read at several `times`, '
+        'one trace per instant on one figure. "selection": what the case '
+        'selection holds. "table": one panel per `paths` in a Table Plot '
+        'View. "stacked": `paths` stacked, one panel each, in one window. '
+        'The answer names the figure key.',
         {'type': 'object', 'properties': {
             'mode': {'type': 'string',
-                     'enum': ['single', 'slice', 'selection', 'table',
-                              'stacked']},
+                     'enum': ['single', 'slice', 'slices', 'selection',
+                              'table', 'stacked']},
             'uri': {'type': 'string'},
             'path': {'type': 'string',
-                     'description': '"single" and "slice": the leaf to '
-                                    'draw, by its full data path, e.g. '
-                                    'core_profiles.profiles_1d[0].electrons'
+                     'description': '"single", "slice" and "slices": the '
+                                    'leaf to draw, by its full data path, '
+                                    'e.g. core_profiles.profiles_1d[0].electrons'
                                     '.temperature'},
             'paths': {'type': 'array', 'items': {},
                       'description': '"table" and "stacked": one panel per '
                                      'path'},
+            'times': {'type': 'array', 'items': {'type': 'number'},
+                      'description': '"slices": instants, the case clock, '
+                                     'one trace per instant on one '
+                                     'figure'},
             'along_time': {'type': ['boolean', 'null'],
                            'description': 'legacy ("single"): one axis to '
                                           'draw. Prefer `along` + '
@@ -414,10 +422,10 @@ TOOLS = [
             'interpolation': {'type': 'string',
                               'enum': ['linear', 'closest', 'previous'],
                               'default': 'linear',
-                              'description': '"slice": how the instant is '
-                                             'read -- the case\'s nearest '
-                                             'slice, or the one at or '
-                                             'before `time`'},
+                              'description': '"slice" and "slices": how '
+                                             'the instant is read -- the '
+                                             'case\'s nearest slice, or '
+                                             'the one at or before it'},
             'columns': {'type': ['integer', 'null'],
                         'description': '"table": the width of the row of '
                                        'panels'},

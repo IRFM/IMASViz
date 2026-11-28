@@ -184,7 +184,7 @@ def captureAsk(name, args):
     name = gestureOf(name, args)
     if name in ('get_screenshot', 'focus_window'):
         return args.get('window', 'app')
-    if name == 'plot_one':
+    if name in ('plot_one', 'plot_slices'):
         return args.get('into_figure_key')
     if name in FIGURE_MUTATIONS:
         return args.get('figure_key')

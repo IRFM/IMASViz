@@ -22,7 +22,8 @@ ask into a cascade of raw Python errors and then a table it invented.
   fall through to `float(time)` and die as `TypeError: float() argument must
   be a string or a real number, not 'list'` -- a data-shaped error the model
   read as a wrong value and retried. It is a schema miss, refused by naming
-  the shape that works (one per instant, into the same figure).
+  the shape that works: `mode="slices"` with `times`, one trace per instant
+  on one figure.
 * `indices` is a mapping `{"axis": i}`. A `indices=44` used to fall into
   `for key in (indices or {})` and die as `TypeError: 'int' object is not
   iterable`. Same class, same fix: refuse by naming the mapping.
@@ -90,8 +91,8 @@ def test_time_is_one_instant_not_a_list(core):
         core.plot_slice(CASE_URI, FILLED, [200, 400, 600, 800])
     message = str(exc.value)
     assert 'time' in message and 'instant' in message, message
-    assert 'into_figure_key' in message, \
-        'the refusal must steer to the working multi-instant path: %s' \
+    assert 'slices' in message and 'times' in message, \
+        'the refusal must steer to the working multi-instant mode: %s' \
         % message
     # And it is the named refusal, not the raw Python error it used to be
     # (the `pytest.raises(ValueError)` above already rules out the TypeError;
