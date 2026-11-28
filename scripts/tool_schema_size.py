@@ -60,6 +60,11 @@ import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOOP_SOURCE = os.path.join(REPO, 'imasviz', 'VizAgent', 'tools.py')
+# The three tables live in `tools_tables.py` beside it (the groups,
+# the per-member parameters and the renames); `TOOLS` and the
+# instructions stay in `tools.py` and are read there too.
+TABLES_SOURCE = os.path.join(REPO, 'imasviz', 'VizAgent',
+                             'tools_tables.py')
 MCP_SOURCE = os.path.join(REPO, 'mcp_server', 'tools.py')
 
 # Chars per token, for the order-of-magnitude figure only. See the module
@@ -170,11 +175,12 @@ def _handWrittenTools(path):
     return spelled
 
 
-def measure(loopSource=LOOP_SOURCE, mcpSource=MCP_SOURCE):
+def measure(loopSource=LOOP_SOURCE, mcpSource=MCP_SOURCE,
+           tablesSource=TABLES_SOURCE):
     """Every number the report prints, in one dictionary."""
-    tools, families, instructions, shared = _sourceConstants(
-        loopSource, ['TOOLS', 'FAMILIES', 'SYSTEM_INSTRUCTIONS',
-                     'SHARED_NOTES'])
+    tools, instructions, shared = _sourceConstants(
+        loopSource, ['TOOLS', 'SYSTEM_INSTRUCTIONS', 'SHARED_NOTES'])
+    (families,) = _sourceConstants(tablesSource, ['FAMILIES'])
 
     payload = _json(tools)
     descriptions = {t['function']['name']: t['function']['description']

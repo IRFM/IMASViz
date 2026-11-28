@@ -170,8 +170,8 @@ def test_the_groups_partition_the_tools_on_offer():
 
 def test_the_groups_are_the_manual_s():
     """A group row of the manual and a group of the table say the same
-    tools. This is what keeps the table in ``tools.py`` from becoming a
-    second, quieter account of the surface."""
+    tools. This is what keeps the table in ``tools_tables.py`` from
+    becoming a second, quieter account of the surface."""
     manual = _manualGroups()
     spelled = {label: _onTheWire(label) for label, _, _ in FAMILIES}
     missing = sorted(set(manual) - set(spelled))

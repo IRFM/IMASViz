@@ -13,5 +13,7 @@
 importing nothing but `imasviz` and PySide6. `dispatcher` runs a function
 on the GUI thread from any worker thread. `llm_client` talks to an
 OpenAI-compatible endpoint. `agent` is the LLM → tool loop. `tools` holds
-the system instructions and the tool schemas. `panel` is the MDI window.
+the system instructions and the tool schemas, with `tools_tables` carrying
+the three tables the schemas answer from (the groups, the per-member
+parameters and the renames). `panel` is the MDI window.
 """
