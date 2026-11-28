@@ -306,6 +306,17 @@ def test_the_user_entry_follows_the_username_the_browser_answers(session, qapp):
     assert session.root.IMASdbBrowserWidget.added == ['g2lfleur']
 
 
+def test_the_public_entry_hands_public_to_the_browser(session, qapp):
+    # The other entry of the pop-up, and the only one a session hands out
+    # before any username is known: the browser is asked for the public
+    # databases, under the name "public".
+    menu = session.popUp()
+    [action for action in menu.actions()
+     if action.text() == 'Add public databases'][0].trigger()
+    qapp.processEvents()
+    assert session.root.IMASdbBrowserWidget.added[-1] == 'public'
+
+
 # --------------------------------------------------------------------------
 # Opening a case the way the start window does
 # --------------------------------------------------------------------------
