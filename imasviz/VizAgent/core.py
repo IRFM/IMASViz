@@ -263,6 +263,17 @@ def axesAddressing(axesSpec, along=None, indices=None):
     from imasviz.VizDataAccess import QVizCurveAbscissa as AB
     from imasviz.VizDataAccess.QVizAxesSpec import QVizAxis
 
+    if indices is not None and not isinstance(indices, dict):
+        # A bare index where the mapping belongs is a schema miss, not a
+        # number to argue with: refused by naming the shape, not as an
+        # `'int' object is not iterable` the model reads as a data problem
+        # and retries into the turn budget.
+        raise ValueError(
+            '`indices` is a mapping of axis name to 0-based index -- e.g. '
+            '{"time_slice": 5} or {"psi": 50} -- one entry per axis the '
+            'curve does NOT run along; it was %r. A bare index belongs in '
+            'the path (equilibrium.time_slice[5]....) or as one entry of '
+            'that mapping.' % (indices,))
     if not axesSpec.isPlottable():
         raise ValueError(_scalarRefusal(axesSpec))
 

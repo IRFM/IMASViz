@@ -44,6 +44,80 @@ class PlotOps:
             self.api.addPlotWidgetToMDI(frame)
             frame.show()
 
+    def _asInstant(self, time, what):
+        """`time` is one instant: a number, in seconds on the case clock.
+
+        A list of them is the ask the model reaches for on "j_tor(psi) at
+        200, 400, 600, 800s" -- the working shape is one instant at a time,
+        into the same figure. Refuse the list by naming that, not as the
+        `float() ... not 'list'` the loop reads as a wrong value and retries
+        into the budget.
+        """
+        if isinstance(time, bool) or not isinstance(time, (int, float)):
+            raise ValueError(
+                '%s: `time` is one instant, a number in seconds on the case '
+                'clock. For several instants of the same profile on one '
+                'figure, draw one per instant and put them in the same '
+                'figure with into_figure_key -- a bare index of the time '
+                'array belongs in `indices`, not in `time`.' % what)
+        return float(time)
+
+    def _filledSiblings(self, view, node, cap=8):
+        """The filled siblings of a leaf, under the same structure, by name.
+
+        Read off the tree's own available-data flag -- the one the tree
+        settles by **reading** each leaf at build time, so a 0-length array
+        is already known to be empty -- not off `list_filled_paths`, which
+        names a 0-length array as filled (measured: it lists `j_tor` while
+        `j_tor` reads 0), the exact shape of the empty leaf this points at.
+        """
+        dataName = node.getDataName() or ''
+        if '.' not in dataName:
+            return []
+        prefix = dataName.rsplit('.', 1)[0] + '.'
+        clean, band = [], []
+        for other in view.signalsList:
+            name = other.getDataName() or ''
+            if not name.startswith(prefix) or '.' in name[len(prefix):]:
+                continue
+            short = name[len(prefix):]
+            if name == dataName:
+                continue
+            try:
+                if not other.hasAvailableData():
+                    continue
+            except Exception:
+                continue
+            # The `_error_` bounds are a band on another profile, not the
+            # profile the ask named: list the clean profiles first, so the
+            # pointer lands on pressure / q / elongation, not on a band.
+            (band if '_error_' in short else clean).append(short)
+        return (sorted(clean) + sorted(band))[:cap]
+
+    def _emptyExplanation(self, view, node, path):
+        """A leaf that holds no values earns a refusal that says so, and
+        points at what the case DOES hold under the same structure.
+
+        "No values along the plotted axis" is a widget phrase the model reads
+        as a wrong axis and retries, and then -- when it stops -- as a table
+        it put together from the filled coordinate and invented values. These
+        words name the emptiness as the case's own and the siblings that are
+        filled, so the answer ends the loop instead of steering it into a
+        fabrication.
+        """
+        message = ('%s holds no values in this case (the leaf is empty), so '
+                   'there is nothing to draw and no index or instant to pin '
+                   'it at' % path)
+        filled = self._filledSiblings(view, node)
+        if filled:
+            message += ('. Under the same structure the case DOES hold: %s.'
+                        % ', '.join('"%s"' % name for name in filled))
+        else:
+            message += ('. Nothing under the same structure holds values '
+                        'either; search_nodes names the leaves the case '
+                        'fills.')
+        return message
+
     def plot_one(self, uri, path, along_time=None, into_figure_key=None,
                  time=None, time_interp=False, along=None, indices=None):
         """One quantity, drawn by `QVizPlotOneNode` into the frame its axes call for.
@@ -99,6 +173,7 @@ class PlotOps:
             raise ValueError(self._scalarRefusal(path))
         if time is not None:
             import numpy as np
+            T = self._asInstant(time, 'plot_one')
             node = self._nodeForPath(view, path)
             tbase = self._timeBase(view, node)
             if tbase is None or tbase.size == 0:
@@ -107,8 +182,7 @@ class PlotOps:
                     'the time parameter applies to a quantity held by a '
                     'dynamic time array (e.g. time_slice[i]); this one is '
                     'not, so a time value there has no slice to resolve to.'
-                    % (path, float(time)))
-            T = float(time)
+                    % (path, T))
             time_index = int(np.argmin(np.abs(tbase - T)))
             clamped = bool(T < float(tbase[0]) or T > float(tbase[-1]))
             # The value is answered the same way plot_slice answers one:
@@ -131,6 +205,12 @@ class PlotOps:
                                   alongTime=along_time)
         frame = command.execute()
         if frame is None:
+            if not node.hasAvailableData():
+                # The leaf is empty in this case (the tree settled that by
+                # reading it): say so and name the filled siblings, instead
+                # of the widget phrase that steers the model into a retry
+                # loop and then a fabricated table.
+                raise ValueError(self._emptyExplanation(view, node, path))
             raise ValueError(
                 '"%s" could not be drawn: %s'
                 % (path, self.lastLogLine(view) or 'see the log panel'))
@@ -195,6 +275,12 @@ class PlotOps:
                                   namedIndices=named_indices or None)
         frame = command.execute()
         if frame is None:
+            if not node.hasAvailableData():
+                # The leaf is empty in this case (the tree settled that by
+                # reading it): say so and name the filled siblings, instead
+                # of the widget phrase that steers the model into a retry
+                # loop and then a fabricated table.
+                raise ValueError(self._emptyExplanation(view, node, path))
             raise ValueError(
                 '"%s" could not be drawn: %s'
                 % (path, self.lastLogLine(view) or 'see the log panel'))
@@ -304,6 +390,8 @@ class PlotOps:
         tensor, or a leaf whose x and y sizes disagree).
         """
         import numpy as np
+        node = self._nodeForPath(view, leafPath)
+        leafPath = node.getDataName() or leafPath
         ids, dot, rel = leafPath.partition('.')
         if not dot or not rel:
             raise ValueError(
@@ -330,11 +418,15 @@ class PlotOps:
         # get_slice answers it as a flat array, and both must be non-empty.
         y = np.asarray(y_raw, dtype=float).ravel()
         if y.size == 0:
+            if not node.hasAvailableData():
+                # The leaf is empty in this case: say so and name the filled
+                # siblings, instead of the branch-is-empty phrase that leaves
+                # the model to read "directly" and invent.
+                raise ValueError(self._emptyExplanation(view, node, leafPath))
             raise ValueError(
                 'plot_slice: %r holds no value at this instant in the case: '
                 'the branch is empty, so there is nothing to draw.' % leafPath)
         from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
-        node = self._nodeForPath(view, leafPath)
         try:
             x_raw, _ = QVizTensorDataAccess(view.dataSource).GetSignal(
                 treeNode=node, plotWidget=None,
@@ -383,6 +475,8 @@ class PlotOps:
         interp = getattr(_id, self._INTERPOLATIONS[interpolation])
 
         view = self._viewForUri(uri)
+        node = self._nodeForPath(view, leaf)
+        leaf = node.getDataName() or leaf
         ids = leaf.split('.', 1)[0]
         if not self.api.IDSDataAlreadyFetched(view, ids, occurrence):
             self.load_ids(uri, ids, occurrence)
@@ -391,8 +485,7 @@ class PlotOps:
         # the ask: the answer reports `time_requested` and `time_slice_time`
         # separately, so a value asked far outside the pulse is still named
         # as the slice the case actually answered with.
-        node = self._nodeForPath(view, leaf)
-        T = float(time)
+        T = self._asInstant(time, 'plot_slice')
         tbase = self._timeBase(view, node)
         if tbase is not None and tbase.size > 0:
             T = float(min(max(T, float(tbase[0])), float(tbase[-1])))
@@ -753,6 +846,13 @@ class PlotOps:
         payload = self._jsonable(result)
         if isinstance(payload, dict) and payload.get('kind') == 'curve':
             payload['samples'] = len(payload.get('y') or [])
+            if payload['samples'] == 0 and not node.hasAvailableData():
+                # The read is empty because the leaf holds no values in this
+                # case, not because of a wrong axis or index: say so and name
+                # the filled siblings, so a "read it directly" does not come
+                # back as a table assembled from the filled coordinate and
+                # invented values.
+                payload['note'] = self._emptyExplanation(view, node, path)
         return payload
 
     def _figureCurves(self, frame):
