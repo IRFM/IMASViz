@@ -23,7 +23,6 @@ class QVizMainMenuController:
     def __init__(self, parent=None):
         self.parent = parent
         self.openShotView = QVizOpenShotView(parent.getMDI())
-        #self.hideAddPublicDBCommand = False
 
     def updateMenu(self, menu, listenerWidget):
         # The windows of the run are not here: they are on the *Windows* menu of
@@ -37,7 +36,6 @@ class QVizMainMenuController:
         # looking at (T46). This pop-up only exists on the start panel, under no
         # title, and the manual named a menu (``Actions -> Save session``) that
         # is nowhere.
-        #if not self.hideAddPublicDBCommand:
         self.menuAddPublicDB(menu, listenerWidget)
         self.menuAddSpecificUserDB(menu, listenerWidget)
 
