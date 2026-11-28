@@ -39,6 +39,7 @@ box is what is asked, through the same *Run* as any other prompt.
 
 import threading
 
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QTextCursor
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -150,12 +151,29 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
         layout.addWidget(self.promptCatalogueBox)
         self._loadCatalogue()
 
-        # Prompt
+        # Prompt: the box, with a discreet clear-the-box button on its
+        # right. It is the one button that touches the box alone -- the
+        # *Clear* below also takes the transcript away. Disabled while
+        # the box is empty, so the row does not jump as the text comes
+        # and goes.
+        promptRow = QHBoxLayout()
+        promptRow.setContentsMargins(0, 0, 0, 0)
+        promptRow.setSpacing(6)
         self.promptEdit = QPlainTextEdit()
         self.promptEdit.setPlaceholderText(
             'Ask the agent to open a case, to plot, to search…')
         self.promptEdit.setMaximumHeight(80)
-        layout.addWidget(self.promptEdit)
+        promptRow.addWidget(self.promptEdit, stretch=1)
+        self.clearPromptButton = QPushButton('×')
+        self.clearPromptButton.setFixedSize(28, 28)
+        self.clearPromptButton.setToolTip(
+            'Clear the prompt box — keeps the transcript')
+        self.clearPromptButton.clicked.connect(self._onClearPrompt)
+        promptRow.addWidget(self.clearPromptButton,
+                             Qt.AlignmentFlag.AlignTop)
+        layout.addLayout(promptRow)
+        self.promptEdit.textChanged.connect(self._updateClearPromptButton)
+        self._updateClearPromptButton()
 
         # Buttons
         self.buttonRow = QHBoxLayout()
@@ -313,6 +331,20 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
         self.transcript.clear()
         self.promptEdit.clear()
         self.promptEdit.setFocus()
+
+    def _onClearPrompt(self):
+        """Clear the prompt box alone: the transcript and the history
+        stay exactly as they are -- the user wanted a fresh box, not a
+        fresh conversation."""
+        self.promptEdit.clear()
+        self.promptEdit.setFocus()
+
+    def _updateClearPromptButton(self):
+        """The clear-the-box button is enabled exactly when the box
+        holds something -- disabled otherwise, so it cannot be pressed
+        on an empty box."""
+        self.clearPromptButton.setEnabled(
+            bool(self.promptEdit.toPlainText().strip()))
 
     def _loadHistory(self):
         """The box from disk: newest first. A run that started after a

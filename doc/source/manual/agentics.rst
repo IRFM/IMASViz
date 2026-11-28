@@ -84,6 +84,10 @@ The window holds, from the top:
 - three buttons: :guilabel:`Tourner` (run the loop on what is typed),
   :guilabel:`Arrêter` (stop the loop at the next turn boundary) and
   :guilabel:`Effacer` (clear the transcript and the box).
+- a discreet **×** button beside the box, disabled while the box is empty:
+  it clears the box alone -- the transcript and the prompt history stay
+  exactly as they are. The same button stands on the web face, beside the
+  same box.
 
 The button labels are in French, as the panel speaks its own language. The
 transcript it fills is what the run leaves: the words the loop spoke, and each

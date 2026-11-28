@@ -104,6 +104,15 @@ textarea#prompt {
   border-radius: 6px; padding: 8px 10px; font: inherit;
 }
 textarea#prompt:focus { outline: none; border-color: var(--accent); }
+.promptRow { display: flex; gap: 6px; align-items: flex-start; }
+.promptRow textarea#prompt { flex: 1 1 auto; width: auto; }
+button#clearPromptBtn {
+  flex: 0 0 auto; width: 28px; height: 28px; padding: 0; border-radius: 6px;
+  background: transparent; border: 1px solid var(--line); color: var(--ink-soft);
+  font-size: 16px; line-height: 1; cursor: pointer; font-family: inherit;
+}
+button#clearPromptBtn:hover:not(:disabled) { color: var(--ink); border-color: var(--ink-soft); }
+button#clearPromptBtn:disabled { opacity: 0.4; cursor: default; }
 select#historyBox {
   width: 100%; background: var(--field); color: var(--ink-soft);
   border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; font: inherit;
@@ -428,7 +437,12 @@ details.tool summary strong { color: var(--accent-strong); }
          of the panel are the same control. -->
     <select id="toolsBox" aria-label="Transcript mode"
             title="Transcript mode: how the agent's answer wears while it works. hide (the answer, the calls cut), off (no tools), verbose (the whole traffic). Shared with the panel and the client."></select>
-    <textarea id="prompt" placeholder="Open a case imas:hdf5?path=…, load an IDS, find a quantity, plot it…"></textarea>
+    <div class="promptRow">
+      <textarea id="prompt" placeholder="Open a case imas:hdf5?path=…, load an IDS, find a quantity, plot it…"></textarea>
+      <button id="clearPromptBtn" type="button" disabled
+              title="Clear the prompt box — keeps the transcript"
+              aria-label="Clear the prompt box">×</button>
+    </div>
     <div class="row">
       <button id="runBtn" type="button">Run</button>
       <button id="stopBtn" type="button" disabled>Stop</button>
@@ -1459,6 +1473,7 @@ details.tool summary strong { color: var(--accent-strong); }
           }).join(', '))
         : ' — no hole to fill'));
       byId('prompt').value = r.text;
+      syncClearPromptButton();
       if (thenRun) runAgent(r.text);
     });
   }
@@ -2087,12 +2102,29 @@ details.tool summary strong { color: var(--accent-strong); }
     try { localStorage.setItem('viz_web_theme', next); } catch (e) { /* best-effort */ }
   }
 
+  // The clear-the-box button: enabled exactly when the box holds
+  // something. A plain assignment to .value fires no 'input', so the two
+  // callers that set the box themselves call this directly after.
+  function syncClearPromptButton() {
+    byId('clearPromptBtn').disabled = !byId('prompt').value.trim();
+  }
+
   function wireButtons() {
     byId('runBtn').addEventListener('click', function () {
       var p = byId('prompt').value;
       if (!p.trim()) return;
       runAgent(p);
     });
+    // The clear-the-box button: discreet, beside the box, enabled when
+    // the box holds something. It clears the box alone -- the transcript,
+    // the captures and the reports stay exactly as they are.
+    syncClearPromptButton();
+    byId('clearPromptBtn').addEventListener('click', function () {
+      byId('prompt').value = '';
+      syncClearPromptButton();
+      byId('prompt').focus();
+    });
+    byId('prompt').addEventListener('input', syncClearPromptButton);
     // The history menu: choosing a line puts that prompt back in the box,
     // to run again, and the menu clears to its head so a second choice is a
     // deliberate act, not the one the menu was showing.
@@ -2102,6 +2134,7 @@ details.tool summary strong { color: var(--accent-strong); }
       if (!value) return;
       byId('prompt').value = value;
       box.value = '';
+      syncClearPromptButton();
       byId('prompt').focus();
     });
     // The transcript mode: choose one, it is sent to the loop in force and
