@@ -661,7 +661,6 @@ class QVizGlobalValues:
 
         os.environ["UDA_DISABLED"] = "1"
         TESTING_USER = os.environ["USER"]
-        TESTING_TS_MAPPINGS_DIR = TESTING_VIZ_HOME + '/ts_mapping_files'
         # IMAS_VERSION is the version of the *data dictionary*, and IMAS-Python
         # reads it itself (imas.dd_zip). It used to be filled here from
         # AL_VERSION when unset, which is what made opening a pulse die: AL_VERSION
@@ -681,8 +680,6 @@ class QVizGlobalValues:
         if IMAS_VIZ_VERSION == '':
             print("IMAS_VIZ_VERSION not defined in environment. Please report to admin!")
             IMAS_VIZ_VERSION = 'Undefined (please report to admin)'
-        if "TS_MAPPINGS_DIR" not in os.environ:
-            os.environ["TS_MAPPINGS_DIR"] = os.environ["VIZ_HOME"] + '/ts_mapping_files'
 
 class GlobalIDs:
     """The one Qt event type the application posts to itself.

@@ -79,10 +79,6 @@ def test_production_mode_is_selected():
     assert QVizGlobalValues.TESTING is False
 
 
-def test_time_series_mappings_are_found():
-    assert os.path.isdir(os.environ['TS_MAPPINGS_DIR'])
-
-
 @pytest.mark.dd
 def test_the_harness_dictionary_is_one_the_distribution_bundles():
     # IMAS_VERSION names a data dictionary, and IMAS-Python reads that variable

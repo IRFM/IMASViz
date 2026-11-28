@@ -25,7 +25,6 @@ cd "$repo"
 export VIZ_HOME="$repo"
 export VIZ_PRODUCTION=1
 export UDA_DISABLED=1
-export TS_MAPPINGS_DIR="${TS_MAPPINGS_DIR:-$repo/ts_mapping_files}"
 # The window title carries this; overridable from the environment.
 export IMAS_VIZ_VERSION="${IMAS_VIZ_VERSION:-local}"
 # Not forced: the code appends VIZ_HOME to sys.path itself, and replacing the

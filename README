@@ -463,8 +463,7 @@ re-verified on every run), then loads the IMAS core with `module load IMAS`.
     scripts/west/run_viz_cli.sh "one prompt"    # one-shot
 
 All six launchers set, for the production run: `VIZ_HOME`, `VIZ_PRODUCTION=1`,
-`UDA_DISABLED=1`, `TS_MAPPINGS_DIR` (default `$repo/ts_mapping_files`) and
-`IMAS_VIZ_VERSION` (overridable from the environment). They do **not** replace
+`UDA_DISABLED=1` and `IMAS_VIZ_VERSION` (overridable from the environment). They do **not** replace
 the modules' `PYTHONPATH`; the code appends `VIZ_HOME` to `sys.path` itself.
 `run_viz_cli.sh` hands any argument straight to `viz_cli`, so it is the one to
 start a one-shot prompt from the shell.

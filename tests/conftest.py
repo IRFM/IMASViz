@@ -61,7 +61,6 @@ os.environ['VIZ_HOME'] = REPO_ROOT
 os.environ['IMAS_VIZ_VERSION'] = os.environ.get('IMAS_VIZ_VERSION', 'test-suite')
 os.environ['UDA_DISABLED'] = '1'
 os.environ['IMAS_VERSION'] = IMAS_TEST_VERSION
-os.environ['TS_MAPPINGS_DIR'] = os.path.join(REPO_ROOT, 'ts_mapping_files')
 
 # No X display on the batch nodes: build every widget offscreen.
 os.environ['QT_QPA_PLATFORM'] = 'offscreen'

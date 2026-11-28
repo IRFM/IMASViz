@@ -56,14 +56,12 @@ class QVizDataTreeView(QTreeWidget):
     """Set and populate QTreeWidget.
     """
 
-    def __init__(self, parent, dataSource, mappingFilesDirectory,
+    def __init__(self, parent, dataSource,
                  *args, **kwargs):
         """
         Arguments:
             parent     (QWindow)            : QVizDataTreeView parent.
             dataSource (QVizIMASDataSource) : IDS data source from QVizDataSourceFactory
-            mappingFilesDirectory (str)     : Path to IMASViz mapping files directory
-                                          (example: viz/ts_mapping_files)
         """
         super(QVizDataTreeView, self).__init__(parent)
 
@@ -86,7 +84,6 @@ class QVizDataTreeView(QTreeWidget):
         self.dataSource = dataSource
         self.selectedItem = None
         self.uri = dataSource.uri
-        self.mappingFilesDirectory = mappingFilesDirectory
         self.showOnlyTensorsRankGe1 = (QVizPreferences.Show_only_tensors_rank_ge_1 == 1)
 
         # What the opened case holds, asked of the case itself: which
@@ -740,8 +737,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         # Set Qt TreeView
         self.dataTreeView = \
             QVizDataTreeView(parent=self,
-                             dataSource=dataSource,
-                             mappingFilesDirectory=os.environ['TS_MAPPINGS_DIR'])
+                             dataSource=dataSource)
         self.dataTreeView.showOnlyTensorsRankGe1 = self.showOnlyTensorsRankGe1
         self.dataTreeView.imas_viz_api = imas_viz_api
 

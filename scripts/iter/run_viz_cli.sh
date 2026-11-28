@@ -24,7 +24,6 @@ cd "$repo"
 export VIZ_HOME="$repo"
 export VIZ_PRODUCTION=1
 export UDA_DISABLED=1
-export TS_MAPPINGS_DIR="${TS_MAPPINGS_DIR:-$repo/ts_mapping_files}"
 export IMAS_VIZ_VERSION="${IMAS_VIZ_VERSION:-local}"
 export PYTHONPATH="$VIZ_HOME${PYTHONPATH:+:$PYTHONPATH}"
 

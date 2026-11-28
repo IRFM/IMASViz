@@ -104,10 +104,6 @@ class QVizGlobalOperations:
                 print("Environment variable HOME not defined. Exiting.")
                 sys.exit()
 
-            if 'TS_MAPPINGS_DIR' not in os.environ:
-                print("Environment variable TS_MAPPINGS_DIR not defined. Exiting.")
-                sys.exit()
-
             if 'USER' not in os.environ:
                 print("Environment variable USER not defined. Exiting.")
                 sys.exit()
@@ -119,10 +115,6 @@ class QVizGlobalOperations:
         else:
 
             print("IMAS_VIZ testing environment.")
-
-            if 'TS_MAPPINGS_DIR' not in os.environ:
-                os.environ["TS_MAPPINGS_DIR"] = QVizGlobalValues.TESTING_TS_MAPPINGS_DIR
-                print("WARNING: environment variable TS_MAPPINGS_DIR defined from testing environment.")
 
             if 'USER' not in os.environ:
                 os.environ['USER'] = QVizGlobalValues.TESTING_USER
@@ -141,10 +133,6 @@ class QVizGlobalOperations:
 
             if 'HOME' not in os.environ:
                 print("Environment variable HOME not defined. Exiting.")
-                sys.exit()
-
-            if 'TS_MAPPINGS_DIR' not in os.environ:
-                print("Environment variable TS_MAPPINGS_DIR not defined. Exiting.")
                 sys.exit()
 
             if 'IMAS_VERSION' not in os.environ:
@@ -171,10 +159,6 @@ class QVizGlobalOperations:
         else:
 
             print("IMAS_VIZ testing environment.")
-
-            if 'TS_MAPPINGS_DIR' not in os.environ:
-                os.environ["TS_MAPPINGS_DIR"] = QVizGlobalValues.TESTING_TS_MAPPINGS_DIR
-                print("WARNING: environment variable TS_MAPPINGS_DIR defined from testing environment.")
 
             if 'IMAS_VERSION' not in os.environ:
                 os.environ["IMAS_VERSION"] = QVizGlobalValues.TESTING_IMAS_VERSION

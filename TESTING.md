@@ -80,8 +80,8 @@ tests that need them are skipped when they are absent.
 | `IMASVIZ_TEST_RANK3_DD_VERSION` | `3.35.0` | data dictionary that case was written with |
 
 Everything else the application needs (`VIZ_HOME`, `VIZ_PRODUCTION`,
-`TS_MAPPINGS_DIR`, `UDA_DISABLED`, `QT_QPA_PLATFORM=offscreen`) is set by
-`tests/conftest.py`; you do not have to export it.
+`UDA_DISABLED`, `QT_QPA_PLATFORM=offscreen`) is set by `tests/conftest.py`;
+you do not have to export it.
 
 ## 2. Running
 
