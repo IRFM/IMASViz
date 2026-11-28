@@ -152,7 +152,13 @@ packaging manifest** in this repo.
 
 ```
 imasviz/
-├── Viz_API.py                 # Viz_API: scripting API + central session state
+├── Viz_API.py                 # Viz_API: scripting API + central session state (thin assembly; behaviour in the mixins below)
+├── Viz_API_chrome.py         # helpers (getNodePath, titleWithCases, caseTooltip), QVizMdiSubWindow, QVizClosableWindow, QVizWindowRecord
+├── Viz_API_windows.py        # QVizWindowBookkeepingMixin: windows openWindows/closeAll/...
+├── Viz_API_figures.py        # QVizFigureRegistryMixin: figure keys, FigureKeyFor, openWindowOfPluginEntry
+├── Viz_API_views.py          # QVizShotViewsMixin: DTV frames, CreateDataTree, ShowDataTree, load occurrences
+├── Viz_API_selection.py      # QVizSelectionMixin: the selection record, SelectSignals(Group)
+└── Viz_API_plotting.py       # QVizPlottingMixin: GetSignal, PlotSelectedSignals, MDI embed
 ├── VizUtils/                  # global constants (QVizGlobalValues: FigureTypes,
 │                              # UserInputs, indices), prefs, logging, window geometry
 ├── VizDataSource/             # opens a case: URI building, DBEntry, factory,
