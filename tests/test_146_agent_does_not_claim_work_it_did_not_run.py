@@ -82,6 +82,13 @@ class Core:
                 'drawn': [key],
                 'windows': self.list_windows()}
 
+    def _fresh_key(self):
+        number = max([int(k[4:]) for k in self._open
+                      if k.startswith('Plot')] or [0]) + 1
+        key = 'Plot%d' % number
+        self._open.add(key)
+        return key
+
     def plot_one(self, uri=None, path=None, into_figure_key=None, **kwargs):
         self.calls.append('plot_one')
         if into_figure_key:
@@ -90,11 +97,50 @@ class Core:
                     'No window holds the key "%s" any more -- '
                     'list_windows names what is open.' % into_figure_key)
             return {'figure': into_figure_key, 'curves': ['pressure', 'temperature']}
-        number = max([int(k[4:]) for k in self._open
-                      if k.startswith('Plot')] or [0]) + 1
-        key = 'Plot%d' % number
-        self._open.add(key)
+        key = self._fresh_key()
         return {'figure': key, 'curves': [path]}
+
+    def plot_slice(self, uri=None, leaf=None, time=None,
+                   into_figure_key=None, **kwargs):
+        """One profile at one instant: the answers of the real gesture,
+        including `drawn` as the number of points, not a window."""
+        self.calls.append('plot_slice')
+        if into_figure_key:
+            if into_figure_key not in self._open:
+                raise ValueError(
+                    'No window holds the key "%s" any more -- '
+                    'list_windows names what is open.' % into_figure_key)
+            key = into_figure_key
+        else:
+            key = self._fresh_key()
+        return {'figure': key, 'kind': 'QVizCurvePlot',
+                'drawn': 101, 'time_requested': float(time),
+                'time_slice_time': float(time), 'interpolation': 'linear',
+                'occurrence': 0}
+
+    def plot_slices(self, uri=None, path=None, times=None,
+                    into_figure_key=None, **kwargs):
+        """One profile at several instants: the same `drawn`-is-an-int
+        shape the real gesture answers, plus the per-instant traces."""
+        self.calls.append('plot_slices')
+        if into_figure_key:
+            if into_figure_key not in self._open:
+                raise ValueError(
+                    'No window holds the key "%s" any more -- '
+                    'list_windows names what is open.' % into_figure_key)
+            key = into_figure_key
+        else:
+            key = self._fresh_key()
+        return {'figure': key, 'kind': 'QVizCurvePlot',
+                'interpolation': 'linear', 'occurrence': 0,
+                'drawn': 101 * len(times),
+                'traces': [{'time_requested': float(t),
+                            'time_slice_time': float(t),
+                            'clamped': False,
+                            'slice_index': 0,
+                            'drawn': 101,
+                            'samples': 101}
+                           for t in times]}
 
     def scale_curve(self, figure_key, factor, curve=None, **kwargs):
         self.calls.append('scale_curve')
@@ -421,3 +467,82 @@ def test_unperformedWorkOn_the_entry_answers_the_window_it_drew():
                              'EquiSurfaces:1', ground) == set()
     assert unperformedWorkOn('j\'ai tracé la pression sur Plot1',
                              ground) == {'Plot1'}
+
+
+# ----------------------------------------- the profile gestures' answers
+
+def test_the_drawn_samples_int_does_not_crash_the_grounding():
+    """`plot_slice` answers `drawn` with the number of points it drew --
+    an int, not a key. The grounding read it as a list of windows and the
+    call was refused after it was drawn ("'int' object is not iterable").
+    The int is the gesture's own summary, not a window: it is skipped, and
+    the figure the answer spells is what grounds the claim."""
+    ground = _groundedFigureKeys(
+        {'uri': 'imas:hdf5?path=x', 'mode': 'slice',
+         'path': 'equilibrium.time_slice[0].profiles_1d.j_tor',
+         'time': 100},
+        {'figure': 'Plot1', 'kind': 'QVizCurvePlot', 'drawn': 101,
+         'time_requested': 100.0, 'time_slice_time': 100.0,
+         'interpolation': 'linear', 'occurrence': 0})
+    assert ground == {'Plot1'}, ground
+
+
+def test_the_drawn_list_of_windows_still_grounds_the_windows():
+    """`run_plugin` answers `drawn` with the windows its entry registered;
+    that spelling of the same field is what it still is."""
+    ground = _groundedFigureKeys(
+        {'uri': 'imas:hdf5?path=x', 'plugin': 'equilibriumsurfaces',
+         'entry': 0},
+        {'ran': {'plugin': 'equilibriumsurfaces', 'entry': 0},
+         'drawn': ['EquiSurfaces:1'],
+         'windows': [{'key': 'EquiSurfaces:1'}, {'key': 'Plot1'}]})
+    assert ground == {'EquiSurfaces:1'}, ground
+
+
+def test_a_profile_slice_claimed_on_its_figure_stands(qapp):
+    """The field shape of the raw refusal: one turn, one honest ask --
+    "Trace une slice de j_tor en fonction de psi pour t=100s". The call
+    succeeds, the answer is honest about the figure it drew, and the loop
+    must not turn that into a refusal: the grounding of the turn beside the
+    call is what makes the answer stand."""
+    core = Core()
+    out = runTurn(core, [
+        LLMResponse(tool_calls=[{
+            'name': 'plot',
+            'args': {'mode': 'slice', 'uri': 'imas:hdf5?path=x',
+                     'path': 'equilibrium.time_slice[0].profiles_1d.j_tor',
+                     'time': 100}}],
+            content=''),
+        LLMResponse(content='J\'ai tracé j_tor à t=100 s sur Plot1.',
+                    tool_calls=None, finish_reason='stop'),
+    ], 'Trace une slice de j_tor en fonction de psi pour t=100s')
+    assert out['finished'] == [None], \
+        'a slice drawn and claimed honestly must stand: %r' % (out['finished'],)
+    assert 'REFUSAL' not in ' '.join(out['lines']), \
+        'the bookkeeping after the draw must not refuse a true claim: %r' % out['lines']
+    assert core.calls == ['plot_slice']
+
+
+def test_a_profile_slice_multi_instant_claimed_on_its_figure_stands(qapp):
+    """The same shape at several instants (`mode="slices"`): one call, one
+    window, one trace per instant -- and the answer must stand on the
+    figure that call opened, the way a `plot_one` does. Before the fix
+    `plot_slices` was in neither set the loop asks and the honest claim
+    was refused as work nobody ran."""
+    core = Core()
+    out = runTurn(core, [
+        LLMResponse(tool_calls=[{
+            'name': 'plot',
+            'args': {'mode': 'slices', 'uri': 'imas:hdf5?path=x',
+                     'path': 'equilibrium.time_slice[0].profiles_1d.j_tor',
+                     'times': [100, 400, 700]}}],
+            content=''),
+        LLMResponse(content='J\'ai tracé j_tor à t=100, 400 et 700 s sur '
+                            'Plot1.',
+                    tool_calls=None, finish_reason='stop'),
+    ], 'Trace j_tor en fonction de psi pour t=100, t=400, t=700 sur la même figure')
+    assert out['finished'] == [None], \
+        'a slices draw claimed honestly must stand: %r' % (out['finished'],)
+    assert 'REFUSAL' not in ' '.join(out['lines']), \
+        'the bookkeeping after the draw must not refuse a true claim: %r' % out['lines']
+    assert core.calls == ['plot_slices']

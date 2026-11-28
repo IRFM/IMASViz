@@ -316,7 +316,7 @@ _CLAIM_NEGATION_RE = re.compile(r'\bnot\b|\bpas\b|\bnever\b')
 # to the drawing tool -- a second, identical window. `run_plugin`
 # answers the keys it drew as `drawn` for exactly that reading.
 _WORK_GESTURES = frozenset((
-    'plot_one', 'plot_slice', 'plot_selection',
+    'plot_one', 'plot_slice', 'plot_slices', 'plot_selection',
     'plot_table', 'plot_stacked', 'equilibrium_surfaces',
     'equilibrium_at_time', 'run_plugin', 'scale_curve', 'shift_curve',
     'normalize_curve', 'reset_curve', 'remove_curve', 'set_axis_range',
@@ -350,11 +350,18 @@ def _groundedFigureKeys(args, result):
         # `run_plugin` answers for the windows its entry registered. Neither
         # is the whole screen: a plugin entry answers `windows` too, and that
         # list is every window of the session, so reading it would ground a
-        # claim of work on a figure this request never touched.
+        # claim of work on a figure this request never touched. `drawn` is
+        # also what the profile gestures (`plot_slice`, `plot_slices`) answer
+        # with the number of points they drew -- an int, not a key: iterating
+        # it answers "'int' object is not iterable" and the call is refused
+        # after it was drawn.
         for field in ('figures', 'drawn'):
-            for value in result.get(field) or ():
-                if isinstance(value, str):
-                    keys.append(value)
+            value = result.get(field)
+            if not isinstance(value, (list, tuple)):
+                continue
+            for item in value:
+                if isinstance(item, str):
+                    keys.append(item)
     # A list result is the window list `list_windows` answers -- a call whose
     # whole answer is that read, which is another thing from the `windows`
     # field above: each entry carries the key of the window it is, and a claim
