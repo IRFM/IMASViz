@@ -21,9 +21,7 @@ an empty answer, or the ``max_turns`` limit is all emitted as a
 """
 
 import json
-import logging
 import re
-import threading
 from collections.abc import Mapping, Sequence
 
 from PySide6.QtCore import QObject, Signal

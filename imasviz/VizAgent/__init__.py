@@ -15,5 +15,7 @@ on the GUI thread from any worker thread. `llm_client` talks to an
 OpenAI-compatible endpoint. `agent` is the LLM → tool loop, with `agent_guards` carrying the tests its final answers stand on. `tools` holds
 the system instructions and the tool schemas, with `tools_tables` carrying
 the three tables the schemas answer from (the groups, the per-member
-parameters and the renames). `panel` is the MDI window.
+parameters and the renames). `panel` is the agent window: a top-level window, not an MDI one.
+It is registered in the session's figureframes so the *Windows* menu
+carries it alongside the other windows of the session.
 """
